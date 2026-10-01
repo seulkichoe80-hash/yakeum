@@ -26,6 +26,13 @@
 - TASK C / Frontend
 - TASK D / 핵심엔진·통합
 
+## 팀 개발 안내
+
+- [TASK A - AI 문서인식](docs/tasks/TASK_A_AI_EXTRACTION.md)
+- [TASK B - 데이터·백엔드](docs/tasks/TASK_B_DATA_BACKEND.md)
+- [TASK C - Frontend](docs/tasks/TASK_C_FRONTEND.md)
+- [TASK D - Reconciliation·통합](docs/tasks/TASK_D_RECONCILIATION_INTEGRATION.md)
+
 작업을 시작하기 전에 반드시 Repository 루트의 `AGENTS.md`를 먼저 읽고 공통 개발규칙을 확인하세요.
 
 현재는 팀 공동개발을 위한 초기 Repository 구성 단계입니다. 실제 기능, API Endpoint, DB Schema, 프레임워크 및 패키지는 아직 구현하거나 확정하지 않았습니다.
