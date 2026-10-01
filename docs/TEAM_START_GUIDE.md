@@ -1,6 +1,8 @@
 # 약이음 팀 개발 시작 안내서
 
-이 문서는 TASK A, TASK B, TASK C 담당 팀원이 별도의 설명 없이 개발을 시작할 수 있도록 만든 공통 안내서입니다. 팀장은 TASK D(Reconciliation / Integration)를 담당합니다. 처음 참여했다면 위에서부터 차례대로 읽어 주세요.
+이 문서는 TASK A, TASK B, TASK C 담당 팀원이 별도의 설명 없이 개발을 시작하고 3주간의 핵심 기능 개발과 E2E 통합까지 마칠 수 있도록 만든 공통 안내서입니다. 팀장은 TASK D(Reconciliation / Integration)를 담당합니다. 처음 참여했다면 위에서부터 차례대로 읽어 주세요.
+
+프로젝트 기능 개발기간은 **3주**입니다. 3주 안에 핵심 기능과 E2E 통합을 완료하고, 이후 기간은 전체 검토, 오류 수정, 사용자 테스트, UI/UX 개선, 발표 준비와 Demo 안정화에 사용합니다.
 
 ## 1. 약이음은 어떤 프로젝트인가요?
 
@@ -78,6 +80,60 @@ A → B → D → C
 ```
 
 첫 번째 통합에서 `B → D → C`를 먼저 확인하는 이유는 HIRA Excel이 이미 구조화된 입력이기 때문입니다. AI 인식 정확도에 영향을 받지 않고 `MedicationRecord → Reconciliation → Frontend` 전체 흐름을 먼저 검증할 수 있습니다. 그다음 TASK A의 비정형 입력을 같은 흐름에 연결합니다.
+
+### 개발 순서와 통합 순서는 다릅니다
+
+- **개발 순서:** A/B/C/D가 동시에 시작합니다. 다른 담당자의 완료를 기다리지 않습니다.
+- **통합 순서:** 안정적인 구조화 입력부터 연결하기 위해 `B → D → C`를 먼저 검증하고, 이후 `A → B → D → C`를 연결합니다.
+
+### 3주 전체 Roadmap
+
+#### 1주차 — 각 담당 기능의 독립 PoC
+
+- TASK A: 비정형 자료 → Multimodal AI → `ExtractionResult`
+- TASK B: HIRA Excel → deterministic parser → `MedicationRecord`
+- TASK C: API Contract Mock → 가족 선택 → 현재 복용목록 → 자료 등록 UI
+- TASK D: Previous/Current MedicationRecord → Reconciliation → `ReconciliationResult`
+
+#### 2주차 — 실제 프로젝트 기능으로 확장
+
+TASK A:
+
+- 약봉투, 처방전, 건강기능식품 입력 처리
+- 복수 `ingredients`와 record-level `confidence` 처리
+- 사용자 확인·수정 흐름
+- 실패 및 미확인 값 처리
+
+TASK B:
+
+- HIRA Parser 안정화
+- 공식 의약품 데이터 연결
+- 제품명·성분명 정규화
+- `product_strength` 처리
+- 공식 데이터 매칭 실패 처리
+
+TASK C:
+
+- AI 인식결과 확인·수정 화면
+- 변경사항과 Medication Timeline
+- 확인필요 상태와 공식 근거 표시 영역
+- 가족별 데이터 구분
+
+TASK D:
+
+- Current Intake State
+- `family_member_id` 단위 처리
+- Timeline 연결
+- Backend/API 연결 준비
+- Reconciliation 예외처리
+
+#### 3주차 — 통합 및 완성
+
+- TASK A: `ExtractionResult`를 TASK B normalization 흐름에 연결
+- TASK B: TASK A/HIRA 입력을 동일한 MedicationRecord 흐름으로 연결
+- TASK C: Mock을 실제 Backend 데이터로 교체
+- TASK D: TASK A/B/C 전체 연결과 E2E 통합
+- 전체 공통: 오류처리, 빈 상태, 로딩 상태, 기본 모바일 대응, 통합 테스트, Demo 핵심 시나리오 검증
 
 ## 4. 담당 역할 한눈에 보기
 
@@ -338,3 +394,226 @@ Codex 작업이 끝나면 다음 형식으로 결과를 보고합니다.
 11. commit SHA
 12. push 여부
 13. Pull Request 여부
+
+## 17. TASK별 3주 전체 완료기준
+
+아래 항목은 각 담당 기능이 3주 후 완료되었다고 판단하는 최소 기준입니다. 상세 구현범위는 반드시 자신의 TASK 문서를 함께 따릅니다.
+
+### TASK A 완료기준
+
+- 약봉투 입력을 처리한다.
+- 처방전 입력을 처리한다.
+- 건강기능식품 입력을 처리한다.
+- 비정형 자료를 `ExtractionResult`로 전달한다.
+- MedicationRecord 후보를 생성한다.
+- 복수 `ingredients`에 대응한다.
+- record-level `confidence`를 제공한다.
+- 미확인 값은 추측하지 않고 `null`로 처리한다.
+- 사용자가 결과를 확인하고 수정할 수 있다.
+- 공식 의약품 정보와 안전정보를 AI가 임의 생성하지 않는다.
+- 실패 상태를 명확히 처리한다.
+- TASK B normalization에 연결 가능한 결과를 전달한다.
+- 관련 테스트가 통과한다.
+
+상세 구현은 [`docs/tasks/TASK_A_AI_EXTRACTION.md`](tasks/TASK_A_AI_EXTRACTION.md)를 따릅니다.
+
+### TASK B 완료기준
+
+- HIRA Excel을 deterministic parser로 처리한다.
+- HIRA 입력에서 MedicationRecord를 생성한다.
+- raw 값을 normalized 값으로 덮어쓰지 않고 보존한다.
+- 제품명을 정규화한다.
+- 성분명을 정규화한다.
+- 공식 의약품 데이터와 매칭한다.
+- `product_strength`와 단위를 올바르게 처리한다.
+- 공식 데이터 매칭 실패를 안전하게 처리하고 원본 record를 유지한다.
+- TASK A의 결과도 같은 normalization 흐름으로 처리할 수 있다.
+- TASK D에 MedicationRecord를 전달할 수 있다.
+- 관련 테스트가 통과한다.
+
+상세 구현은 [`docs/tasks/TASK_B_DATA_BACKEND.md`](tasks/TASK_B_DATA_BACKEND.md)를 따릅니다.
+
+### TASK C 완료기준
+
+- 가족을 선택할 수 있다.
+- 향후 가족 추가를 수용할 수 있는 화면·상태 구조를 사용한다.
+- 자료 등록 화면이 있다.
+- 현재 복용정보를 표시한다.
+- AI 결과를 확인하고 수정할 수 있다.
+- 변경사항과 Medication Timeline을 표시한다.
+- `MAINTAINED`, `NEW`, `DOSE_CHANGED`, `NEEDS_CONFIRMATION`을 표시한다.
+- 공식 근거 표시 영역이 있다.
+- 오류, 빈 상태, 로딩 상태를 처리한다.
+- Mock이 아닌 실제 Backend 데이터와 연결된다.
+- 기본 모바일 화면에 대응한다.
+- 관련 테스트가 통과한다.
+
+Frontend는 Reconciliation 상태나 의료적 판단을 직접 만들지 않고 Backend의 `ReconciliationResult`를 표시합니다. 상세 구현은 [`docs/tasks/TASK_C_FRONTEND.md`](tasks/TASK_C_FRONTEND.md)를 따릅니다.
+
+### TASK D 완료기준
+
+TASK D는 팀장이 담당합니다.
+
+- Previous/Current MedicationRecord를 비교한다.
+- `MAINTAINED`, `NEW`, `DOSE_CHANGED`, `NEEDS_CONFIRMATION`을 처리한다.
+- deterministic `reason_code`를 제공한다.
+- `family_member_id` 단위로 처리한다.
+- Current Intake State를 구성한다.
+- Timeline과 연결한다.
+- Backend/API를 통합한다.
+- TASK A/B/C를 연결한다.
+- E2E 테스트가 통과한다.
+- Demo 핵심 시나리오가 안정적으로 작동한다.
+
+최신 자료에 없다는 이유만으로 복용 중단으로 판단하지 않습니다. 이 경우 `NEEDS_CONFIRMATION`을 사용합니다. 상세 구현은 [`docs/tasks/TASK_D_RECONCILIATION_INTEGRATION.md`](tasks/TASK_D_RECONCILIATION_INTEGRATION.md)를 따릅니다.
+
+## 18. 주차별 체크포인트
+
+각 주 마지막에는 다음 질문에 답하고 결과를 팀에 공유합니다.
+
+### 1주차 종료
+
+- [ ] 내 기능이 독립적으로 최소 1건 작동하는가?
+- [ ] 가상 또는 비식별 데이터만 사용했는가?
+- [ ] PoC의 입력과 출력이 문서의 Contract를 따르는가?
+- [ ] 실패한 테스트와 미완료 항목을 숨기지 않고 기록했는가?
+
+### 2주차 종료
+
+- [ ] 실제 프로젝트 Contract에 맞게 데이터를 주고받을 수 있는가?
+- [ ] `DATA_SCHEMA.md`와 `API_CONTRACT.md`를 임의로 바꾸지 않았는가?
+- [ ] 오류·미확인·매칭 실패를 안전하게 처리하는가?
+- [ ] 다음 통합에 필요한 입력과 출력 예시를 담당자에게 공유했는가?
+
+### 3주차 종료
+
+- [ ] 내 기능이 다른 담당 기능과 연결되어 E2E에서 작동하는가?
+- [ ] 오류, 빈 상태와 로딩 상태를 확인했는가?
+- [ ] 통합 테스트와 핵심 Demo 시나리오가 통과하는가?
+- [ ] 남은 문제와 제한사항이 완료보고에 기록되어 있는가?
+
+## 19. 1주차 이후 작업을 계속하는 방법
+
+1주차 PoC가 끝났다고 팀장 지시를 기다리며 작업을 중단하지 않습니다. 자신의 TASK 문서에 적힌 **2주차 → 3주차** 순서로 계속 진행합니다. 각 단계에서 공통 Contract와 담당 범위를 다시 확인합니다.
+
+다만 다음 상황에서는 구현을 멈추고 팀장에게 먼저 공유합니다.
+
+- `DATA_SCHEMA.md` 변경이 필요함
+- `API_CONTRACT.md` 변경이 필요함
+- 다른 담당자의 핵심 코드를 변경해야 함
+- 의료안전 판단이 필요함
+- 개인정보·건강정보 처리 문제가 있음
+- 담당범위가 충돌함
+- 통합 Contract와 실제 결과가 다름
+
+## 20. Git과 Codex로 지속 작업하기
+
+각 담당자는 처음 만든 자신의 feature branch에서 작은 단위로 다음 흐름을 반복합니다.
+
+```text
+구현 → 테스트 → git diff 확인 → commit → push
+```
+
+- TASK A: `feature/ai-extraction`
+- TASK B: `feature/data-backend`
+- TASK C: `feature/frontend`
+- TASK D: `feature/reconciliation`
+
+다른 사람의 branch에 직접 commit하지 않습니다. `main`과 `develop`에도 직접 기능 코드를 작성하지 않으며, `develop` 병합은 검토 후 수행합니다.
+
+Codex를 사용할 때마다 처음부터 프로젝트를 설명할 필요는 없습니다. 대신 매 작업 시작 시 Codex가 다음 문서를 먼저 확인하도록 합니다.
+
+1. `AGENTS.md`
+2. `docs/TEAM_START_GUIDE.md`
+3. `docs/DATA_SCHEMA.md`
+4. `docs/API_CONTRACT.md`
+5. 자신의 `docs/tasks/TASK_*.md`
+
+그리고 구현 전에 다음을 먼저 보고하도록 요청합니다.
+
+- 현재 Git 상태와 branch
+- 현재까지 구현된 기능
+- 이번 작업 목표
+- 예상 변경 파일
+- 다른 담당자에게 미치는 영향
+- 테스트 계획
+
+## 21. 기능 완료 후 절차
+
+기능이 완료되어도 바로 `develop`에 병합하지 않습니다.
+
+```text
+기능 구현 완료
+↓
+테스트
+↓
+git diff 확인
+↓
+commit
+↓
+feature branch push
+↓
+완료보고
+↓
+팀장 검토
+↓
+Pull Request
+↓
+develop 병합
+```
+
+테스트 실패나 미해결 문제가 있으면 완료라고 보고하지 않고 완료보고에 정확히 기록합니다.
+
+## 22. 3주 개발 종료 성공 기준
+
+3주 개발 완료는 각 기능이 따로 동작하는 상태가 아니라 다음 E2E 시나리오가 연결되어 작동하는 상태를 뜻합니다.
+
+### 시나리오 1 — HIRA 기반 첫 번째 Vertical Slice
+
+```text
+HIRA 자료
+→ Parser
+→ MedicationRecord
+→ Reconciliation
+→ ReconciliationResult
+→ 가족별 Timeline·변경사항 화면
+```
+
+### 시나리오 2 — 약봉투·처방전 기반 두 번째 Vertical Slice
+
+```text
+약봉투 또는 처방전
+→ AI Extraction
+→ 사용자 확인
+→ 공식정보 정규화
+→ MedicationRecord
+→ Reconciliation
+→ Timeline 반영
+```
+
+### 시나리오 3 — 건강기능식품
+
+```text
+건강기능식품
+→ AI Extraction
+→ 사용자 확인
+→ 복수 성분 구조화
+→ 가족별 복용정보에 반영
+```
+
+약과 건강기능식품의 병용 가능 여부에 대한 의료적 판단을 AI가 임의 생성하지 않습니다. 공식 근거 또는 별도 안전 규칙이 확보된 범위만 처리합니다.
+
+## 23. 3주 이후 단계
+
+3주가 끝난 직후 새로운 기능부터 추가하지 않습니다. 다음 순서로 현재 결과의 품질과 Demo 안정성을 높입니다.
+
+1. E2E 오류 수정
+2. 데이터 정확성 검증
+3. 사용자 테스트
+4. UI/UX 개선
+5. 의료안전 검토
+6. Demo 안정화
+7. 발표자료 준비
+8. 사용자 테스트 결과와 KPI 정리
+
+새 기능 제안은 위 검토 결과와 우선순위를 확인한 뒤 별도로 결정합니다.

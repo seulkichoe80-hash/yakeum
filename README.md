@@ -28,7 +28,7 @@
 
 ## 팀 개발 안내
 
-- [TEAM START GUIDE](docs/TEAM_START_GUIDE.md)
+- [팀 개발 전체 안내 (착수 → 3주 개발 → 통합)](docs/TEAM_START_GUIDE.md)
 - [TASK A - AI 문서인식](docs/tasks/TASK_A_AI_EXTRACTION.md)
 - [TASK B - 데이터·백엔드](docs/tasks/TASK_B_DATA_BACKEND.md)
 - [TASK C - Frontend](docs/tasks/TASK_C_FRONTEND.md)
