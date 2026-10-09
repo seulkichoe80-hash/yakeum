@@ -1,0 +1,278 @@
+[
+  {
+    "status": "MATCHED",
+    "record": {
+      "source": "HIRA",
+      "date": "2024-03-05",
+      "date_raw": "2024-03-05 00:00:00",
+      "drug_code": "000123456",
+      "product_name": {
+        "raw": "타이레놀정500밀리그램",
+        "normalized": "타이레놀정500밀리그램"
+      },
+      "ingredients": [
+        {
+          "name": {
+            "raw": "아세트아미노펜",
+            "normalized": "아세트아미노펜"
+          },
+          "amount": 500,
+          "unit": "mg",
+          "amount_raw": "500mg",
+          "source": "HIRA"
+        }
+      ],
+      "dosage": {
+        "dose_per_time": 1,
+        "times_per_day": 3,
+        "total_days": 5,
+        "raw": {
+          "dose_per_time": "1",
+          "times_per_day": "3",
+          "total_days": "5"
+        }
+      },
+      "institution": "가나다의원",
+      "source_ref": {
+        "file": "sample_hira.xlsx",
+        "sheet": "진료내역",
+        "row": 6
+      },
+      "raw_row": {
+        "date": "2024-03-05 00:00:00",
+        "institution": "가나다의원",
+        "product_name": "타이레놀정500밀리그램",
+        "drug_code": "000123456",
+        "ingredient": "아세트아미노펜",
+        "strength": "500mg",
+        "dose_per_time": "1",
+        "times_per_day": "3",
+        "total_days": "5"
+      }
+    },
+    "match": {
+      "source": "MFDS_DRUG",
+      "official_id": "000123456",
+      "match_method": "CODE_EXACT"
+    },
+    "warnings": [],
+    "errors": []
+  },
+  {
+    "status": "MATCHED",
+    "record": {
+      "source": "HIRA",
+      "date": "2024-03-07",
+      "date_raw": "2024.03.07",
+      "drug_code": "198800001",
+      "product_name": {
+        "raw": "뮤코펙트정 30mg",
+        "normalized": "뮤코펙트"
+      },
+      "ingredients": [
+        {
+          "name": {
+            "raw": "암브록솔염산염",
+            "normalized": "암브록솔염산염"
+          },
+          "amount": 30,
+          "unit": "mg",
+          "amount_raw": null,
+          "source": "MFDS"
+        }
+      ],
+      "dosage": {
+        "dose_per_time": 0,
+        "times_per_day": 3,
+        "total_days": 3,
+        "raw": {
+          "dose_per_time": "0",
+          "times_per_day": "3",
+          "total_days": "3"
+        }
+      },
+      "institution": "가나다의원",
+      "source_ref": {
+        "file": "sample_hira.xlsx",
+        "sheet": "진료내역",
+        "row": 7
+      },
+      "raw_row": {
+        "date": "2024.03.07",
+        "institution": "가나다의원",
+        "product_name": "뮤코펙트정 30mg",
+        "drug_code": "198800001",
+        "ingredient": null,
+        "strength": null,
+        "dose_per_time": "0",
+        "times_per_day": "3",
+        "total_days": "3"
+      }
+    },
+    "match": {
+      "source": "MFDS_DRUG",
+      "official_id": "198800001",
+      "match_method": "CODE_EXACT"
+    },
+    "warnings": [
+      "성분 정보 없음 (공식 데이터 매칭으로 보완 필요)"
+    ],
+    "errors": []
+  },
+  {
+    "status": "PARTIAL",
+    "record": {
+      "source": "HIRA",
+      "date": null,
+      "date_raw": "2024-13-45",
+      "drug_code": null,
+      "product_name": {
+        "raw": "가나릴",
+        "normalized": "가나릴"
+      },
+      "ingredients": [],
+      "dosage": {
+        "dose_per_time": 1,
+        "times_per_day": 2,
+        "total_days": 7,
+        "raw": {
+          "dose_per_time": "1",
+          "times_per_day": "2",
+          "total_days": "7"
+        }
+      },
+      "institution": "라마바약국",
+      "source_ref": {
+        "file": "sample_hira.xlsx",
+        "sheet": "진료내역",
+        "row": 9
+      },
+      "raw_row": {
+        "date": "2024-13-45",
+        "institution": "라마바약국",
+        "product_name": "가나릴",
+        "drug_code": null,
+        "ingredient": null,
+        "strength": null,
+        "dose_per_time": "1",
+        "times_per_day": "2",
+        "total_days": "7"
+      }
+    },
+    "match": {
+      "source": null,
+      "official_id": null,
+      "match_method": "NAME_EXACT"
+    },
+    "warnings": [
+      "약품코드 없음",
+      "이상 날짜: '2024-13-45'",
+      "성분 정보 없음 (공식 데이터 매칭으로 보완 필요)",
+      "후보 2건 (NAME_EXACT): 199900002, 199900003"
+    ],
+    "errors": []
+  },
+  {
+    "status": "UNMATCHED",
+    "record": {
+      "source": "HIRA",
+      "date": "2024-04-01",
+      "date_raw": "20240401",
+      "drug_code": "999999999",
+      "product_name": {
+        "raw": "없는약정",
+        "normalized": "없는약"
+      },
+      "ingredients": [],
+      "dosage": {
+        "dose_per_time": null,
+        "times_per_day": null,
+        "total_days": null,
+        "raw": {
+          "dose_per_time": null,
+          "times_per_day": null,
+          "total_days": null
+        }
+      },
+      "institution": "라마바약국",
+      "source_ref": {
+        "file": "sample_hira.xlsx",
+        "sheet": "진료내역",
+        "row": 10
+      },
+      "raw_row": {
+        "date": "20240401",
+        "institution": "라마바약국",
+        "product_name": "없는약정",
+        "drug_code": "999999999",
+        "ingredient": null,
+        "strength": null,
+        "dose_per_time": null,
+        "times_per_day": null,
+        "total_days": null
+      }
+    },
+    "match": {
+      "source": null,
+      "official_id": null,
+      "match_method": "NONE"
+    },
+    "warnings": [
+      "성분 정보 없음 (공식 데이터 매칭으로 보완 필요)",
+      "공식 데이터에서 찾지 못함 (원본 값 보존)"
+    ],
+    "errors": []
+  },
+  {
+    "status": "FAILED",
+    "record": {
+      "source": "HIRA",
+      "date": "2024-04-02",
+      "date_raw": "2024-04-02",
+      "drug_code": "123",
+      "product_name": {
+        "raw": null,
+        "normalized": null
+      },
+      "ingredients": [],
+      "dosage": {
+        "dose_per_time": 1,
+        "times_per_day": 1,
+        "total_days": 1,
+        "raw": {
+          "dose_per_time": "1",
+          "times_per_day": "1",
+          "total_days": "1"
+        }
+      },
+      "institution": "라마바약국",
+      "source_ref": {
+        "file": "sample_hira.xlsx",
+        "sheet": "진료내역",
+        "row": 11
+      },
+      "raw_row": {
+        "date": "2024-04-02",
+        "institution": "라마바약국",
+        "product_name": null,
+        "drug_code": "123",
+        "ingredient": null,
+        "strength": null,
+        "dose_per_time": "1",
+        "times_per_day": "1",
+        "total_days": "1"
+      }
+    },
+    "match": {
+      "source": null,
+      "official_id": null,
+      "match_method": "NONE"
+    },
+    "warnings": [
+      "성분 정보 없음 (공식 데이터 매칭으로 보완 필요)"
+    ],
+    "errors": [
+      "약품명이 비어 있어 행을 해석할 수 없음"
+    ]
+  }
+]
