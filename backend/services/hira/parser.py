@@ -5,6 +5,7 @@
 import logging
 import re
 from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -48,24 +49,40 @@ def _text(v: Any) -> Optional[str]:
     return None if _blank(v) else str(v).strip()
 
 
-def _num(v: Any) -> Tuple[Optional[float], Optional[str]]:
+def _dec(v: Any) -> Decimal:
+    """float 를 거치지 않고 Decimal 로 (엑셀 숫자 셀은 repr 문자열을 경유해 2진 오차를 만들지 않는다)."""
+    if isinstance(v, Decimal):
+        return v
+    if isinstance(v, int):
+        return Decimal(v)
+    return Decimal(str(v))
+
+
+def _num(v: Any) -> Tuple[Optional[Decimal], Optional[str]]:
     """(값, 경고). 0 은 0 으로, 빈 값은 None 으로 구분."""
     if _blank(v):
         return None, None
     if isinstance(v, bool):
         return None, f"숫자로 해석 불가: {v!r}"
-    if isinstance(v, (int, float)):
-        n = float(v)
-    else:
+    try:
+        if isinstance(v, (int, float, Decimal)):
+            n = _dec(v)
+            if not n.is_finite():
+                return None, f"숫자로 해석 불가: {v!r}"
+            return n, None
         fr = _FRACTION_RE.match(str(v))
-        if fr and float(fr.group(2)) != 0:
-            n = float(fr.group(1)) / float(fr.group(2))
-            return (int(n) if n == int(n) else n), None
+        if fr and int(fr.group(2)) != 0:
+            a, b = Decimal(fr.group(1)), Decimal(fr.group(2))
+            n = a / b
+            if n * b != a:
+                return n, f"분수 {v!r}를 소수로 환산하며 근사됨"
+            return n, None
         m = _NUM_PREFIX_RE.match(str(v))
         if not m:
             return None, f"숫자로 해석 불가: {v!r}"
-        n = float(m.group(1).replace(",", ""))
-    return (int(n) if n == int(n) else n), None
+        return Decimal(m.group(1).replace(",", "")), None
+    except (InvalidOperation, ValueError):
+        return None, f"숫자로 해석 불가: {v!r}"
 
 
 def _grid(ws) -> Tuple[List[List[Any]], set]:
@@ -153,8 +170,7 @@ def _ingredients(ing_raw, str_raw, warns) -> List[Ingredient]:
         if s:
             m = _STRENGTH_RE.match(s)
             if m:
-                amount = float(m.group(1).replace(",", ""))
-                amount = int(amount) if amount == int(amount) else amount
+                amount = Decimal(m.group(1).replace(",", ""))
                 unit = m.group(2) or None
             else:
                 warns.append(f"함량 해석 불가: {s!r}")
@@ -189,6 +205,15 @@ def _row_to_record(raw: Dict[str, Any], mapping, ref, warns, errs) -> Medication
         warns.append("날짜 없음")
 
     rec.institution = _text(raw.get("institution"))
+    rec.row_no = _text(raw.get("row_no"))
+    rec.prescribing_institution = _text(raw.get("prescribing_institution"))
+    rec.dispensing_institution = _text(raw.get("dispensing_institution"))
+    rec.drug_category = _text(raw.get("drug_category"))
+    rec.unit = _text(raw.get("unit"))
+    rec.dispensing_date_raw = _text(raw.get("dispensing_date"))
+    rec.dispensing_date, w = parse_date(raw.get("dispensing_date"), yr)
+    if w and rec.dispensing_date_raw != rec.date_raw:  # 같은 컬럼이면 위 date 경고와 중복이라 생략
+        warns.append(f"dispensing_date: {w}")
     rec.ingredients = _ingredients(_text(raw.get("ingredient")), _text(raw.get("strength")), warns)
 
     d = Dosage(raw={k: _text(raw.get(k)) for k in ("dose_per_time", "times_per_day", "total_days")})
@@ -196,12 +221,9 @@ def _row_to_record(raw: Dict[str, Any], mapping, ref, warns, errs) -> Medication
         val, w = _num(raw.get(fld))
         if w:
             warns.append(f"{fld}: {w}")
-        if fld == "total_days" and val is not None:
-            if val != int(val):
-                warns.append(f"total_days: 정수가 아님: {val!r}")
-                val = None
-            else:
-                val = int(val)
+        if fld == "total_days" and val is not None and val != val.to_integral_value():
+            warns.append(f"total_days: 정수가 아님: {val!r}")
+            val = None
         setattr(d, fld, val)
     rec.dosage = d
     return rec
@@ -258,7 +280,7 @@ def parse_hira_excel(path, mapping_path: Optional[Path] = None, sheet: Optional[
         except Exception as e:  # noqa: BLE001 - 한 행 실패가 전체를 막지 않게
             rec = MedicationRecord(source_ref=ref, raw_row={k: _text(v) for k, v in raw.items()})
             errs.append(f"행 처리 중 예외: {e}")
-        key = (rec.date_raw, rec.drug_code or rec.product_name.raw, rec.institution, tuple(sorted(rec.dosage.raw.items())))
+        key = (rec.date_raw, rec.dispensing_date_raw, rec.drug_code or rec.product_name.raw, rec.institution, rec.prescribing_institution, rec.dispensing_institution, tuple(sorted(rec.dosage.raw.items())))
         if not errs and key in seen:
             warns.append(f"중복 행: {seen[key]}행과 동일한 내용")
         elif not errs:

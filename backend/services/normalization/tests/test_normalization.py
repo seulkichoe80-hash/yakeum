@@ -25,7 +25,7 @@ def test_statuses(tmp_path):
 
 def test_code_exact_and_ingredients_filled_from_mfds(tmp_path):
     r = _run(tmp_path)[1]
-    assert r.match.match_method == "CODE_EXACT" and r.match.official_id == "198800001"
+    assert r.match.match_method == "CODE_EXACT" and r.match.official_id == "OFFICIAL-0002"
     assert r.record.ingredients[0].source == "MFDS"
 
 
@@ -48,5 +48,5 @@ def test_normalize_name():
 def test_fuzzy_match_threshold():
     c = MockMfdsClient()
     out = match(c, None, "뮤코펙토정", 0.7)
-    assert out.method == "NAME_FUZZY" and out.candidates[0].official_id == "198800001"
+    assert out.method == "NAME_FUZZY" and out.candidates[0].official_id == "OFFICIAL-0002"
     assert match(c, None, "뮤코펙토정", 0.99).method == "NONE"

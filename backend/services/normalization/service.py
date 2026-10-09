@@ -60,11 +60,12 @@ def normalize_row(row: ParsedRow, client: MfdsClient, threshold: float) -> Norma
 
     item = out.candidates[0]
     info = MatchInfo(item.source, item.official_id, out.method)
+    rec.official_name = item.name  # raw 는 덮어쓰지 않고 별도 필드로 보관
     status = STATUS_MATCHED
     if not rec.ingredients:
         if item.ingredients:
             rec.ingredients = [
-                Ingredient(TextField(i.name, normalize_name(i.name)), i.amount, i.unit, None, "MFDS")
+                Ingredient(TextField(i.name, normalize_name(i.name)), i.amount, i.unit, None, "MFDS", i.ingredient_id)
                 for i in item.ingredients
             ]
         else:

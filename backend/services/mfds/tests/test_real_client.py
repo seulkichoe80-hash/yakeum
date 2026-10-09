@@ -1,7 +1,9 @@
 import urllib.error
+from pathlib import Path
 
 from backend.services.mfds.real_client import RealMfdsClient
 
+DEFAULT_CFG = Path(__file__).parents[1] / "api_config.yaml"
 DRUG_PAYLOAD = {
     "header": {"resultCode": "00", "resultMsg": "NORMAL SERVICE."},
     "body": {"items": [
@@ -31,13 +33,33 @@ def client(*responses, **kw):
     return RealMfdsClient(transport=t, sleep=lambda s: None, **kw), t
 
 
-def test_find_by_code_keeps_leading_zero_string_and_exact_only():
-    c, _ = client(DRUG_PAYLOAD)
+def test_find_by_code_is_skipped_until_insurance_code_spec_is_configured():
+    # 기본 설정은 보험코드 조회 명세 미확인 → ITEM_SEQ 와 약품코드를 비교하지 않고 호출도 하지 않는다
+    c, t = client(DRUG_PAYLOAD)
+    assert c.find_by_code("000123456") == [] and t.calls == []
+    assert not c.last_failed
+
+
+def test_find_by_code_uses_insurance_code_field_only_and_keeps_leading_zero(tmp_path):
+    import yaml
+    cfg = yaml.safe_load(DEFAULT_CFG.read_text(encoding="utf-8"))
+    cfg["sources"]["drug"]["insurance_code_param"] = "edi_code"
+    cfg["sources"]["drug"]["fields"]["insurance_code"] = "EDI_CODE"
+    cfg["sources"].pop("health_food")
+    p = tmp_path / "cfg.yaml"
+    p.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
+    payload = {"header": {"resultCode": "00"}, "body": {"items": [
+        {"ITEM_SEQ": "000123456", "ITEM_NAME": "가정", "EDI_CODE": "999"},          # ITEM_SEQ 만 같은 항목 → 제외
+        {"ITEM_SEQ": "111", "ITEM_NAME": "나정", "EDI_CODE": "000123456",
+         "MAIN_ITEM_INGR": "[M040702]아세트아미노펜"},
+    ]}}
+    c, _ = client(payload, config_path=p)
     items = c.find_by_code("000123456")
-    assert [i.official_id for i in items] == ["000123456"]  # 999 는 코드 불일치로 제외
+    assert [i.official_id for i in items] == ["111"]
+    assert items[0].insurance_code == "000123456"
     assert items[0].ingredients[0].name == "아세트아미노펜"
+    assert items[0].ingredients[0].ingredient_id == "M040702"
     assert items[0].ingredients[0].amount is None  # 함량 정보 없으면 추측하지 않는다
-    assert not c.last_failed and c.last_warnings == []
 
 
 def test_retry_then_success():

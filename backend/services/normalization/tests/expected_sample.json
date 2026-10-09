@@ -16,16 +16,17 @@
             "raw": "아세트아미노펜",
             "normalized": "아세트아미노펜"
           },
-          "amount": 500,
+          "amount": "500",
           "unit": "mg",
           "amount_raw": "500mg",
-          "source": "HIRA"
+          "source": "HIRA",
+          "official_id": null
         }
       ],
       "dosage": {
-        "dose_per_time": 1,
-        "times_per_day": 3,
-        "total_days": 5,
+        "dose_per_time": "1",
+        "times_per_day": "3",
+        "total_days": "5",
         "raw": {
           "dose_per_time": "1",
           "times_per_day": "3",
@@ -33,6 +34,14 @@
         }
       },
       "institution": "가나다의원",
+      "row_no": null,
+      "dispensing_date": null,
+      "dispensing_date_raw": null,
+      "prescribing_institution": null,
+      "dispensing_institution": null,
+      "drug_category": null,
+      "unit": null,
+      "official_name": "타이레놀정500밀리그램",
       "source_ref": {
         "file": "sample_hira.xlsx",
         "sheet": "진료내역",
@@ -52,7 +61,7 @@
     },
     "match": {
       "source": "MFDS_DRUG",
-      "official_id": "000123456",
+      "official_id": "OFFICIAL-0001",
       "match_method": "CODE_EXACT"
     },
     "warnings": [],
@@ -75,16 +84,17 @@
             "raw": "암브록솔염산염",
             "normalized": "암브록솔염산염"
           },
-          "amount": 30,
+          "amount": "30",
           "unit": "mg",
           "amount_raw": null,
-          "source": "MFDS"
+          "source": "MFDS",
+          "official_id": null
         }
       ],
       "dosage": {
-        "dose_per_time": 0,
-        "times_per_day": 3,
-        "total_days": 3,
+        "dose_per_time": "0",
+        "times_per_day": "3",
+        "total_days": "3",
         "raw": {
           "dose_per_time": "0",
           "times_per_day": "3",
@@ -92,6 +102,14 @@
         }
       },
       "institution": "가나다의원",
+      "row_no": null,
+      "dispensing_date": null,
+      "dispensing_date_raw": null,
+      "prescribing_institution": null,
+      "dispensing_institution": null,
+      "drug_category": null,
+      "unit": null,
+      "official_name": "뮤코펙트정",
       "source_ref": {
         "file": "sample_hira.xlsx",
         "sheet": "진료내역",
@@ -111,7 +129,7 @@
     },
     "match": {
       "source": "MFDS_DRUG",
-      "official_id": "198800001",
+      "official_id": "OFFICIAL-0002",
       "match_method": "CODE_EXACT"
     },
     "warnings": [
@@ -132,9 +150,9 @@
       },
       "ingredients": [],
       "dosage": {
-        "dose_per_time": 1,
-        "times_per_day": 2,
-        "total_days": 7,
+        "dose_per_time": "1",
+        "times_per_day": "2",
+        "total_days": "7",
         "raw": {
           "dose_per_time": "1",
           "times_per_day": "2",
@@ -142,6 +160,14 @@
         }
       },
       "institution": "라마바약국",
+      "row_no": null,
+      "dispensing_date": null,
+      "dispensing_date_raw": null,
+      "prescribing_institution": null,
+      "dispensing_institution": null,
+      "drug_category": null,
+      "unit": null,
+      "official_name": null,
       "source_ref": {
         "file": "sample_hira.xlsx",
         "sheet": "진료내역",
@@ -195,6 +221,14 @@
         }
       },
       "institution": "라마바약국",
+      "row_no": null,
+      "dispensing_date": null,
+      "dispensing_date_raw": null,
+      "prescribing_institution": null,
+      "dispensing_institution": null,
+      "drug_category": null,
+      "unit": null,
+      "official_name": null,
       "source_ref": {
         "file": "sample_hira.xlsx",
         "sheet": "진료내역",
@@ -236,9 +270,9 @@
       },
       "ingredients": [],
       "dosage": {
-        "dose_per_time": 1,
-        "times_per_day": 1,
-        "total_days": 1,
+        "dose_per_time": "1",
+        "times_per_day": "1",
+        "total_days": "1",
         "raw": {
           "dose_per_time": "1",
           "times_per_day": "1",
@@ -246,6 +280,14 @@
         }
       },
       "institution": "라마바약국",
+      "row_no": null,
+      "dispensing_date": null,
+      "dispensing_date_raw": null,
+      "prescribing_institution": null,
+      "dispensing_institution": null,
+      "drug_category": null,
+      "unit": null,
+      "official_name": null,
       "source_ref": {
         "file": "sample_hira.xlsx",
         "sheet": "진료내역",

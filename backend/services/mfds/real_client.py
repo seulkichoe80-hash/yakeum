@@ -60,11 +60,13 @@ def _items(payload: Any, path: List[str]) -> List[Dict[str, Any]]:
     return out
 
 
-def _strip_code_prefix(s: str) -> str:
+def _split_code_prefix(s: str) -> Tuple[Optional[str], str]:
+    """"[M040702]아세트아미노펜" → ("M040702", "아세트아미노펜"). 접두 코드가 없으면 (None, 이름)."""
     s = s.strip()
     if s.startswith("[") and "]" in s:
-        s = s.split("]", 1)[1]
-    return s.strip()
+        code, rest = s[1:].split("]", 1)
+        return (code.strip() or None), rest.strip()
+    return None, s
 
 
 def parse_item(raw: Dict[str, Any], cfg: Dict[str, Any]) -> Optional[OfficialItem]:
@@ -76,11 +78,14 @@ def parse_item(raw: Dict[str, Any], cfg: Dict[str, Any]) -> Optional[OfficialIte
     ing_field = f.get("ingredients")
     if ing_field and raw.get(ing_field):
         for part in str(raw[ing_field]).split(cfg.get("ingredient_separator", "|")):
-            n = _strip_code_prefix(part)
+            ing_id, n = _split_code_prefix(part)
             if n:
-                ings.append(OfficialIngredient(name=n))  # 함량은 응답에 없다고 가정 → None
+                ings.append(OfficialIngredient(name=n, ingredient_id=ing_id))  # 함량은 응답에 없다고 가정 → None
     form = raw.get(f["form"]) if f.get("form") else None
-    return OfficialItem(cfg["source"], str(oid).strip(), str(name).strip(), ings, form or None)
+    ins_field = f.get("insurance_code")
+    ins = raw.get(ins_field) if ins_field else None
+    ins = str(ins).strip() if ins not in (None, "") else None
+    return OfficialItem(cfg["source"], str(oid).strip(), str(name).strip(), ings, form or None, ins)
 
 
 class RealMfdsClient(MfdsClient):
@@ -106,11 +111,20 @@ class RealMfdsClient(MfdsClient):
 
     # -- public ---------------------------------------------------------
     def find_by_code(self, code: str) -> List[OfficialItem]:
+        """HIRA 약품코드(보험코드)로 조회한다.
+
+        품목기준코드(ITEM_SEQ 등 official_id)는 보험코드와 다른 체계이므로 비교하지 않는다.
+        api_config.yaml 에 insurance_code_param / fields.insurance_code 가 확인·설정된 소스만 조회하고,
+        설정이 없으면 코드 조회를 건너뛴다(이름 매칭으로 진행). 실제 명세 확인 전까지 기본값은 건너뜀.
+        """
         self._reset()
         out: List[OfficialItem] = []
         for key, cfg in self.config["sources"].items():
-            items = self._query(key, cfg, cfg["code_param"], code)
-            out += [i for i in items if i.official_id == code]  # 코드는 문자열 정확 일치
+            param = cfg.get("insurance_code_param")
+            if not param or not cfg["fields"].get("insurance_code"):
+                continue
+            items = self._query(key, cfg, param, code)
+            out += [i for i in items if i.insurance_code == code]  # 문자열 정확 일치
         return out
 
     def search_by_name(self, name: str, limit: int = 50) -> List[OfficialItem]:

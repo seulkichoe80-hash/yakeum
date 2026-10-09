@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from pathlib import Path
 from typing import List, Optional
 
@@ -17,13 +18,14 @@ class MockMfdsClient(MfdsClient):
         if items is not None:
             self._items = list(items)
             return
-        raw = json.loads(Path(data_path or DEFAULT_DATA).read_text(encoding="utf-8"))
+        raw = json.loads(Path(data_path or DEFAULT_DATA).read_text(encoding="utf-8"), parse_float=Decimal, parse_int=Decimal)
         self._items = [
             OfficialItem(
                 source=r["source"],
                 official_id=str(r["official_id"]),
                 name=r["name"],
                 form=r.get("form"),
+                insurance_code=(str(r["insurance_code"]) if r.get("insurance_code") is not None else None),
                 ingredients=[OfficialIngredient(**i) for i in r.get("ingredients", [])],
             )
             for r in raw
@@ -31,7 +33,8 @@ class MockMfdsClient(MfdsClient):
 
     def find_by_code(self, code: str) -> List[OfficialItem]:
         self.last_warnings = []
-        return [i for i in self._items if i.official_id == code]
+        # HIRA 약품코드는 공식 제품 식별자(official_id)와 다른 체계다. insurance_code 로만 비교한다.
+        return [i for i in self._items if i.insurance_code is not None and i.insurance_code == code]
 
     def search_by_name(self, name: str, limit: int = 50) -> List[OfficialItem]:
         self.last_warnings = []

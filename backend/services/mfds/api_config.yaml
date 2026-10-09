@@ -7,17 +7,18 @@ sources:
     source: MFDS_DRUG
     url: https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService06/getDrugPrdtPrmsnInq06
     name_param: item_name
-    code_param: item_seq
+    # HIRA 약품코드(보험코드) 조회는 공식 명세로 파라미터/응답 필드를 확인한 뒤에만 채운다 (ITEM_SEQ 와 혼동 금지).
+    insurance_code_param: null
     extra_params: {type: json, pageNo: 1, numOfRows: 50}
     items_path: [body, items]
-    fields: {id: ITEM_SEQ, name: ITEM_NAME, form: CHART, ingredients: MAIN_ITEM_INGR}
+    fields: {id: ITEM_SEQ, name: ITEM_NAME, form: CHART, ingredients: MAIN_ITEM_INGR, insurance_code: null}
     ingredient_separator: "|"     # 예: "[M040702]아세트아미노펜|[M040703]카페인"
   health_food:                    # 건강기능식품 품목제조신고
     source: MFDS_HEALTH_FOOD
     url: https://apis.data.go.kr/1471000/HtfsInfoService03/getHtfsItem01
     name_param: Prduct
-    code_param: Prdlst_report_no
+    insurance_code_param: null    # 건강기능식품은 HIRA 약품코드 체계와 무관 → 코드 조회 없음
     extra_params: {type: json, pageNo: 1, numOfRows: 50}
     items_path: [body, items]
-    fields: {id: PRDLST_REPORT_NO, name: PRDUCT, form: null, ingredients: null}  # 성분 목록 필드 없음 가정
+    fields: {id: PRDLST_REPORT_NO, name: PRDUCT, form: null, ingredients: null, insurance_code: null}  # 성분 목록 필드 없음 가정
     ingredient_separator: "|"
