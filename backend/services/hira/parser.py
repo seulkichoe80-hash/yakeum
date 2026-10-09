@@ -2,6 +2,7 @@
 
 추측하지 않는다: 모르면 None + warnings. 한 행이 실패해도 전체는 계속 진행한다.
 """
+import logging
 import re
 from datetime import date, datetime
 from pathlib import Path
@@ -19,10 +20,12 @@ from backend.services.normalization.models import (
 )
 from backend.services.normalization.name_normalizer import normalize_name
 
+log = logging.getLogger(__name__)
 DEFAULT_MAPPING = Path(__file__).parent / "column_mapping.yaml"
 
 _STRENGTH_RE = re.compile(r"^\s*(\d[\d,]*(?:\.\d+)?)\s*([A-Za-zμ㎍㎎㎖%가-힣]*)\s*$")
 _NUM_PREFIX_RE = re.compile(r"^\s*(\d[\d,]*(?:\.\d+)?)")
+_FRACTION_RE = re.compile(r"^\s*(\d+)\s*/\s*(\d+)\s*[A-Za-z가-힣]*\s*$")
 _DATE_RES = [
     re.compile(r"^(\d{4})[-./](\d{1,2})[-./](\d{1,2})\.?$"),
     re.compile(r"^(\d{4})(\d{2})(\d{2})$"),
@@ -54,6 +57,10 @@ def _num(v: Any) -> Tuple[Optional[float], Optional[str]]:
     if isinstance(v, (int, float)):
         n = float(v)
     else:
+        fr = _FRACTION_RE.match(str(v))
+        if fr and float(fr.group(2)) != 0:
+            n = float(fr.group(1)) / float(fr.group(2))
+            return (int(n) if n == int(n) else n), None
         m = _NUM_PREFIX_RE.match(str(v))
         if not m:
             return None, f"숫자로 해석 불가: {v!r}"
@@ -107,6 +114,7 @@ def parse_date(v: Any, year_range=(1990, 2100)) -> Tuple[Optional[str], Optional
         d = v
     else:
         s = str(int(v)) if isinstance(v, float) and v == int(v) else str(v).strip()
+        s = re.split(r"[ T]", s, maxsplit=1)[0]  # "2024-03-05 00:00:00" 같은 시각 부분 제거
         for rx in _DATE_RES:
             m = rx.match(s)
             if m:
@@ -206,21 +214,33 @@ def parse_hira_excel(path, mapping_path: Optional[Path] = None, sheet: Optional[
     base_ref = {"file": path.name, "sheet": None, "row": None}
     try:
         wb = openpyxl.load_workbook(path, data_only=True)
-        ws = wb[sheet] if sheet else wb.active
-        base_ref["sheet"] = ws.title
-        grid, merged = _grid(ws)
     except Exception as e:  # noqa: BLE001 - 파일을 못 읽는 경우도 결과로 기록
         return [ParsedRow(MedicationRecord(source_ref=base_ref), errors=[f"파일을 읽을 수 없음: {e}"])]
 
-    h, cols = _detect_header(grid, mapping)
+    # 시트 지정이 없으면 활성 시트부터 보고, 헤더가 없으면 다른 시트도 탐색
+    sheets = [wb[sheet]] if sheet else [wb.active] + [w for w in wb.worksheets if w is not wb.active]
+    ws = grid = merged = None
+    h, cols = None, {}
+    for cand in sheets:
+        try:
+            g, mg = _grid(cand)
+        except Exception as e:  # noqa: BLE001
+            log.warning("sheet %s unreadable: %s", cand.title, e)
+            continue
+        h, cols = _detect_header(g, mapping)
+        if h is not None:
+            ws, grid, merged = cand, g, mg
+            break
     if h is None:
-        return [ParsedRow(MedicationRecord(source_ref=base_ref), errors=["헤더 행을 찾을 수 없음"])]
+        return [ParsedRow(MedicationRecord(source_ref=base_ref), errors=[f"헤더 행을 찾을 수 없음 (탐색 시트: {[w.title for w in sheets]})"])]
+    base_ref["sheet"] = ws.title
 
     missing = [f for f in mapping.get("required_fields", []) if f not in cols]
     if missing:
         return [ParsedRow(MedicationRecord(source_ref=base_ref), errors=[f"필수 컬럼 없음: {missing}"])]
 
     rows: List[ParsedRow] = []
+    seen: Dict[Any, int] = {}
     for i in range(h + 1, len(grid)):
         row = grid[i]
         if all(_blank(c) for c in row):
@@ -238,5 +258,11 @@ def parse_hira_excel(path, mapping_path: Optional[Path] = None, sheet: Optional[
         except Exception as e:  # noqa: BLE001 - 한 행 실패가 전체를 막지 않게
             rec = MedicationRecord(source_ref=ref, raw_row={k: _text(v) for k, v in raw.items()})
             errs.append(f"행 처리 중 예외: {e}")
+        key = (rec.date_raw, rec.drug_code or rec.product_name.raw, rec.institution, tuple(sorted(rec.dosage.raw.items())))
+        if not errs and key in seen:
+            warns.append(f"중복 행: {seen[key]}행과 동일한 내용")
+        elif not errs:
+            seen[key] = i + 1
         rows.append(ParsedRow(rec, warns, errs))
+    log.info("parsed %s: %d rows", path.name, len(rows))
     return rows

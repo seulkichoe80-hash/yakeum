@@ -13,6 +13,7 @@ class MockMfdsClient(MfdsClient):
 
     def __init__(self, data_path: Optional[Path] = None, items: Optional[List[OfficialItem]] = None):
         self.last_warnings: List[str] = []
+        self.last_failed = False
         if items is not None:
             self._items = list(items)
             return

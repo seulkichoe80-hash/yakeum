@@ -45,7 +45,10 @@ def normalize_row(row: ParsedRow, client: MfdsClient, threshold: float) -> Norma
     warnings += out.warnings
 
     if not out.candidates:
-        warnings.append("공식 데이터에서 찾지 못함 (원본 값 보존)")
+        if out.lookup_failed:
+            warnings.append("공식 데이터 조회 실패로 매칭하지 못함 (재시도 필요, 원본 값 보존)")
+        else:
+            warnings.append("공식 데이터에서 찾지 못함 (원본 값 보존)")
         return NormalizationResult(STATUS_UNMATCHED, rec, MatchInfo(), warnings, [])
 
     if len(out.candidates) > 1:
@@ -70,10 +73,32 @@ def normalize_row(row: ParsedRow, client: MfdsClient, threshold: float) -> Norma
     return NormalizationResult(status, rec, info, warnings, [])
 
 
+def _threshold(config: Optional[dict]) -> float:
+    t = float((config or load_config()).get("fuzzy_threshold", 0.9))
+    if not 0.0 < t <= 1.0:
+        raise ValueError(f"fuzzy_threshold 는 (0, 1] 범위여야 함: {t}")
+    return t
+
+
+def summarize(results: List[NormalizationResult]) -> dict:
+    counts = {s: 0 for s in (STATUS_MATCHED, STATUS_PARTIAL, STATUS_UNMATCHED, STATUS_FAILED)}
+    for r in results:
+        counts[r.status] += 1
+    return {"total": len(results), **counts}
+
+
 def normalize_rows(rows: List[ParsedRow], client: Optional[MfdsClient] = None, config: Optional[dict] = None):
     client = client or MockMfdsClient()
-    threshold = float((config or load_config()).get("fuzzy_threshold", 0.9))
-    return [normalize_row(r, client, threshold) for r in rows]
+    threshold = _threshold(config)
+    results = []
+    for r in rows:
+        try:
+            results.append(normalize_row(r, client, threshold))
+        except Exception as e:  # noqa: BLE001 - 한 행의 예기치 못한 오류가 전체를 막지 않게
+            log.exception("row normalization crashed")
+            results.append(NormalizationResult(STATUS_FAILED, r.record, MatchInfo(), list(r.warnings), [f"정규화 중 예외: {e}"]))
+    log.info("normalized: %s", summarize(results))
+    return results
 
 
 def normalize_hira_file(path, client: Optional[MfdsClient] = None, config: Optional[dict] = None, mapping_path=None):
