@@ -38,3 +38,26 @@
 2. `column_mapping.yaml`, `api_config.yaml`만 수정 (코드 변경 최소화)
 3. 가상 픽스처와 테스트 갱신 → `python -m pytest backend/services -q`
 4. 공통 Schema/Contract 변경이 필요한 사항(Evidence, 안전정보, 건강기능식품 ID, 새 오류 코드)은 코드로 우회하지 않고 팀장에게 먼저 보고
+
+## 4. B→D 연동 협의 결정 반영 현황 (PoC 방향, 공통 Schema/Contract 변경 아님)
+| # | 결정 | B 쪽 상태 | 근거 테스트 |
+| --- | --- | --- | --- |
+| 1 | 기준일 방식 우선: 원본 조제일 모두 보존. 이전/현재 선택은 D 책임 | 반영됨 (선택 기능 미구현) | `test_every_dispensing_date_is_preserved_and_nothing_is_collapsed` |
+| 2 | 같은 약 반복행 자동 삭제·최신 1건 축약 금지 | 반영됨. 중복 경고만 남김 | `test_identical_repeated_rows_are_kept_with_duplicate_warning` |
+| 3 | NormalizationResult status/match/warnings/errors 보존 | 반영됨 | `test_status_match_warnings_errors_are_carried_over` |
+| 4 | HIRA `user_confirmed=false` 유지 (복용 여부 아님) | 반영됨 | `test_user_confirmed_false_and_confidence_null_for_all_hira_records` |
+| 5 | 원본/공식명/규칙 정규화명 혼동 금지 | 원본 보존 반영. 단, 공통 Schema에 공식명 전용 필드가 없어 `product_name_normalized`에 공식명(단일 매칭) 또는 규칙값이 들어감 → **D 비교 영향은 팀 협의 대상** | `test_raw_product_name_is_never_overwritten` |
+| 6 | 함량 null 은 null 유지 | 반영됨 (HIRA 성분이 있으면 공식 함량으로 덮어쓰지 않음) | `test_product_strength_stays_null_when_unknown` |
+| 7 | 빈 성분 원본 보존, 성분만으로 매칭 확정 금지 | 반영됨 | `test_empty_ingredients_are_preserved_as_empty_list`, `test_ingredient_name_alone_never_confirms_a_match` |
+| 8 | B→D 연결 코드는 D/API 통합 담당 | B 는 연결 코드 미작성 | — |
+| 9 | ID PoC 잠정 규칙(UUID5/해시) 유지, 재업로드·중복·순서 회귀검증 | 반영됨 | `test_reupload_*`, `test_row_order_*`, `test_same_product_different_*`, `test_ids_do_not_depend_on_matching_outcome` 외 |
+
+## 5. 현재 미검증 항목과 다음 확인 방법
+| 항목 | 상태 | 다음 확인 방법 |
+| --- | --- | --- |
+| 실제 HIRA 파일 헤더·처방기관/조제기관·날짜·약품코드 의미 | 미검증 (가상 헤더만 사용) | 1장 체크리스트를 비식별 사본으로 수행 |
+| 식약처 API URL·파라미터·응답 필드·성분 필드 | 미검증 (Mock/가짜 응답만 사용) | 2장 절차, 실제 키는 환경변수로만 사용 |
+| HIRA 약품코드 ↔ 식약처 제품 식별자 체계 | 미확인. 보험코드 매칭(`insurance_code_param`)은 꺼져 있음 | 공식 명세 확인 후 `api_config.yaml`만 수정 |
+| HIRA 성분 함량 컬럼 유무 | 미확인 (TASK 문서에는 함량 컬럼이 없음) | 실제 파일 확인. 없으면 `product_strength` 는 null 유지 |
+| `product_name_normalized` 의미 통일 | 팀 협의 필요 (공통 Schema 사항) | 팀장·D 와 협의 후 결정 |
+| D 연동 동작 | 미실행 (연결 코드는 D/API 통합 담당) | D 가 B 출력(`d_examples` 형태)으로 확인 |
