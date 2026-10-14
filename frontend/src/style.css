@@ -8,4 +8,6 @@
 .detail{max-width:100%;overscroll-behavior:contain}
 .detail dl{grid-template-columns:minmax(0,110px) minmax(0,1fr)}
 .field-error{color:#a33e4e!important;font-size:12px}
+.backend-mode{background:#d9f2ea;color:#086d60;font-weight:700}.file-pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}.inline-notice{margin:18px 0}.loading,.error-panel{margin-top:18px;padding:16px;border-radius:10px;background:#eef7f4;color:#426a60;font-size:13px}.error-panel{background:#fff0f1;color:#8b3443}.error-panel p{color:#8b3443}.processing-errors{border-color:#efcbd1;background:#fffafb}.normalization-warning{border-color:#f0d9ad;background:#fffcf5}.issue{display:flex;align-items:flex-start;gap:12px;border-top:1px solid #e7ece9;padding:13px 0;font-size:12px}.issue strong{min-width:85px}.issue span{overflow-wrap:anywhere}.confirmation-buttons{display:flex;gap:6px;flex-wrap:wrap}.confirmation-buttons button{font-size:11px;padding:8px}.pending small{color:#71877c}
 @media(max-width:720px){nav button,.tabs button{min-height:44px}.row{flex-direction:column;gap:0}.row label{width:100%}.detail{padding:20px}.detail dl{grid-template-columns:minmax(0,90px) minmax(0,1fr);gap:14px}.check input{flex-shrink:0}}
+@media(max-width:720px){.file-pair{grid-template-columns:1fr}.confirmation-buttons{width:100%}.confirmation-buttons button{flex:1}.issue{display:grid;gap:6px}}

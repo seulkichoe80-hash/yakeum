@@ -2,7 +2,7 @@
 export function fileError(name: string, size: number, isExcel: boolean): string | null {
  if (size === 0) return '내용이 없는 파일입니다. 다른 파일을 선택해 주세요.';
  if (size > 10 * 1024 * 1024) return '10MB 이하 파일을 선택해 주세요.';
- const supported = isExcel ? /\.(xlsx|xls)$/i.test(name) : /\.(png|jpe?g|webp)$/i.test(name);
+ const supported = isExcel ? /\.xlsx$/i.test(name) : /\.(png|jpe?g|webp)$/i.test(name);
  return supported ? null : '지원하지 않는 파일 형식입니다. 안내된 형식의 파일을 선택해 주세요.';
 }
 export function reviewError(product: string, strength: string, unit: string): string | null {

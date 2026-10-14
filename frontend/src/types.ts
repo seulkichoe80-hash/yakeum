@@ -19,12 +19,35 @@ export type MedicationRecord = {
 };
 export const statuses = ['MAINTAINED', 'NEW', 'DOSE_CHANGED', 'NEEDS_CONFIRMATION'] as const;
 export type Status = typeof statuses[number];
-export const labels: Record<Status, string> = { MAINTAINED: '유지', NEW: '신규', DOSE_CHANGED: '함량변경', NEEDS_CONFIRMATION: '확인 필요' };
+export const labels: Record<Status, string> = { MAINTAINED: '기록상 유지', NEW: '신규 기록', DOSE_CHANGED: '복용정보 변경', NEEDS_CONFIRMATION: '확인 필요' };
 export type ReconciliationItem = {
  status: Status; previous_record: MedicationRecord | null; current_record: MedicationRecord | null;
  reason_code: string; evidence: unknown[]; // Evidence structure is a team TODO.
 };
 export type ReconciliationResult = { family_member_id: string; generated_at: string; items: ReconciliationItem[] };
+export type ErrorDetail = { code: string; message: string; field: string | null };
+export type NormalizationStatus = 'MATCHED' | 'PARTIAL' | 'UNMATCHED' | 'FAILED';
+export type NormalizationResult = {
+ status: NormalizationStatus;
+ record: MedicationRecord | null;
+ match: { source: string | null; official_id: string | null; match_method: string | null };
+ warnings: ErrorDetail[];
+ errors: ErrorDetail[];
+};
+export type ResultBatches = { previous: NormalizationResult[]; current: NormalizationResult[] };
+export type CurrentIntakeState = {
+ family_member_id: string; medication_record_id: string;
+ intake_status: 'TAKING' | 'NOT_TAKING' | 'UNKNOWN';
+ verification_status: 'PENDING' | 'USER_VERIFIED';
+ verified_by: string | null; last_verified_at: string | null;
+};
+export type VerticalSliceResponse = {
+ processing: { parser: 'DETERMINISTIC'; file_processing: 'EXECUTED'; official_data_mode: 'LOCAL_MOCK'; persisted: false };
+ accepted_results: ResultBatches;
+ review_results: ResultBatches;
+ reconciliation_result: ReconciliationResult;
+ current_intake_states: CurrentIntakeState[];
+};
 // id is a local rendering key, never part of the wire contract.
 export type Item = ReconciliationItem & { id: string };
 export type Member = { id: string; name: string; relationship: string; consent: boolean; approved: boolean };

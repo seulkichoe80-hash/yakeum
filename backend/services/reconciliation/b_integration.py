@@ -8,6 +8,7 @@ repeat dispensing records, or changes the source results.
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timezone
 from typing import Any, Mapping, Sequence
 
 from .engine import reconcile_records
@@ -38,11 +39,20 @@ def reconcile_normalization_results(
     previous = _prepare_batch(previous_results, expected_family_id)
     current = _prepare_batch(current_results, expected_family_id)
 
-    reconciliation_result = reconcile_records(
-        previous["records"],
-        current["records"],
-        generated_at=generated_at,
-    )
+    if previous["records"] or current["records"]:
+        reconciliation_result = reconcile_records(
+            previous["records"],
+            current["records"],
+            generated_at=generated_at,
+        )
+    else:
+        # Both files may contain only FAILED rows. Preserve those rows for
+        # review while returning a valid, empty result for the explicit family.
+        reconciliation_result = {
+            "family_member_id": expected_family_id,
+            "generated_at": generated_at or _utc_now(),
+            "items": [],
+        }
 
     return {
         "accepted_results": {
@@ -103,3 +113,7 @@ def _required_text(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string")
     return value.strip()
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")

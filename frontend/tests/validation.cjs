@@ -7,6 +7,7 @@ assert.equal(fileError('photo.png',10*1024*1024,false),null);
 assert.ok(fileError('not-image.txt',50,false));
 assert.ok(fileError('photo.png',50,true));
 assert.equal(fileError('history.XLSX',50,true),null);
+assert.ok(fileError('legacy.xls',50,true));
 assert.equal(reviewError('가상 제품','',''),null);
 assert.equal(reviewError('가상 제품','0','mg'),null);
 assert.equal(reviewError('가상 제품','0.12345678901234567890','mg'),null);
