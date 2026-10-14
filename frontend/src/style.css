@@ -33,6 +33,14 @@ button{min-height:42px}
 .timeline-status{margin-top:16px;padding:16px;border-radius:12px;background:#fff7e8}
 .timeline-status p{margin:6px 0;color:#67502b}
 .timeline-status small{color:#7b6a4b;overflow-wrap:anywhere}
+.mock-mode{background:#fff3db;color:#76571f;font-weight:700}
+.empty-mode{background:#eef1ef;color:#5d6f67;font-weight:700}
+.result-empty small{display:block;margin-top:15px;color:#71877c}
+.empty-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.normalization-group{margin-top:10px;border:1px solid #ead8b7;border-radius:10px;background:#fff}
+.normalization-group summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;cursor:pointer;color:#67502b;font-weight:700}
+.normalization-group summary strong{padding:4px 9px;border-radius:999px;background:#fff4dd;font-size:12px;white-space:nowrap}
+.normalization-group .issue{margin:0 14px}
 @media(max-width:720px){
  main{padding-left:14px;padding-right:14px}
  .card{padding:16px}
@@ -41,4 +49,6 @@ button{min-height:42px}
  .timeline-comparison{grid-template-columns:1fr}
  .timeline-snapshot{padding:15px}
  .confirmation-buttons button{min-height:44px}
+ .empty-actions{display:grid}
+ .normalization-group summary{align-items:flex-start}
 }

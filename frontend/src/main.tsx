@@ -11,7 +11,12 @@ import {
  type CurrentIntakeStore, type IntakeChoice,
 } from './currentIntakeUi';
 import { initialIntegrationState, integrationReducer } from './integrationState';
-import { localMockNotice, normalizationLabels, reconciliationDescriptions } from './presentation';
+import {
+ groupNormalizationAttention, localMockNotice, normalizationLabels, reconciliationDescriptions,
+} from './presentation';
+import {
+ initialResultViewState, mockItemsForFamily, resultViewReducer,
+} from './resultView';
 import { medicationTimeline } from './timeline';
 import { fileError, reviewError } from './validation';
 import './style.css';
@@ -23,6 +28,10 @@ function App() {
  const [integration, dispatchIntegration] = useReducer(
   integrationReducer,
   initialIntegrationState(primaryMemberId),
+ );
+ const [resultView, dispatchResultView] = useReducer(
+  resultViewReducer,
+  initialResultViewState(primaryMemberId),
  );
  const [page, setPage] = useState('overview');
  const [filter, setFilter] = useState<Status | 'ALL'>('ALL');
@@ -41,9 +50,7 @@ function App() {
  const [confirmed, setConfirmed] = useState(false);
  const [name, setName] = useState('');
  const [relation, setRelation] = useState('');
- const [intakeStore, setIntakeStore] = useState<CurrentIntakeStore>(() =>
-  replaceFamilyIntakeStates({}, primaryMemberId, mockResult.items),
- );
+ const [intakeStore, setIntakeStore] = useState<CurrentIntakeStore>({});
  const [tab, setTab] = useState('기본정보');
  const [month, setMonth] = useState('2026-09');
  const dialogRef = useRef<HTMLElement>(null);
@@ -51,10 +58,14 @@ function App() {
  const activeMemberRef = useRef(memberId);
 
  const allowed = member.consent && member.approved;
- const backendResponse = integration.phase === 'success' ? integration.response : null;
+ const backendResponse = resultView.mode === 'BACKEND' && integration.phase === 'success'
+  ? integration.response
+  : null;
  const backendItems = backendResponse ? toItems(backendResponse.reconciliation_result) : null;
- const items = backendItems ?? (memberId === primaryMemberId ? mockResult.items : []);
- const isBackend = backendItems !== null;
+ const mockItems = resultView.mode === 'MOCK' ? mockItemsForFamily(mockResult.items, memberId) : null;
+ const items = backendItems ?? mockItems ?? [];
+ const isBackend = resultView.mode === 'BACKEND' && backendItems !== null;
+ const isMock = resultView.mode === 'MOCK';
  const pending = items.filter(item => item.status === 'NEEDS_CONFIRMATION');
  const visible = items.filter(item =>
   (filter === 'ALL' || item.status === filter)
@@ -63,10 +74,13 @@ function App() {
  const reviewResults = backendResponse
   ? [...backendResponse.review_results.previous, ...backendResponse.review_results.current]
   : [];
- const normalizationAttention = backendResponse
-  ? [...backendResponse.accepted_results.previous, ...backendResponse.accepted_results.current]
-    .filter(result => result.status === 'PARTIAL' || result.status === 'UNMATCHED')
+ const normalizationGroups = backendResponse
+  ? groupNormalizationAttention(backendResponse.accepted_results)
   : [];
+ const normalizationAttentionCount = normalizationGroups.reduce(
+  (count, group) => count + group.results.length,
+  0,
+ );
  const inputError = reviewError(product, strength, unit);
  const selectedTimeline = selected ? medicationTimeline(selected) : null;
 
@@ -83,6 +97,7 @@ function App() {
   activeMemberRef.current = id;
   setMemberId(id);
   dispatchIntegration({ type: 'memberChanged', memberId: id });
+  dispatchResultView({ type: 'memberChanged', memberId: id });
   setSelected(null);
   setPreviousFile(null);
   setCurrentFile(null);
@@ -164,6 +179,7 @@ function App() {
 
   const requestMemberId = memberId;
   dispatchIntegration({ type: 'started', memberId: requestMemberId });
+  dispatchResultView({ type: 'backendStarted', memberId: requestMemberId });
   setNotice('가상 XLSX를 Backend에서 실제 처리하고 있습니다. 외부 식약처 API는 호출하지 않습니다.');
   try {
    const response = await requestHiraComparison({
@@ -179,6 +195,7 @@ function App() {
     response.current_intake_states,
    ));
    dispatchIntegration({ type: 'succeeded', memberId: requestMemberId, response });
+   dispatchResultView({ type: 'backendSucceeded', memberId: requestMemberId });
    setFilter('ALL');
    setQuery('');
    setPage('overview');
@@ -189,6 +206,17 @@ function App() {
    dispatchIntegration({ type: 'failed', memberId: requestMemberId, error: message });
    setNotice(message);
   }
+ }
+
+ function showMock() {
+  const itemsForMember = mockItemsForFamily(mockResult.items, memberId);
+  dispatchIntegration({ type: 'memberChanged', memberId });
+  dispatchResultView({ type: 'mockSelected', memberId });
+  setIntakeStore(current => replaceFamilyIntakeStates(current, memberId, itemsForMember));
+  setFilter('ALL');
+  setQuery('');
+  setMonth('2026-09');
+  setNotice('사용자가 명시적으로 선택한 가상 고정 Mock입니다. 실제 자료가 저장되거나 복구된 것이 아닙니다.');
  }
 
  function registerDemo() {
@@ -235,7 +263,9 @@ function App() {
 
  const modeLabel = isBackend
   ? 'BACKEND · 가상 XLSX · MFDS LOCAL MOCK'
-  : 'MOCK · 가상 고정 데이터';
+  : isMock
+   ? 'MOCK · 명시적 미리보기'
+   : '결과 없음 · 재분석 필요';
 
  return <div className="shell">
   <aside>
@@ -257,7 +287,7 @@ function App() {
   <main>
    <header>
     <div className="breadcrumb">우리 가족 / {page === 'overview' ? '대시보드' : page === 'upload' ? '자료 등록' : page === 'inbox' ? '확인함' : '가족 관리'}</div>
-    <span className={'demo ' + (isBackend ? 'backend-mode' : '')}>{modeLabel}</span>
+    <span className={'demo ' + (isBackend ? 'backend-mode' : isMock ? 'mock-mode' : 'empty-mode')}>{modeLabel}</span>
    </header>
    <div className="heading">
     <div>
@@ -276,7 +306,9 @@ function App() {
    <div className="info">
     {isBackend
      ? `업로드한 가상 파일을 실제로 파싱·비교했습니다. ${localMockNotice} 결과는 저장되지 않습니다.`
-     : '이 화면은 가상 고정 Mock입니다. 자료 등록에서 가상 XLSX 두 개를 선택하면 Backend 처리 결과로 전환됩니다.'}
+     : isMock
+      ? '사용자가 명시적으로 선택한 가상 고정 Mock입니다. 실제 업로드 결과나 저장된 자료가 아닙니다.'
+      : '이 가족에게 표시할 비교 결과가 없습니다. 자료를 다시 분석하거나 가상 Mock 보기를 직접 선택해 주세요.'}
     {' '}표시된 변화는 복용 변경 지시가 아닙니다.
    </div>
    {notice && <div className="notice" role="status">{notice}</div>}
@@ -287,7 +319,15 @@ function App() {
       <button className="primary" onClick={() => setPage('family')}>동의 관리 열기</button>
      </section>
     : <>
-     {page === 'overview' && <>
+     {page === 'overview' && (resultView.mode === 'EMPTY' ? <section className="card empty result-empty">
+      <h2>표시할 비교 결과가 없습니다</h2>
+      <p>가족을 전환하면 이전 업로드 결과는 초기화됩니다. 자료를 다시 분석하거나 가상 Mock을 명시적으로 선택해 주세요.</p>
+      <div className="empty-actions">
+       <button className="primary" onClick={() => setPage('upload')}>자료 분석하기</button>
+       <button onClick={showMock}>가상 Mock 보기</button>
+      </div>
+      <small>실제 자료가 저장되거나 복구된 것처럼 표시하지 않습니다.</small>
+     </section> : <>
       <div className="stats">{statuses.map(status =>
        <button key={status} className={'stat ' + status + (filter === status ? ' chosen' : '')} onClick={() => setFilter(filter === status ? 'ALL' : status)}>
         <span>{labels[status]}</span>
@@ -317,18 +357,21 @@ function App() {
         </div>,
        )}
       </section>}
-      {normalizationAttention.length > 0 && <section className="card normalization-warning">
-       <h2>제품 정보 정규화 확인 필요 {normalizationAttention.length}건</h2>
+      {normalizationAttentionCount > 0 && <section className="card normalization-warning">
+       <h2>제품 정보 정규화 확인 필요 {normalizationAttentionCount}건</h2>
        <p>원본 기록은 유지됩니다. 정규화 상태는 의약품 안전성 판단을 의미하지 않습니다. {localMockNotice}</p>
-       {normalizationAttention.map((result, index) =>
-        <div className="issue" key={'normalization-' + index}>
-          <strong>{normalizationLabels[result.status]}</strong>
-          <span>
-           {productName(result.record)} · {result.warnings.map(warning => warning.message).join(' · ') || normalizationLabels[result.status]}
-           <small className="technical-status">기술 상태: {result.status}</small>
-          </span>
-        </div>,
-       )}
+       {normalizationGroups.map(group => <details className="normalization-group" key={group.source}>
+        <summary>{group.title}<strong>{group.results.length}건</strong></summary>
+        {group.results.map((result, index) =>
+         <div className="issue" key={`${group.source}-normalization-${index}`}>
+           <strong>{normalizationLabels[result.status]}</strong>
+           <span>
+            {productName(result.record)} · {result.warnings.map(warning => warning.message).join(' · ') || normalizationLabels[result.status]}
+            <small className="technical-status">기술 상태: {result.status}</small>
+           </span>
+         </div>,
+        )}
+       </details>)}
       </section>}
       {!isBackend && month !== '2026-09'
        ? <section className="card empty">
@@ -368,7 +411,7 @@ function App() {
           {visible.length === 0 && <p className="empty">{isBackend ? '처리된 비교 결과가 없습니다.' : '조건에 맞는 기록이 없습니다.'}</p>}
          </div>
         </section>}
-     </>}
+     </>)}
      {page === 'upload' && <section className="card form">
       <h2>자료를 등록할 가족과 파일 역할을 확인해 주세요</h2>
       <p>HIRA 비교에서는 사용자가 이전/현재 파일을 직접 구분하며 Backend가 날짜로 역할을 바꾸지 않습니다.</p>

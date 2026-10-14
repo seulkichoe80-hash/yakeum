@@ -1,4 +1,4 @@
-import type { NormalizationStatus, Status } from './types';
+import type { NormalizationResult, NormalizationStatus, ResultBatches, Status } from './types';
 
 export const reconciliationDescriptions: Record<Status, string> = {
  MAINTAINED: '기록상 변경이 발견되지 않음',
@@ -15,3 +15,20 @@ export const normalizationLabels: Record<NormalizationStatus, string> = {
 };
 
 export const localMockNotice = 'LOCAL_MOCK 환경이며 실제 식약처 조회가 수행되지 않았습니다.';
+
+export type NormalizationAttentionGroup = {
+ source: 'previous' | 'current';
+ title: string;
+ results: NormalizationResult[];
+};
+
+export function groupNormalizationAttention(batches: ResultBatches): NormalizationAttentionGroup[] {
+ return ([
+  ['previous', '이전 자료의 공식 제품정보 미확인'],
+  ['current', '현재 자료의 공식 제품정보 미확인'],
+ ] as const).map(([source, title]) => ({
+  source,
+  title,
+  results: batches[source].filter(result => result.status === 'PARTIAL' || result.status === 'UNMATCHED'),
+ })).filter(group => group.results.length > 0);
+}
