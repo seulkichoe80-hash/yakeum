@@ -6,6 +6,7 @@ from .current_intake import (
     apply_user_verification,
     build_current_intake_states,
 )
+from .b_integration import reconcile_normalization_results
 from .engine import reconcile_records
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     "VerificationStatus",
     "apply_user_verification",
     "build_current_intake_states",
+    "reconcile_normalization_results",
     "reconcile_records",
 ]

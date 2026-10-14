@@ -1,0 +1,12 @@
+[
+  {"source": "MFDS_DRUG", "official_id": "OFFICIAL-0001", "insurance_code": "000123456", "name": "타이레놀정500밀리그램", "form": "정제",
+   "ingredients": [{"name": "아세트아미노펜", "amount": 500, "unit": "mg"}]},
+  {"source": "MFDS_DRUG", "official_id": "OFFICIAL-0002", "insurance_code": "198800001", "name": "뮤코펙트정", "form": "정제",
+   "ingredients": [{"name": "암브록솔염산염", "amount": 30, "unit": "mg"}]},
+  {"source": "MFDS_DRUG", "official_id": "199900002", "name": "가나릴캡슐", "form": "캡슐",
+   "ingredients": [{"name": "가짜성분A", "amount": 100, "unit": "mg"}]},
+  {"source": "MFDS_DRUG", "official_id": "199900003", "name": "가나릴정", "form": "정제",
+   "ingredients": [{"name": "가짜성분B", "amount": 50, "unit": "mg"}]},
+  {"source": "MFDS_HEALTH_FOOD", "official_id": "2020000011", "name": "비타민C 1000", "form": "정제",
+   "ingredients": [{"name": "비타민C", "amount": 1000, "unit": "mg"}]}
+]

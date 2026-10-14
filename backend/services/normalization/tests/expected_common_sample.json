@@ -1,0 +1,247 @@
+[
+  {
+    "status": "MATCHED",
+    "record": {
+      "record_id": "4dadaeda-00a6-50ff-8a1b-d7ba9ac3a9a1",
+      "family_member_id": "00000000-0000-4000-8000-000000000001",
+      "source_type": "HIRA",
+      "source_record_id": "hira:049869600306e898df55",
+      "record_date": "2024-03-05",
+      "dispensing_date": "2024-03-05",
+      "prescribing_institution": "가나다의원",
+      "dispensing_institution": "라마바약국",
+      "product_name_raw": "타이레놀정500밀리그램",
+      "product_name_normalized": "타이레놀정500밀리그램",
+      "drug_code": "000123456",
+      "drug_category": "해열진통소염제",
+      "unit": "정",
+      "dose_per_administration": "1",
+      "administrations_per_day": "3",
+      "duration_days": "5",
+      "dosage_text_raw": null,
+      "mfds_product_id": "OFFICIAL-0001",
+      "ingredients": [
+        {
+          "ingredient_name_raw": "아세트아미노펜",
+          "ingredient_name_normalized": "아세트아미노펜",
+          "product_strength": null,
+          "product_strength_unit": null,
+          "official_ingredient_id": null
+        }
+      ],
+      "confidence": null,
+      "user_confirmed": false
+    },
+    "match": {
+      "source": "MFDS_DRUG",
+      "official_id": "OFFICIAL-0001",
+      "match_method": "CODE_EXACT"
+    },
+    "warnings": [],
+    "errors": []
+  },
+  {
+    "status": "PARTIAL",
+    "record": {
+      "record_id": "a1b68da6-9bfa-5148-8451-f426df503f29",
+      "family_member_id": "00000000-0000-4000-8000-000000000001",
+      "source_type": "HIRA",
+      "source_record_id": "hira:6ac4a716f955d30870ec",
+      "record_date": "2024-03-05",
+      "dispensing_date": "2024-03-05",
+      "prescribing_institution": "가나다의원",
+      "dispensing_institution": "라마바약국",
+      "product_name_raw": "가나릴",
+      "product_name_normalized": "가나릴",
+      "drug_code": null,
+      "drug_category": "가상분류",
+      "unit": "정",
+      "dose_per_administration": "0.5",
+      "administrations_per_day": "2",
+      "duration_days": "7",
+      "dosage_text_raw": null,
+      "mfds_product_id": null,
+      "ingredients": [
+        {
+          "ingredient_name_raw": "가짜성분",
+          "ingredient_name_normalized": "가짜성분",
+          "product_strength": null,
+          "product_strength_unit": null,
+          "official_ingredient_id": null
+        }
+      ],
+      "confidence": null,
+      "user_confirmed": false
+    },
+    "match": {
+      "source": null,
+      "official_id": null,
+      "match_method": "NAME_EXACT"
+    },
+    "warnings": [
+      {
+        "code": "NORMALIZATION_FAILED",
+        "message": "약품코드 없음",
+        "field": "drug_code"
+      },
+      {
+        "code": "OFFICIAL_MATCH_NOT_FOUND",
+        "message": "후보 2건 (NAME_EXACT): 199900002, 199900003",
+        "field": null
+      }
+    ],
+    "errors": []
+  },
+  {
+    "status": "PARTIAL",
+    "record": {
+      "record_id": "ebe7963c-e6aa-5e9e-b5cc-22a28c609de4",
+      "family_member_id": "00000000-0000-4000-8000-000000000001",
+      "source_type": "HIRA",
+      "source_record_id": "hira:6ac4a716f955d30870ec-2",
+      "record_date": "2024-03-05",
+      "dispensing_date": "2024-03-05",
+      "prescribing_institution": "가나다의원",
+      "dispensing_institution": "라마바약국",
+      "product_name_raw": "가나릴",
+      "product_name_normalized": "가나릴",
+      "drug_code": null,
+      "drug_category": "가상분류",
+      "unit": "정",
+      "dose_per_administration": "0.5",
+      "administrations_per_day": "2",
+      "duration_days": "7",
+      "dosage_text_raw": null,
+      "mfds_product_id": null,
+      "ingredients": [
+        {
+          "ingredient_name_raw": "가짜성분",
+          "ingredient_name_normalized": "가짜성분",
+          "product_strength": null,
+          "product_strength_unit": null,
+          "official_ingredient_id": null
+        }
+      ],
+      "confidence": null,
+      "user_confirmed": false
+    },
+    "match": {
+      "source": null,
+      "official_id": null,
+      "match_method": "NAME_EXACT"
+    },
+    "warnings": [
+      {
+        "code": "NORMALIZATION_FAILED",
+        "message": "약품코드 없음",
+        "field": "drug_code"
+      },
+      {
+        "code": "NORMALIZATION_FAILED",
+        "message": "중복 행: 5행과 동일한 내용",
+        "field": null
+      },
+      {
+        "code": "OFFICIAL_MATCH_NOT_FOUND",
+        "message": "후보 2건 (NAME_EXACT): 199900002, 199900003",
+        "field": null
+      }
+    ],
+    "errors": []
+  },
+  {
+    "status": "UNMATCHED",
+    "record": {
+      "record_id": "100ed59f-3650-5688-a5c2-7a4d6bc8c6bf",
+      "family_member_id": "00000000-0000-4000-8000-000000000001",
+      "source_type": "HIRA",
+      "source_record_id": "hira:1dc46f5142b6e3c8700f",
+      "record_date": "2024-04-01",
+      "dispensing_date": "2024-04-01",
+      "prescribing_institution": "마바사의원",
+      "dispensing_institution": "라마바약국",
+      "product_name_raw": "없는약정",
+      "product_name_normalized": "없는약",
+      "drug_code": "999999999",
+      "drug_category": null,
+      "unit": "캡슐",
+      "dose_per_administration": "0",
+      "administrations_per_day": "2",
+      "duration_days": "3",
+      "dosage_text_raw": null,
+      "mfds_product_id": null,
+      "ingredients": [],
+      "confidence": null,
+      "user_confirmed": false
+    },
+    "match": {
+      "source": null,
+      "official_id": null,
+      "match_method": null
+    },
+    "warnings": [
+      {
+        "code": "NORMALIZATION_FAILED",
+        "message": "성분 정보 없음 (공식 데이터 매칭으로 보완 필요)",
+        "field": "ingredients"
+      },
+      {
+        "code": "OFFICIAL_MATCH_NOT_FOUND",
+        "message": "공식 데이터에서 찾지 못함 (원본 값 보존)",
+        "field": null
+      }
+    ],
+    "errors": []
+  },
+  {
+    "status": "FAILED",
+    "record": null,
+    "match": {
+      "source": null,
+      "official_id": null,
+      "match_method": null
+    },
+    "warnings": [
+      {
+        "code": "NORMALIZATION_FAILED",
+        "message": "이상 날짜: '2024-13-45'",
+        "field": "record_date"
+      },
+      {
+        "code": "NORMALIZATION_FAILED",
+        "message": "성분 정보 없음 (공식 데이터 매칭으로 보완 필요)",
+        "field": "ingredients"
+      }
+    ],
+    "errors": [
+      {
+        "code": "REQUIRED_FIELD_MISSING",
+        "message": "조제일자를 확인할 수 없어 공통 MedicationRecord 를 만들 수 없습니다.",
+        "field": "dispensing_date"
+      }
+    ]
+  },
+  {
+    "status": "FAILED",
+    "record": null,
+    "match": {
+      "source": null,
+      "official_id": null,
+      "match_method": null
+    },
+    "warnings": [
+      {
+        "code": "NORMALIZATION_FAILED",
+        "message": "성분 정보 없음 (공식 데이터 매칭으로 보완 필요)",
+        "field": "ingredients"
+      }
+    ],
+    "errors": [
+      {
+        "code": "REQUIRED_FIELD_MISSING",
+        "message": "약품명이 비어 있어 행을 해석할 수 없음",
+        "field": "product_name_raw"
+      }
+    ]
+  }
+]

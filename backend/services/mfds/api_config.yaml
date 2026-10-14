@@ -1,0 +1,24 @@
+# 공공데이터포털 식약처 API 설정. 실제 응답으로 검증되지 않은 가정값 → 다르면 이 파일만 고친다.
+# 인증키는 코드/설정에 쓰지 않고 환경변수 MFDS_API_KEY 로만 읽는다.
+key_param: serviceKey
+success_codes: ["00", "03"]      # 03 = 데이터 없음(정상 처리)
+sources:
+  drug:                           # 의약품 제품 허가정보
+    source: MFDS_DRUG
+    url: https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService06/getDrugPrdtPrmsnInq06
+    name_param: item_name
+    # HIRA 약품코드(보험코드) 조회는 공식 명세로 파라미터/응답 필드를 확인한 뒤에만 채운다 (ITEM_SEQ 와 혼동 금지).
+    insurance_code_param: null
+    extra_params: {type: json, pageNo: 1, numOfRows: 50}
+    items_path: [body, items]
+    fields: {id: ITEM_SEQ, name: ITEM_NAME, form: CHART, ingredients: MAIN_ITEM_INGR, insurance_code: null}
+    ingredient_separator: "|"     # 예: "[M040702]아세트아미노펜|[M040703]카페인"
+  health_food:                    # 건강기능식품 품목제조신고
+    source: MFDS_HEALTH_FOOD
+    url: https://apis.data.go.kr/1471000/HtfsInfoService03/getHtfsItem01
+    name_param: Prduct
+    insurance_code_param: null    # 건강기능식품은 HIRA 약품코드 체계와 무관 → 코드 조회 없음
+    extra_params: {type: json, pageNo: 1, numOfRows: 50}
+    items_path: [body, items]
+    fields: {id: PRDLST_REPORT_NO, name: PRDUCT, form: null, ingredients: null, insurance_code: null}  # 성분 목록 필드 없음 가정
+    ingredient_separator: "|"
