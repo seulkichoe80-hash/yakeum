@@ -5,11 +5,16 @@ import {
  ingredientText, strengthText, toItems, type Status, type Item, type Member,
 } from './domain';
 import { requestHiraComparison } from './api';
+import {
+ getCurrentIntakeState, initialCurrentIntakeState, intakeChoiceLabels,
+ replaceFamilyIntakeStates, verificationLabels, verifyCurrentIntake,
+ type CurrentIntakeStore, type IntakeChoice,
+} from './currentIntakeUi';
 import { initialIntegrationState, integrationReducer } from './integrationState';
+import { localMockNotice, normalizationLabels, reconciliationDescriptions } from './presentation';
+import { medicationTimeline } from './timeline';
 import { fileError, reviewError } from './validation';
 import './style.css';
-
-type DemoIntake = 'TAKING' | 'NOT_TAKING' | 'UNKNOWN';
 
 function App() {
  const [members, setMembers] = useState(initialMembers);
@@ -36,7 +41,9 @@ function App() {
  const [confirmed, setConfirmed] = useState(false);
  const [name, setName] = useState('');
  const [relation, setRelation] = useState('');
- const [demoIntake, setDemoIntake] = useState<Record<string, DemoIntake>>({});
+ const [intakeStore, setIntakeStore] = useState<CurrentIntakeStore>(() =>
+  replaceFamilyIntakeStates({}, primaryMemberId, mockResult.items),
+ );
  const [tab, setTab] = useState('기본정보');
  const [month, setMonth] = useState('2026-09');
  const dialogRef = useRef<HTMLElement>(null);
@@ -60,10 +67,8 @@ function App() {
   ? [...backendResponse.accepted_results.previous, ...backendResponse.accepted_results.current]
     .filter(result => result.status === 'PARTIAL' || result.status === 'UNMATCHED')
   : [];
- const intakeByRecord = new Map(
-  (backendResponse?.current_intake_states ?? []).map(state => [state.medication_record_id, state]),
- );
  const inputError = reviewError(product, strength, unit);
+ const selectedTimeline = selected ? medicationTimeline(selected) : null;
 
  function resetUpload() {
   setUploadState('idle');
@@ -82,7 +87,6 @@ function App() {
   setPreviousFile(null);
   setCurrentFile(null);
   setFile(null);
-  setDemoIntake({});
   resetUpload();
   setQuery('');
   setFilter('ALL');
@@ -168,6 +172,12 @@ function App() {
     currentFile,
    });
    if (activeMemberRef.current !== requestMemberId) return;
+   setIntakeStore(current => replaceFamilyIntakeStates(
+    current,
+    requestMemberId,
+    toItems(response.reconciliation_result),
+    response.current_intake_states,
+   ));
    dispatchIntegration({ type: 'succeeded', memberId: requestMemberId, response });
    setFilter('ALL');
    setQuery('');
@@ -205,9 +215,22 @@ function App() {
   setNotice('비정형 자료는 아직 Backend로 전송되지 않는 UI 데모입니다.');
  }
 
- function setDemoVerification(item: Item, value: DemoIntake) {
-  setDemoIntake(current => ({ ...current, [item.id]: value }));
-  setNotice('선택은 이 화면의 저장되지 않는 데모 상태입니다. ReconciliationResult는 변경되지 않았습니다.');
+ function confirmCurrentIntake(item: Item, value: IntakeChoice) {
+  const recordId = item.previous_record?.record_id ?? item.current_record?.record_id;
+  if (!recordId) return;
+  setIntakeStore(current => {
+   const withInitial = getCurrentIntakeState(current, memberId, recordId)
+    ? current
+    : {
+      ...current,
+      [memberId]: {
+       ...current[memberId],
+       [recordId]: initialCurrentIntakeState(memberId, recordId),
+      },
+     };
+   return verifyCurrentIntake(withInitial, memberId, recordId, value);
+  });
+  setNotice('현재 브라우저에서만 유지되며 저장되지 않습니다. ReconciliationResult는 변경되지 않았습니다.');
  }
 
  const modeLabel = isBackend
@@ -252,7 +275,7 @@ function App() {
    </div>
    <div className="info">
     {isBackend
-     ? '업로드한 가상 파일을 실제로 파싱·비교했습니다. 공식 제품 매칭은 LOCAL MOCK이며 결과는 저장되지 않습니다.'
+     ? `업로드한 가상 파일을 실제로 파싱·비교했습니다. ${localMockNotice} 결과는 저장되지 않습니다.`
      : '이 화면은 가상 고정 Mock입니다. 자료 등록에서 가상 XLSX 두 개를 선택하면 Backend 처리 결과로 전환됩니다.'}
     {' '}표시된 변화는 복용 변경 지시가 아닙니다.
    </div>
@@ -269,13 +292,7 @@ function App() {
        <button key={status} className={'stat ' + status + (filter === status ? ' chosen' : '')} onClick={() => setFilter(filter === status ? 'ALL' : status)}>
         <span>{labels[status]}</span>
         <strong>{items.filter(item => item.status === status).length}<small>건</small></strong>
-        <p>{status === 'MAINTAINED'
-         ? '비교 가능한 기록상 변화 없음'
-         : status === 'NEW'
-          ? '현재 자료에서 새로 확인'
-          : status === 'DOSE_CHANGED'
-           ? '제품 함량 또는 투약정보 변화'
-           : '최신 자료에서 미확인'}</p>
+         <p>{reconciliationDescriptions[status]}</p>
        </button>,
       )}</div>
       <section className="card timeline">
@@ -292,18 +309,24 @@ function App() {
        <p>파일 또는 행을 처리하지 못한 결과입니다. 최신 자료 미확인 상태와는 다릅니다.</p>
        {reviewResults.map((result, index) =>
         <div className="issue" key={'failed-' + index}>
-         <strong>FAILED</strong>
-         <span>{[...result.errors, ...result.warnings].map(error => error.message).join(' · ') || '처리할 수 없는 행입니다.'}</span>
+          <strong>{normalizationLabels.FAILED}</strong>
+          <span>
+           {[...result.errors, ...result.warnings].map(error => error.message).join(' · ') || '처리할 수 없는 행입니다.'}
+           <small className="technical-status">기술 상태: FAILED</small>
+          </span>
         </div>,
        )}
       </section>}
       {normalizationAttention.length > 0 && <section className="card normalization-warning">
        <h2>제품 정보 정규화 확인 필요 {normalizationAttention.length}건</h2>
-       <p>원본 기록은 유지되며 제품 정보 매칭을 추가로 확인해야 합니다.</p>
+       <p>원본 기록은 유지됩니다. 정규화 상태는 의약품 안전성 판단을 의미하지 않습니다. {localMockNotice}</p>
        {normalizationAttention.map((result, index) =>
         <div className="issue" key={'normalization-' + index}>
-         <strong>{result.status}</strong>
-         <span>{productName(result.record)} · {result.warnings.map(warning => warning.message).join(' · ') || '공식 제품 미매칭'}</span>
+          <strong>{normalizationLabels[result.status]}</strong>
+          <span>
+           {productName(result.record)} · {result.warnings.map(warning => warning.message).join(' · ') || normalizationLabels[result.status]}
+           <small className="technical-status">기술 상태: {result.status}</small>
+          </span>
         </div>,
        )}
       </section>}
@@ -417,23 +440,31 @@ function App() {
      </section>}
      {page === 'inbox' && <section className="card">
       <h2>최신 자료에서 확인되지 않은 항목</h2>
-      <p>자료에서 보이지 않는다는 이유만으로 복용 중단으로 처리하지 않습니다. 아래 선택은 저장되지 않는 데모입니다.</p>
+       <p>자료에서 보이지 않는다는 이유만으로 복용 중단으로 처리하지 않습니다.</p>
+       <div className="browser-only-notice">현재 브라우저에서만 유지되며 저장되지 않습니다. 새로고침하면 초기화됩니다.</div>
       {pending.map(item => {
        const record = item.previous_record ?? item.current_record;
-       const serverState = record ? intakeByRecord.get(record.record_id) : undefined;
-       const selectedIntake = demoIntake[item.id];
+        const currentState = getCurrentIntakeState(intakeStore, memberId, record?.record_id ?? null)
+         ?? (record ? initialCurrentIntakeState(memberId, record.record_id) : undefined);
        return <div className="pending" key={item.id}>
         <div>
          <strong>{productName(item.previous_record)}</strong>
-         <p>이전 기록 {item.previous_record?.record_date} · 최신 자료에서 미확인</p>
-         <small>서버 초기 상태: {serverState ? `${serverState.intake_status} / ${serverState.verification_status}` : 'Mock 미연결'}</small>
-         {selectedIntake && <small className="block">로컬 데모 선택: {selectedIntake} · 저장되지 않음</small>}
+          <p>이전 기록 기준일: {item.previous_record?.record_date ?? '미확인'}</p>
+          <p>현재 자료에서 확인되지 않았습니다. 현재도 복용하고 있나요?</p>
+          {currentState && <small className="intake-state">
+           현재 응답: {intakeChoiceLabels[currentState.intake_status]} · {verificationLabels[currentState.verification_status]}
+          </small>}
         </div>
         <button onClick={() => openDetails(item, '변경 이력')}>기록 살펴보기</button>
         <div className="confirmation-buttons">
-         <button onClick={() => setDemoVerification(item, 'TAKING')}>먹고 있음</button>
-         <button onClick={() => setDemoVerification(item, 'NOT_TAKING')}>먹지 않음</button>
-         <button onClick={() => setDemoVerification(item, 'UNKNOWN')}>잘 모르겠음</button>
+          {(['TAKING', 'NOT_TAKING', 'UNKNOWN'] as IntakeChoice[]).map(choice =>
+           <button
+            key={choice}
+            aria-pressed={currentState?.verification_status === 'USER_VERIFIED' && currentState.intake_status === choice}
+            className={currentState?.verification_status === 'USER_VERIFIED' && currentState.intake_status === choice ? 'selected' : ''}
+            onClick={() => confirmCurrentIntake(item, choice)}
+           >{intakeChoiceLabels[choice]}</button>,
+          )}
         </div>
        </div>;
       })}
@@ -482,14 +513,32 @@ function App() {
      <p>제품 성분 함량: {strengthText(selected.current_record ?? selected.previous_record)}</p>
     </>}
     {tab === '공식 근거' && <>
-     <p>현재 Vertical Slice는 LOCAL MOCK 매칭만 사용합니다. 실제 식약처 API 검증 완료를 의미하지 않습니다.</p>
+     <p>{localMockNotice} 실제 식약처 API 검증 완료를 의미하지 않습니다.</p>
      <a href="https://nedrug.mfds.go.kr/" target="_blank" rel="noreferrer">식약처 의약품안전나라 포털 열기 ↗</a>
      <small className="block">포털 링크는 이 제품에 대한 매칭 근거가 아닙니다.</small>
     </>}
-    {tab === '변경 이력' && <>
-     <p>이전: {selected.previous_record ? `${selected.previous_record.record_date} · ${strengthText(selected.previous_record)}` : '이전 기록 없음'}</p>
-     <p>현재: {selected.current_record ? `${selected.current_record.record_date} · ${strengthText(selected.current_record)}` : '최신 자료에서 미확인'}</p>
-     <p>엔진 사유 코드: {selected.reason_code}</p>
+    {tab === '변경 이력' && selectedTimeline && <>
+     <div className="timeline-comparison">
+      {[
+       { title: '이전 기록', snapshot: selectedTimeline.previous },
+       { title: '현재 기록', snapshot: selectedTimeline.current },
+      ].map(({ title, snapshot }) => <article key={title} className="timeline-snapshot">
+       <h3>{title}</h3>
+       <dl>
+        <dt>기록일</dt><dd>{snapshot.recordDate}</dd>
+        <dt>제품명</dt><dd>{snapshot.productName}</dd>
+        <dt>성분</dt><dd>{snapshot.ingredient}</dd>
+        <dt>제품 함량</dt><dd>{snapshot.productStrength}</dd>
+        <dt>1회 투약량</dt><dd>{snapshot.dosePerAdministration}</dd>
+        <dt>하루 투여횟수</dt><dd>{snapshot.administrationsPerDay}</dd>
+       </dl>
+      </article>)}
+     </div>
+     <div className="timeline-status">
+      <strong>변경 상태: {labels[selectedTimeline.status]}</strong>
+      <p>{reconciliationDescriptions[selectedTimeline.status]}</p>
+      <small>엔진 사유 코드: {selected.reason_code}</small>
+     </div>
     </>}
    </section>
   </div>}
