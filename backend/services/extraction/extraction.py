@@ -24,9 +24,9 @@ load_dotenv()
 # 모델 우선순위 (503 대비 폴백)
 # ─────────────────────────────────────
 MODELS = [
-    "gemini-3.8-flash",       # 1순위: Google 권장 최신 모델
-    "gemini-3.5-flash",       # 2순위: 폴백
-    "gemini-3.1-pro-preview", # 3순위: 고성능 폴백  
+    "gemini-2.5-flash-preview-05-20",      
+    "gemini-2.5-pro-preview-05-06",       
+    "gemini-2.0-flash", 
 ]
 
 # ─────────────────────────────────────
@@ -59,10 +59,12 @@ def _parse_response(raw_json: str) -> ExtractionResult:
         "약봉투": DocumentType.PILL_ENVELOPE,
         "건강기능식품": DocumentType.HEALTH_SUPPLEMENT,
     }
-    document_type = doc_type_map.get(
-        data.get("document_type", ""),
-        DocumentType.PILL_ENVELOPE  # 기본값
-    )
+    raw_doc_type = data.get("document_type")
+    if raw_doc_type is None:
+        raise ValueError("document_type 누락: AI 응답에 문서 종류가 없습니다")
+    document_type = doc_type_map.get(raw_doc_type)
+    if document_type is None:
+        raise ValueError(f"document_type 알 수 없음: '{raw_doc_type}'")
 
     # ── timing 변환 ──
     timing_map = {
@@ -81,14 +83,17 @@ def _parse_response(raw_json: str) -> ExtractionResult:
             item.get("timing", "알수없음"),
             MealTiming.UNKNOWN
         )
+        raw_name = item.get("name")
+        if not raw_name:
+            raise ValueError("medications[].name 누락: 약 이름이 없습니다")
         medications.append(MedicationItem(
-            name=item.get("name", "이름없음"),
+            name=raw_name,
             dosage=item.get("dosage"),
             frequency=item.get("frequency"),
             duration=item.get("duration"),
             timing=timing,
             instructions=item.get("instructions"),
-            confidence=float(item.get("confidence", 1.0)),
+            confidence=float(item.get("confidence", -1.0)),
         ))
 
     return ExtractionResult(
@@ -98,9 +103,10 @@ def _parse_response(raw_json: str) -> ExtractionResult:
         hospital_name=data.get("hospital_name"),
         prescription_date=data.get("prescription_date"),
         raw_text=data.get("raw_text"),
-        overall_confidence=float(data.get("overall_confidence", 1.0)),
+        overall_confidence=float(data.get("overall_confidence", -1.0)),
         error_message=data.get("error_message"),
     )
+
 
 
 # ─────────────────────────────────────

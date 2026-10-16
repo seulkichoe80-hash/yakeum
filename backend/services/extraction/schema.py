@@ -35,7 +35,7 @@ class MedicationItem:
     duration: Optional[str] = None     # 복용 기간 (예: "7일")
     timing: MealTiming = MealTiming.UNKNOWN  # 식전/식후
     instructions: Optional[str] = None # 특이사항 (예: "물과 함께")
-    confidence: float = 1.0            # AI 확신도 (0.0 ~ 1.0)
+    confidence: float = -1.0            # AI 확신도 (0.0 ~ 1.0)
 
 # ─────────────────────────────────────
 # 4. 이미지 1장에서 추출한 전체 결과
@@ -48,5 +48,5 @@ class ExtractionResult:
     hospital_name: Optional[str] = None            # 병원/약국 이름
     prescription_date: Optional[str] = None        # 처방 날짜
     raw_text: Optional[str] = None                 # AI가 읽은 원본 텍스트
-    overall_confidence: float = 1.0                # 전체 확신도
+    overall_confidence: float = -1.0                # 전체 확신도
     error_message: Optional[str] = None            # 오류 메시지
