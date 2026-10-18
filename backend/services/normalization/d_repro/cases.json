@@ -1,0 +1,498 @@
+{
+  "family_member_id": "00000000-0000-4000-8000-000000000001",
+  "cases": [
+    {
+      "id": "R1",
+      "title": "한 시점에 같은 약이 2줄 (이전 1줄 → 현재 2줄)",
+      "expect_by_design": "계속 복용 중인 약이 MAINTAINED 또는 대표 기록 1건 비교",
+      "previous": [
+        {
+          "status": "MATCHED",
+          "record": {
+            "record_id": "4b1c153f-bc76-50fd-81f4-d9a490c21961",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:e3ec7757e0f07ce88050",
+            "record_date": "2024-02-05",
+            "dispensing_date": "2024-02-05",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "타이레놀정500밀리그램",
+            "product_name_normalized": "타이레놀정500밀리그램",
+            "drug_code": "000123456",
+            "drug_category": "해열진통소염제",
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "3",
+            "duration_days": "5",
+            "dosage_text_raw": null,
+            "mfds_product_id": "OFFICIAL-0001",
+            "ingredients": [
+              {
+                "ingredient_name_raw": "아세트아미노펜",
+                "ingredient_name_normalized": "아세트아미노펜",
+                "product_strength": null,
+                "product_strength_unit": null,
+                "official_ingredient_id": null
+              }
+            ],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": "MFDS_DRUG",
+            "official_id": "OFFICIAL-0001",
+            "match_method": "CODE_EXACT"
+          },
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "current": [
+        {
+          "status": "MATCHED",
+          "record": {
+            "record_id": "8d401769-ceda-5966-9186-87b6d6a7947e",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:af76eee36b9c284a293a",
+            "record_date": "2024-05-05",
+            "dispensing_date": "2024-05-05",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "타이레놀정500밀리그램",
+            "product_name_normalized": "타이레놀정500밀리그램",
+            "drug_code": "000123456",
+            "drug_category": "해열진통소염제",
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "3",
+            "duration_days": "5",
+            "dosage_text_raw": null,
+            "mfds_product_id": "OFFICIAL-0001",
+            "ingredients": [
+              {
+                "ingredient_name_raw": "아세트아미노펜",
+                "ingredient_name_normalized": "아세트아미노펜",
+                "product_strength": null,
+                "product_strength_unit": null,
+                "official_ingredient_id": null
+              }
+            ],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": "MFDS_DRUG",
+            "official_id": "OFFICIAL-0001",
+            "match_method": "CODE_EXACT"
+          },
+          "warnings": [],
+          "errors": []
+        },
+        {
+          "status": "MATCHED",
+          "record": {
+            "record_id": "47e91728-e724-5638-940a-c861b20aa4a2",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:d0a35fc63d5db9c3f3a4",
+            "record_date": "2024-06-05",
+            "dispensing_date": "2024-06-05",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "타이레놀정500밀리그램",
+            "product_name_normalized": "타이레놀정500밀리그램",
+            "drug_code": "000123456",
+            "drug_category": "해열진통소염제",
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "3",
+            "duration_days": "5",
+            "dosage_text_raw": null,
+            "mfds_product_id": "OFFICIAL-0001",
+            "ingredients": [
+              {
+                "ingredient_name_raw": "아세트아미노펜",
+                "ingredient_name_normalized": "아세트아미노펜",
+                "product_strength": null,
+                "product_strength_unit": null,
+                "official_ingredient_id": null
+              }
+            ],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": "MFDS_DRUG",
+            "official_id": "OFFICIAL-0001",
+            "match_method": "CODE_EXACT"
+          },
+          "warnings": [],
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "title": "양쪽 시점 모두 같은 약이 2줄",
+      "expect_by_design": "같은 약의 반복 조제는 같은 약으로 비교",
+      "previous": [
+        {
+          "status": "MATCHED",
+          "record": {
+            "record_id": "17e7ad0b-efb6-545f-af4d-6fad34417dcb",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:403efc6855c9617c26d7",
+            "record_date": "2024-01-05",
+            "dispensing_date": "2024-01-05",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "타이레놀정500밀리그램",
+            "product_name_normalized": "타이레놀정500밀리그램",
+            "drug_code": "000123456",
+            "drug_category": "해열진통소염제",
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "3",
+            "duration_days": "5",
+            "dosage_text_raw": null,
+            "mfds_product_id": "OFFICIAL-0001",
+            "ingredients": [
+              {
+                "ingredient_name_raw": "아세트아미노펜",
+                "ingredient_name_normalized": "아세트아미노펜",
+                "product_strength": null,
+                "product_strength_unit": null,
+                "official_ingredient_id": null
+              }
+            ],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": "MFDS_DRUG",
+            "official_id": "OFFICIAL-0001",
+            "match_method": "CODE_EXACT"
+          },
+          "warnings": [],
+          "errors": []
+        },
+        {
+          "status": "MATCHED",
+          "record": {
+            "record_id": "4b1c153f-bc76-50fd-81f4-d9a490c21961",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:e3ec7757e0f07ce88050",
+            "record_date": "2024-02-05",
+            "dispensing_date": "2024-02-05",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "타이레놀정500밀리그램",
+            "product_name_normalized": "타이레놀정500밀리그램",
+            "drug_code": "000123456",
+            "drug_category": "해열진통소염제",
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "3",
+            "duration_days": "5",
+            "dosage_text_raw": null,
+            "mfds_product_id": "OFFICIAL-0001",
+            "ingredients": [
+              {
+                "ingredient_name_raw": "아세트아미노펜",
+                "ingredient_name_normalized": "아세트아미노펜",
+                "product_strength": null,
+                "product_strength_unit": null,
+                "official_ingredient_id": null
+              }
+            ],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": "MFDS_DRUG",
+            "official_id": "OFFICIAL-0001",
+            "match_method": "CODE_EXACT"
+          },
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "current": [
+        {
+          "status": "MATCHED",
+          "record": {
+            "record_id": "8d401769-ceda-5966-9186-87b6d6a7947e",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:af76eee36b9c284a293a",
+            "record_date": "2024-05-05",
+            "dispensing_date": "2024-05-05",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "타이레놀정500밀리그램",
+            "product_name_normalized": "타이레놀정500밀리그램",
+            "drug_code": "000123456",
+            "drug_category": "해열진통소염제",
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "3",
+            "duration_days": "5",
+            "dosage_text_raw": null,
+            "mfds_product_id": "OFFICIAL-0001",
+            "ingredients": [
+              {
+                "ingredient_name_raw": "아세트아미노펜",
+                "ingredient_name_normalized": "아세트아미노펜",
+                "product_strength": null,
+                "product_strength_unit": null,
+                "official_ingredient_id": null
+              }
+            ],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": "MFDS_DRUG",
+            "official_id": "OFFICIAL-0001",
+            "match_method": "CODE_EXACT"
+          },
+          "warnings": [],
+          "errors": []
+        },
+        {
+          "status": "MATCHED",
+          "record": {
+            "record_id": "47e91728-e724-5638-940a-c861b20aa4a2",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:d0a35fc63d5db9c3f3a4",
+            "record_date": "2024-06-05",
+            "dispensing_date": "2024-06-05",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "타이레놀정500밀리그램",
+            "product_name_normalized": "타이레놀정500밀리그램",
+            "drug_code": "000123456",
+            "drug_category": "해열진통소염제",
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "3",
+            "duration_days": "5",
+            "dosage_text_raw": null,
+            "mfds_product_id": "OFFICIAL-0001",
+            "ingredients": [
+              {
+                "ingredient_name_raw": "아세트아미노펜",
+                "ingredient_name_normalized": "아세트아미노펜",
+                "product_strength": null,
+                "product_strength_unit": null,
+                "official_ingredient_id": null
+              }
+            ],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": "MFDS_DRUG",
+            "official_id": "OFFICIAL-0001",
+            "match_method": "CODE_EXACT"
+          },
+          "warnings": [],
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "title": "UNMATCHED + 성분 없음 + 약품코드만 동일 (성분·함량 모두 알 수 없음)",
+      "expect_by_design": "성분·함량 동일성을 확인할 수 없으므로 SAME_INGREDIENT_SAME_STRENGTH 로 확정하지 않음",
+      "previous": [
+        {
+          "status": "UNMATCHED",
+          "record": {
+            "record_id": "a4d94fb5-52ef-5feb-bee7-a7c33cac6515",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:59aea4b84bf22ad5ca47",
+            "record_date": "2024-03-05",
+            "dispensing_date": "2024-03-05",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "없는약정",
+            "product_name_normalized": "없는약",
+            "drug_code": "999999999",
+            "drug_category": null,
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "2",
+            "duration_days": "3",
+            "dosage_text_raw": null,
+            "mfds_product_id": null,
+            "ingredients": [],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": null,
+            "official_id": null,
+            "match_method": null
+          },
+          "warnings": [
+            {
+              "code": "NORMALIZATION_FAILED",
+              "message": "성분 정보 없음 (공식 데이터 매칭으로 보완 필요)",
+              "field": "ingredients"
+            },
+            {
+              "code": "OFFICIAL_MATCH_NOT_FOUND",
+              "message": "공식 데이터에서 찾지 못함 (원본 값 보존)",
+              "field": null
+            }
+          ],
+          "errors": []
+        }
+      ],
+      "current": [
+        {
+          "status": "UNMATCHED",
+          "record": {
+            "record_id": "f5757671-a5a7-5932-8d62-56321fbbd8d0",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:4da1469190264dc3c802",
+            "record_date": "2024-06-10",
+            "dispensing_date": "2024-06-10",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "없는약정",
+            "product_name_normalized": "없는약",
+            "drug_code": "999999999",
+            "drug_category": null,
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "2",
+            "duration_days": "3",
+            "dosage_text_raw": null,
+            "mfds_product_id": null,
+            "ingredients": [],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": null,
+            "official_id": null,
+            "match_method": null
+          },
+          "warnings": [
+            {
+              "code": "NORMALIZATION_FAILED",
+              "message": "성분 정보 없음 (공식 데이터 매칭으로 보완 필요)",
+              "field": "ingredients"
+            },
+            {
+              "code": "OFFICIAL_MATCH_NOT_FOUND",
+              "message": "공식 데이터에서 찾지 못함 (원본 값 보존)",
+              "field": null
+            }
+          ],
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "title": "성분명은 있으나 함량 null (HIRA 에 함량 컬럼 없음) + 투약량 동일",
+      "expect_by_design": "함량을 모르면 '같은 함량'이라는 사유를 붙이지 않음",
+      "previous": [
+        {
+          "status": "MATCHED",
+          "record": {
+            "record_id": "4dadaeda-00a6-50ff-8a1b-d7ba9ac3a9a1",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:049869600306e898df55",
+            "record_date": "2024-03-05",
+            "dispensing_date": "2024-03-05",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "타이레놀정500밀리그램",
+            "product_name_normalized": "타이레놀정500밀리그램",
+            "drug_code": "000123456",
+            "drug_category": "해열진통소염제",
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "3",
+            "duration_days": "5",
+            "dosage_text_raw": null,
+            "mfds_product_id": "OFFICIAL-0001",
+            "ingredients": [
+              {
+                "ingredient_name_raw": "아세트아미노펜",
+                "ingredient_name_normalized": "아세트아미노펜",
+                "product_strength": null,
+                "product_strength_unit": null,
+                "official_ingredient_id": null
+              }
+            ],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": "MFDS_DRUG",
+            "official_id": "OFFICIAL-0001",
+            "match_method": "CODE_EXACT"
+          },
+          "warnings": [],
+          "errors": []
+        }
+      ],
+      "current": [
+        {
+          "status": "MATCHED",
+          "record": {
+            "record_id": "3fe3bb3e-8506-5f33-975e-e19829fa188f",
+            "family_member_id": "00000000-0000-4000-8000-000000000001",
+            "source_type": "HIRA",
+            "source_record_id": "hira:4d5930b600b9b9e3b808",
+            "record_date": "2024-06-10",
+            "dispensing_date": "2024-06-10",
+            "prescribing_institution": "가나다의원",
+            "dispensing_institution": "라마바약국",
+            "product_name_raw": "타이레놀정500밀리그램",
+            "product_name_normalized": "타이레놀정500밀리그램",
+            "drug_code": "000123456",
+            "drug_category": "해열진통소염제",
+            "unit": "정",
+            "dose_per_administration": "1",
+            "administrations_per_day": "3",
+            "duration_days": "5",
+            "dosage_text_raw": null,
+            "mfds_product_id": "OFFICIAL-0001",
+            "ingredients": [
+              {
+                "ingredient_name_raw": "아세트아미노펜",
+                "ingredient_name_normalized": "아세트아미노펜",
+                "product_strength": null,
+                "product_strength_unit": null,
+                "official_ingredient_id": null
+              }
+            ],
+            "confidence": null,
+            "user_confirmed": false
+          },
+          "match": {
+            "source": "MFDS_DRUG",
+            "official_id": "OFFICIAL-0001",
+            "match_method": "CODE_EXACT"
+          },
+          "warnings": [],
+          "errors": []
+        }
+      ]
+    }
+  ]
+}
