@@ -52,3 +52,5 @@ button{min-height:42px}
  .empty-actions{display:grid}
  .normalization-group summary{align-items:flex-start}
 }
+/* Source snapshots are read-only and may include long original values. */
+main details pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-width:100%}

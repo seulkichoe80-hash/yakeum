@@ -1,4 +1,4 @@
-import type { MedicationRecord, VerticalSliceResponse } from './types';
+import type { MedicationRecord, VerticalSliceResponse, HiraV2Response } from './types';
 
 const RECONCILIATION_STATUSES = new Set(['MAINTAINED', 'NEW', 'DOSE_CHANGED', 'NEEDS_CONFIRMATION']);
 const NORMALIZATION_STATUSES = new Set(['MATCHED', 'PARTIAL', 'UNMATCHED', 'FAILED']);
@@ -23,13 +23,13 @@ export type HiraComparisonInput = {
 export async function requestHiraComparison(
  input: HiraComparisonInput,
  fetcher: typeof fetch = fetch,
-): Promise<VerticalSliceResponse> {
+): Promise<HiraV2Response> {
  const form = new FormData();
  form.append('family_member_id', input.familyMemberId);
  form.append('previous_file', input.previousFile);
  form.append('current_file', input.currentFile);
 
- const response = await fetcher('/api/v1/reconciliations/hira', {
+ const response = await fetcher('/api/v2/reconciliations/hira', {
   method: 'POST',
   body: form,
   signal: input.signal,
@@ -44,7 +44,7 @@ export async function requestHiraComparison(
   }
   throw new ApiError(message, response.status);
  }
- return parseVerticalSliceResponse(await response.json(), input.familyMemberId);
+ return parseHiraV2Response(await response.json(), input.familyMemberId);
 }
 
 export function parseVerticalSliceResponse(value: unknown, expectedFamilyId: string): VerticalSliceResponse {
@@ -120,4 +120,35 @@ function assertFamilyRecord(value: unknown, familyId: string): asserts value is 
 
 function isObject(value: unknown): value is Record<string, unknown> {
  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function parseHiraV2Response(value:unknown, family:string):HiraV2Response {
+ if(!isObject(value)||value.response_version!=='TASK_D_HIRA_V2'||value.family_member_id!==family
+  ||!isObject(value.comparison)||typeof value.comparison.executed!=='boolean'
+  ||!Array.isArray(value.comparison.holds)||!Array.isArray(value.source_rows)) throw new ApiError('HIRA v2 계약을 확인할 수 없습니다.',502);
+ const held=!value.comparison.executed;
+ if(held ? (value.comparison.holds.length===0||value.reconciliation_result!==null||!Array.isArray(value.current_intake_states)||value.current_intake_states.length!==0)
+  : value.comparison.holds.length!==0) throw new ApiError('비교 실행/보류 결과가 일치하지 않습니다.',502);
+ // Reuse all existing processing, batch, family and intake safety checks.
+ parseVerticalSliceResponse(held?{...value,reconciliation_result:{family_member_id:family,generated_at:'held',items:[]}}:value,family);
+ const refKey=(ref:Record<string,unknown>)=>JSON.stringify([ref.side,ref.document_id,ref.input_index]);
+ const refs=new Set<string>(); const pointers=new Set<string>();
+ for(const row of value.source_rows) {
+  if(!isObject(row)||!isObject(row.ref)||!['previous','current'].includes(String(row.ref.side))
+   ||typeof row.ref.document_id!=='string'||!Number.isInteger(row.ref.input_index)||Number(row.ref.input_index)<0
+   ||!isObject(row.raw_fields)||typeof row.normalization_ref!=='string') throw new ApiError('원본 참조가 올바르지 않습니다.',502);
+  const match=/^\/(accepted_results|review_results)\/(previous|current)\/(0|[1-9]\d*)$/.exec(row.normalization_ref);
+  if(!match||match[2]!==row.ref.side) throw new ApiError('정규화 참조가 올바르지 않습니다.',502);
+  const batch=value[match[1]] as Record<string,unknown[]>;
+  if(!batch[match[2]][Number(match[3])]||refs.has(refKey(row.ref))||pointers.has(row.normalization_ref)) throw new ApiError('정규화 참조가 중복되거나 없습니다.',502);
+  refs.add(refKey(row.ref));pointers.add(row.normalization_ref);
+ }
+ const total=['accepted_results','review_results'].reduce((n,key)=>{const b=value[key] as Record<string,unknown[]>;return n+b.previous.length+b.current.length;},0);
+ if(pointers.size!==total) throw new ApiError('원본 참조가 누락됐습니다.',502);
+ for(const hold of value.comparison.holds) {
+  if(!isObject(hold)||!['UNIDENTIFIED_FAILED_INPUT','UNKNOWN_COMPARISON_FIELDS','AMBIGUOUS_REPEATED_RECORDS'].includes(String(hold.kind))
+   ||typeof hold.message!=='string'||!Array.isArray(hold.affected_refs)||hold.affected_refs.length===0
+   ||hold.affected_refs.some((ref:unknown)=>!isObject(ref)||!refs.has(refKey(ref)))) throw new ApiError('보류 사유/원본 참조가 올바르지 않습니다.',502);
+ }
+ return value as HiraV2Response;
 }

@@ -414,3 +414,13 @@ TASK D가 MedicationRecord의 과거와 현재를 비교한 결과를 TASK C Fro
 - 통합 시점에는 모든 담당자가 동일한 `docs/DATA_SCHEMA.md`와 `docs/API_CONTRACT.md`를 기준으로 연결한다.
 
 이 문서는 **API Contract v1 Draft**이며 실제 Endpoint나 Backend 구현을 확정하지 않는다. 변경이 필요하면 모든 담당자가 영향 범위를 확인하고 합의한 뒤 수정한다.
+
+
+## TASK D MVP HIRA 응답 버전 (통합안)
+
+사용자가 승인한 TASK D MVP 범위로 `/api/v2/reconciliations/hira`를 추가했다.
+이는 팀 전체 계약 합의 완료를 뜻하지 않는다. v1 응답과 MedicationRecord,
+Reconciliation 상태·reason_code 의미는 유지한다. 새 TASK D 화면만 v2를 사용한다.
+실행 여부·전체 보류 사유·원본 참조와 nullable 결과 계약은
+[HIRA_COMPARISON_HOLD_V2.md](integration/HIRA_COMPARISON_HOLD_V2.md)를 따른다.
+보류는 `comparison.executed=false`, 결과 null이며 정상 비교 0건과 구분한다.

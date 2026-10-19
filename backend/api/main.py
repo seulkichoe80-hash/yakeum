@@ -12,7 +12,7 @@ import openpyxl
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 
 from backend.api.pipeline import process_hira_comparison
-from backend.api.schemas import VerticalSliceResponse
+from backend.api.schemas import VerticalSliceResponse, HiraV2Response
 from backend.api.photo_demo import router as photo_demo_router
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
@@ -41,15 +41,12 @@ app = FastAPI(
 app.include_router(photo_demo_router)
 
 
-@app.post(
-    "/api/v1/reconciliations/hira",
-    response_model=VerticalSliceResponse,
-)
-async def reconcile_hira_files(
+async def _reconcile_hira_files(
     family_member_id: Annotated[UUID, Form()],
     previous_file: Annotated[UploadFile, File()],
     current_file: Annotated[UploadFile, File()],
-) -> VerticalSliceResponse:
+    *, version: int = 1,
+) -> VerticalSliceResponse | HiraV2Response:
     """Process explicitly labelled previous/current virtual HIRA XLSX files."""
 
     try:
@@ -63,8 +60,9 @@ async def reconcile_hira_files(
                 previous_path,
                 current_path,
                 str(family_member_id),
+                version=version,
             )
-            return VerticalSliceResponse.model_validate(result)
+            return (HiraV2Response if version == 2 else VerticalSliceResponse).model_validate(result)
     except UploadRejected as error:
         raise HTTPException(
             status_code=error.status_code,
@@ -78,6 +76,24 @@ async def reconcile_hira_files(
     finally:
         await previous_file.close()
         await current_file.close()
+
+
+@app.post("/api/v1/reconciliations/hira", response_model=VerticalSliceResponse)
+async def reconcile_hira_files(
+    family_member_id: Annotated[UUID, Form()],
+    previous_file: Annotated[UploadFile, File()],
+    current_file: Annotated[UploadFile, File()],
+):
+    return await _reconcile_hira_files(family_member_id, previous_file, current_file)
+
+
+@app.post("/api/v2/reconciliations/hira", response_model=HiraV2Response)
+async def reconcile_hira_v2(
+    family_member_id: Annotated[UUID, Form()],
+    previous_file: Annotated[UploadFile, File()],
+    current_file: Annotated[UploadFile, File()],
+):
+    return await _reconcile_hira_files(family_member_id, previous_file, current_file, version=2)
 
 
 async def _save_and_validate(upload: UploadFile, destination: Path) -> None:

@@ -20,17 +20,18 @@ def process_hira_comparison(
     previous_path: Path,
     current_path: Path,
     family_member_id: str,
+    *, version: int = 1,
 ) -> dict[str, Any]:
     """Run deterministic local processing without persistence or network I/O."""
 
-    previous_results = to_common_results(
-        normalize_hira_file(previous_path, client=MockMfdsClient()),
-        family_member_id,
-    )
-    current_results = to_common_results(
-        normalize_hira_file(current_path, client=MockMfdsClient()),
-        family_member_id,
-    )
+    previous_internal = normalize_hira_file(previous_path, client=MockMfdsClient())
+    current_internal = normalize_hira_file(current_path, client=MockMfdsClient())
+    previous_results = to_common_results(previous_internal, family_member_id)
+    current_results = to_common_results(current_internal, family_member_id)
+    if version == 2:
+        from backend.api.hira_hold import process_guarded
+        return process_guarded(previous_results, current_results,
+                               previous_internal, current_internal, family_member_id)
     integrated = reconcile_normalization_results(
         previous_results,
         current_results,

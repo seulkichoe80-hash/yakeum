@@ -1,5 +1,7 @@
 # HIRA 비교 보류 계약 초안 — 미합의·미구현
 
+> 후속 상태: 사용자 승인에 따른 TASK D MVP 구현은 [HIRA_COMPARISON_HOLD_V2.md](HIRA_COMPARISON_HOLD_V2.md)에 기록한다. 아래는 당시 초안/관찰 기록이며 팀 전체 합의 완료를 의미하지 않는다.
+
 작성 기준: TASK D `5d54e88`, 기존 `TASK_D_POLICY_REVIEW.md` 및 실제
 `backend/api/pipeline.py`, `schemas.py`, `reconciliation/b_integration.py`,
 `engine.py`, B의 parser/adapter/repeat_report를 대조했다.

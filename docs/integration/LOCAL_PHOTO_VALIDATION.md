@@ -119,3 +119,44 @@ frontend/documentation-only change; the earlier result remains historical eviden
 normalization references resolve and the full example preserves source rows and
 normalization results. No new gate, response contract or representative policy
 was implemented or behavior-tested.
+
+## TASK D HIRA v2 MVP integration (2026-10-19)
+
+Starting HEAD `bd4af98aadcb0da1352776adbfcff177a9b0f1fa`, clean tree. Fetch confirmed
+origin TASK D remained `5d54e88`; both prior commits are preserved. The user
+approved the hold draft for TASK D MVP, not as completed team-wide agreement.
+See `HIRA_COMPARISON_HOLD_V2.md` and the additive API_CONTRACT version note.
+
+Final checks after implementation:
+
+- `/tmp/yakeum-review/venv/bin/python -m pytest backend -q`: **229 passed,
+  5 subtests passed**, 1 existing Starlette TestClient deprecation warning.
+  The five nested subtests are not five extra independently collected test items.
+  This includes all 214 previous items and 15 new v2 cases.
+- `pnpm test` in frontend: all seven script groups passed, including v1 validation
+  and new v2 version/held/empty/source-reference/stale-result checks.
+- `pnpm build`: strict TypeScript and Vite production build passed (43 modules).
+- The same integration browser command documented above passed **12 groups**:
+  photo regression plus real synthetic XLSX parsing/B/D, v2 failure/unknown/repeat
+  and reversed-order holds, original/normalization display, old intake removal,
+  held → normal reprocess UNKNOWN/PENDING, normal zero result, cancellation and
+  A→B→A late response rejection. All 4 viewport checks passed; runtime errors 0,
+  external API attempts 0; inherited font requests blocked 9.
+- The standalone image-review browser command above passed all **4 scenario
+  groups**, 4 viewports, accessibility/focus/preview/file/cancellation checks,
+  unchanged storage, API requests 0, write requests 0, runtime errors 0.
+- A preliminary final browser rerun was interrupted by Vite HMR while a UI copy
+  correction was saved (navigation/timeouts). Both suites were rerun after all
+  source changes stopped and passed; the interrupted run is not counted as pass.
+
+No live Gemini/MFDS requests: photo extraction and official matching use local
+Mocks; XLSX parsing, B normalization, D comparison/hold and browser UI execute
+locally with synthetic fixtures. No DB/auth/deployment was added. Evidence is
+executable assertions and console results, not an archived screenshot/trace.
+
+Pre-push review covers all staged changes and prior unpushed commit objects.
+Secret/token/private-key/credential-URL and common personal-ID patterns had no
+findings; no real upload, binary fixture, .env, dist, node_modules, cache or other
+local generated output is staged. Test workbooks/images are synthetic and created
+in temporary directories. This bounded inspection is not a claim of universal
+secret detection.

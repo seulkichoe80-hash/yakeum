@@ -68,7 +68,7 @@ function App() {
  const backendResponse = resultView.mode === 'BACKEND' && integration.phase === 'success'
   ? integration.response
   : null;
- const backendItems = backendResponse ? toItems(backendResponse.reconciliation_result) : null;
+ const backendItems = backendResponse ? (backendResponse.reconciliation_result ? toItems(backendResponse.reconciliation_result) : []) : null;
  const mockItems = resultView.mode === 'MOCK' ? mockItemsForFamily(mockResult.items, memberId) : null;
  const items = backendItems ?? mockItems ?? [];
  const isBackend = resultView.mode === 'BACKEND' && backendItems !== null;
@@ -200,6 +200,8 @@ function App() {
   hiraAbort.current?.abort();
   const controller = new AbortController();hiraAbort.current=controller;
   const version = ++hiraVersion.current;
+  setSelected(null);
+  setIntakeStore(current => replaceFamilyIntakeStates(current, requestMemberId, []));
   dispatchIntegration({ type: 'started', memberId: requestMemberId });
   dispatchResultView({ type: 'backendStarted', memberId: requestMemberId });
   setNotice('가상 XLSX를 Backend에서 실제 처리하고 있습니다. 외부 식약처 API는 호출하지 않습니다.');
@@ -214,7 +216,7 @@ function App() {
    setIntakeStore(current => replaceFamilyIntakeStates(
     current,
     requestMemberId,
-    toItems(response.reconciliation_result),
+    response.reconciliation_result ? toItems(response.reconciliation_result) : [],
     response.current_intake_states,
    ));
    dispatchIntegration({ type: 'succeeded', memberId: requestMemberId, response });
@@ -222,7 +224,7 @@ function App() {
    setFilter('ALL');
    setQuery('');
    setPage('overview');
-   setNotice('가상 XLSX 처리 완료: deterministic parser · D 비교 · MFDS LOCAL MOCK 결과입니다.');
+   setNotice(response.comparison.executed ? '가상 XLSX 처리 완료: deterministic parser · D 비교 · MFDS LOCAL MOCK 결과입니다.' : '자료는 보존했으며 전체 비교를 보류했습니다. 원본을 확인하고 다시 처리해 주세요.');
   } catch (error) {
    if (activeMemberRef.current !== requestMemberId || version!==hiraVersion.current || controller.signal.aborted) return;
    const message = error instanceof Error ? error.message : '자료 처리 요청에 실패했습니다.';
@@ -331,7 +333,7 @@ function App() {
    </div>
    <div className="info">
     {isBackend
-     ? `업로드한 가상 파일을 실제로 파싱·비교했습니다. ${localMockNotice} 결과는 저장되지 않습니다.`
+     ? `업로드한 가상 파일을 실제로 파싱했습니다. ${backendResponse?.comparison.executed ? 'D 비교를 실행했습니다.' : 'D 비교는 실행하지 않았습니다.'} ${localMockNotice} 결과는 저장되지 않습니다.`
      : isMock
       ? '사용자가 명시적으로 선택한 가상 고정 Mock입니다. 실제 업로드 결과나 저장된 자료가 아닙니다.'
       : '이 가족에게 표시할 비교 결과가 없습니다. 자료를 다시 분석하거나 가상 Mock 보기를 직접 선택해 주세요.'}
@@ -354,6 +356,23 @@ function App() {
       </div>
       <small>실제 자료가 저장되거나 복구된 것처럼 표시하지 않습니다.</small>
      </section> : <>
+      {backendResponse && !backendResponse.comparison.executed && <section className="card" role="alert">
+       <h2>HIRA 전체 비교 보류</h2>
+       <p>새 비교·복용 확인 결과를 만들지 않았습니다. 이전 결과를 새 자료의 결과로 표시하지 않습니다.</p>
+       {backendResponse.comparison.holds.map(hold=><p key={hold.kind}>{hold.message}</p>)}
+      </section>}
+      {backendResponse && <section className="card">
+       <h2>HIRA 원본·정규화 결과 {backendResponse.source_rows.length}건</h2>
+       {backendResponse.source_rows.map(row=>{
+        const [,,side,index]=row.normalization_ref.split('/');
+        const bucket=row.normalization_ref.startsWith('/accepted_results/')?backendResponse.accepted_results:backendResponse.review_results;
+        const result=bucket[side as 'previous'|'current'][Number(index)];
+        return <details key={`${row.ref.document_id}-${row.ref.input_index}`}><summary>{row.ref.side==='previous'?'이전':'현재'} 후보 {row.ref.input_index+1} · {result.status}</summary>
+         <p>문서 {row.ref.document_id} · 원본 행 {row.locator?.row??'미확인'} · {row.normalization_ref}</p>
+         <pre>{JSON.stringify({raw_fields:row.raw_fields,normalization_result:result},null,2)}</pre>
+        </details>;
+       })}
+      </section>}
       <div className="stats">{statuses.map(status =>
        <button key={status} className={'stat ' + status + (filter === status ? ' chosen' : '')} onClick={() => setFilter(filter === status ? 'ALL' : status)}>
         <span>{labels[status]}</span>
@@ -434,7 +453,7 @@ function App() {
             <span>›</span>
            </button>,
           )}
-          {visible.length === 0 && <p className="empty">{isBackend ? '처리된 비교 결과가 없습니다.' : '조건에 맞는 기록이 없습니다.'}</p>}
+          {visible.length === 0 && <p className="empty">{isBackend ? (backendResponse?.comparison.executed ? (items.length===0 ? '정상 비교 결과 0건입니다.' : '조건에 맞는 기록이 없습니다.') : '비교를 실행하지 않았습니다. 보류 사유를 확인해 주세요.') : '조건에 맞는 기록이 없습니다.'}</p>}
          </div>
         </section>}
      </>)}

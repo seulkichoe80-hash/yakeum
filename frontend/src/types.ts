@@ -48,6 +48,13 @@ export type VerticalSliceResponse = {
  reconciliation_result: ReconciliationResult;
  current_intake_states: CurrentIntakeState[];
 };
+export type HiraSourceRef = {side:'previous'|'current';document_id:string;input_index:number};
+export type HiraV2Response = Omit<VerticalSliceResponse,'reconciliation_result'> & {
+ response_version:'TASK_D_HIRA_V2'; family_member_id:string;
+ comparison:{executed:boolean;holds:{kind:string;message:string;affected_refs:HiraSourceRef[]}[]};
+ source_rows:{ref:HiraSourceRef;locator:{sheet_index:number|null;row:number|null}|null;raw_fields:Record<string,unknown>;normalization_ref:string}[];
+ reconciliation_result:ReconciliationResult|null;
+};
 // id is a local rendering key, never part of the wire contract.
 export type Item = ReconciliationItem & { id: string };
 export type Member = { id: string; name: string; relationship: string; consent: boolean; approved: boolean };

@@ -1,16 +1,16 @@
-import type { VerticalSliceResponse } from './types';
+import type { HiraV2Response } from './types';
 
 export type IntegrationState = {
  memberId: string;
  phase: 'idle' | 'loading' | 'success' | 'error';
- response: VerticalSliceResponse | null;
+ response: HiraV2Response | null;
  error: string | null;
 };
 
 export type IntegrationAction =
  | { type: 'memberChanged'; memberId: string }
  | { type: 'started'; memberId: string }
- | { type: 'succeeded'; memberId: string; response: VerticalSliceResponse }
+ | { type: 'succeeded'; memberId: string; response: HiraV2Response }
  | { type: 'failed'; memberId: string; error: string };
 
 export function initialIntegrationState(memberId: string): IntegrationState {

@@ -1,5 +1,7 @@
 # TASK D 정책 비교 및 push 전 점검
 
+> 후속 상태: 사용자 승인에 따른 TASK D MVP 구현은 [HIRA_COMPARISON_HOLD_V2.md](HIRA_COMPARISON_HOLD_V2.md)에 기록한다. 아래는 당시 초안/관찰 기록이며 팀 전체 합의 완료를 의미하지 않는다.
+
 기준: 2026-10-19, `codex/task-d-weekly-integration`의
 `f7e0db7dae081ffa3523e09197953691e1b17f95`. 기존 검증 commit을 되돌리거나
 덮어쓰지 않고 후속 변경을 추가한다. 공통 상태/Schema/API 의미는 변경하지 않는다.

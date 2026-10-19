@@ -172,16 +172,16 @@ async function delayed(page,pattern) {
 
   // Real virtual XLSX upload, real parser and D engine; official lookup stays Mock.
   execFileSync(process.env.YAKEUM_TEST_PYTHON||'python3',['-c',
-   'import sys\nfrom pathlib import Path\nfrom backend.tests.test_b_d_c_api import _xlsx,_row\np=Path(sys.argv[1])\np.joinpath("previous.xlsx").write_bytes(_xlsx([_row(1,"2026-09-01","가상유지약","000000001",dose="1"),_row(2,"2026-09-01","가상미확인약","000000002")]))\np.joinpath("current.xlsx").write_bytes(_xlsx([_row(1,"2026-10-19","가상유지약","000000001",dose="2")]))',fixtureDir],{cwd:path.resolve(__dirname,'../..')});
+   'import sys\nfrom pathlib import Path\nfrom backend.tests.test_b_d_c_api import _xlsx,_row\nfrom backend.tests.test_hira_hold_v2 import known\np=Path(sys.argv[1])\na=known(date="2026-09-01")\nb=known(2,date="2026-09-01",code="198800001")\nc=known(date="2026-10-19")\nc[9]="2"\np.joinpath("previous.xlsx").write_bytes(_xlsx([a,b]))\np.joinpath("current.xlsx").write_bytes(_xlsx([c]))\np.joinpath("failure.xlsx").write_bytes(_xlsx([c,_row(9,"invalid",None,None)]))\np.joinpath("unknown.xlsx").write_bytes(_xlsx([_row(1,"2026-10-19","가상함량미확인","000000001")]))\nr=known(2,date="2026-10-01")\np.joinpath("repeat.xlsx").write_bytes(_xlsx([c,r]))\np.joinpath("repeat-reversed.xlsx").write_bytes(_xlsx([r,c]))\np.joinpath("empty.xlsx").write_bytes(_xlsx([]))',fixtureDir],{cwd:path.resolve(__dirname,'../..')});
   await page.goto(base);await page.getByRole('button',{name:/↥.*자료 등록/}).click();
   const inputs=page.locator('input[type=file]');
   await inputs.nth(0).setInputFiles(path.join(fixtureDir,'previous.xlsx'));
   await inputs.nth(1).setInputFiles(path.join(fixtureDir,'current.xlsx'));
   await page.getByRole('button',{name:'가상 XLSX 분석 요청',exact:true}).click();
   await page.getByRole('heading',{name:'우리 가족 복용정보',exact:true}).waitFor();
-  assert.match(await page.locator('main').innerText(),/가상유지약/);
+  assert.match(await page.locator('main').innerText(),/타이레놀정500밀리그램/);
   assert.match(await page.locator('main').innerText(),/BACKEND.*가상 XLSX/);
-  await page.getByRole('button',{name:/가상유지약/}).first().click();
+  await page.getByRole('button',{name:/타이레놀정500밀리그램/}).first().click();
   await page.getByRole('button',{name:'변경 이력',exact:true}).click();
   assert.match(await page.getByRole('dialog').innerText(),/2026-09-01/);
   assert.match(await page.getByRole('dialog').innerText(),/2026-10-19/);
@@ -193,13 +193,48 @@ async function delayed(page,pattern) {
   assert.match(await page.locator('.pending').innerText(),/현재 자료에서 확인되지 않았습니다/);
   checked.push('HIRA XLSX -> real parser -> B/D -> result, intake confirmation and timeline');
 
+  async function uploadCurrent(filename) {
+   await page.getByRole('button',{name:/↥.*자료 등록/}).click();
+   await page.locator('input[type=file]').nth(1).setInputFiles(path.join(fixtureDir,filename));
+   await page.getByRole('button',{name:'가상 XLSX 분석 요청',exact:true}).click();
+   await page.getByRole('heading',{name:'우리 가족 복용정보',exact:true}).waitFor();
+  }
+  for(const filename of ['failure.xlsx','unknown.xlsx','repeat.xlsx','repeat-reversed.xlsx']) {
+   await uploadCurrent(filename);
+   await page.getByRole('heading',{name:'HIRA 전체 비교 보류',exact:true}).waitFor();
+   assert.equal(await page.locator('.pending').count(),0,'prior verified intake must not survive a held result');
+   assert.equal(await page.getByRole('dialog').count(),0);
+   assert.equal(await page.locator('button.record').count(),0);
+   assert.match(await page.locator('main').innerText(),/비교를 실행하지 않았습니다/);
+   const sources=page.locator('main details').filter({has:page.locator('summary', {hasText:/후보/})});
+   assert.ok(await sources.count()>=3);
+   await sources.last().locator('summary').click();
+   assert.match(await sources.last().innerText(),/normalization_result/);
+   assert.match(await sources.last().innerText(),/raw_fields/);
+  }
+  checked.push('HIRA failure/unknown/repeat/permuted input held; original and normalization shown; old intake cleared');
+  await uploadCurrent('current.xlsx');
+  assert.equal(await page.getByRole('heading',{name:'HIRA 전체 비교 보류',exact:true}).count(),0);
+  await page.getByRole('button',{name:/✓.*확인함/}).click();
+  assert.match(await page.locator('.pending').innerText(),/현재 응답: 잘 모르겠음 · 확인 전/);
+  checked.push('HIRA held -> normal reprocess resets intake to UNKNOWN/PENDING');
   await page.getByRole('button',{name:/↥.*자료 등록/}).click();
-  delay=await delayed(page,'**/api/v1/reconciliations/hira');
+  await page.locator('input[type=file]').nth(0).setInputFiles(path.join(fixtureDir,'empty.xlsx'));
+  await page.locator('input[type=file]').nth(1).setInputFiles(path.join(fixtureDir,'empty.xlsx'));
+  await page.getByRole('button',{name:'가상 XLSX 분석 요청',exact:true}).click();
+  await page.getByRole('heading',{name:'우리 가족 복용정보',exact:true}).waitFor();
+  assert.match(await page.locator('main').innerText(),/정상 비교 결과 0건/);
+  assert.equal(await page.getByRole('heading',{name:'HIRA 전체 비교 보류',exact:true}).count(),0);
+  checked.push('HIRA executed empty result distinguished from not executed');
+
+
+  await page.getByRole('button',{name:/↥.*자료 등록/}).click();
+  delay=await delayed(page,'**/api/v2/reconciliations/hira');
   await page.getByRole('button',{name:'가상 XLSX 분석 요청',exact:true}).click();await delay.arrived;
   await page.getByRole('button',{name:'HIRA 요청 취소',exact:true}).click();
   delay.release();await delay.done;
   assert.equal(await page.getByRole('heading',{name:'새 자료 등록',exact:true}).count(),1);
-  delay=await delayed(page,'**/api/v1/reconciliations/hira');
+  delay=await delayed(page,'**/api/v2/reconciliations/hira');
   await page.getByRole('button',{name:'가상 XLSX 분석 요청',exact:true}).click();await delay.arrived;
   await page.getByRole('combobox',{name:'가족 구성원',exact:true}).selectOption(familyB);
   await page.getByRole('combobox',{name:'가족 구성원',exact:true}).selectOption(familyA);
