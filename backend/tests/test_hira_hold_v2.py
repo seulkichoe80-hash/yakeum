@@ -133,3 +133,26 @@ async def test_missing_dose_is_unknown_but_zero_is_known():
     body=(await post([row],[row])).json()
     assert body['comparison']['executed'] is True
     assert body['accepted_results']['current'][0]['record']['dose_per_administration']=='0'
+
+
+async def test_optional_hira_metadata_and_duration_do_not_hold_normal_comparison():
+    """Optional XLSX cells stay unknown without disabling a fully comparable pair."""
+    previous, current = known(), known(date='2026-10-01')
+    for row in (previous, current):
+        for index in (0, 2, 3, 5, 11):
+            row[index] = None  # row number, institutions, category and duration
+    body = (await post([previous], [current])).json()
+    assert body['comparison'] == {'executed': True, 'holds': []}
+    item = body['reconciliation_result']['items'][0]
+    assert item['status'] == 'MAINTAINED'
+    assert item['reason_code'] == 'SAME_INGREDIENT_SAME_STRENGTH'
+    for result in body['accepted_results']['previous'] + body['accepted_results']['current']:
+        record = result['record']
+        assert record['duration_days'] is None
+        assert record['prescribing_institution'] is None
+        assert record['dispensing_institution'] is None
+        assert record['drug_category'] is None
+        assert record['confidence'] is None
+        assert record['user_confirmed'] is False
+        assert all(i['official_ingredient_id'] is None for i in record['ingredients'])
+    assert_sources(body)

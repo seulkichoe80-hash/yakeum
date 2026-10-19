@@ -1,5 +1,9 @@
 # TASK D: local Mock photo workflow
 
+> 아래는 사진 연결을 처음 추가한 시점의 기록이다. 현재 실행·HIRA v2·3분 시연은
+> [MVP_DEMO.md](MVP_DEMO.md)를 따른다. 이후 C d797bc8 접근성 선별 반영과
+> HIRA 보류 v2(ad3713c)가 추가됐으므로 아래의 “HIRA 변경 없음”은 당시 범위만 뜻한다.
+
 ## Scope and source comparison
 
 Work started from clean `codex/task-d-weekly-integration` at

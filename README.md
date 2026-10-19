@@ -36,4 +36,8 @@
 
 작업을 시작하기 전에 반드시 Repository 루트의 `AGENTS.md`를 먼저 읽고 공통 개발규칙을 확인하세요.
 
-현재는 팀 공동개발을 위한 초기 Repository 구성 단계입니다. 실제 기능, API Endpoint, DB Schema, 프레임워크 및 패키지는 아직 구현하거나 확정하지 않았습니다.
+현재 TASK D 통합 브랜치는 **Mock 기반 1차 통합 시연**을 지원합니다. 가상 사진 후보 검토 → B 정규화 → D 비교 → 복용 확인·타임라인과 가상 HIRA XLSX 비교를 로컬에서 실행합니다. 실제 외부 API·DB·인증·배포 완료를 의미하지 않습니다.
+
+- [실행 준비·설정 변수·3분 시연 순서](docs/integration/MVP_DEMO.md)
+- [1차 MVP 마감 검토](docs/integration/MVP_CLOSEOUT_REVIEW.md)
+- [HIRA 비교 보류 v2 — TASK D 통합안](docs/integration/HIRA_COMPARISON_HOLD_V2.md)
