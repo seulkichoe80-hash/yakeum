@@ -79,6 +79,7 @@ export function ImageReviewPanel(props:Props) {
      <div className="candidate-heading"><h3>후보 {index+1} · {candidate.draft.product||'제품명 미확인'}</h3><span className="badge">{extractionLabels[candidate.original.status]}</span></div>
      <p>가상 출처: {candidate.original.record?.source_record_id ?? `가상 문서의 후보 ${index+1} · 원본 record 없음`} · 신뢰도: {candidate.original.record?.confidence ?? '미확인'}</p>
      {candidate.original.warnings.length>0&&<ul className="candidate-warnings">{candidate.original.warnings.map((w,n)=><li key={n}>{w.message}</li>)}</ul>}
+     {candidate.original.errors.length>0&&<ul className="field-error" role="alert">{candidate.original.errors.map((error,n)=><li key={n}>{error.message}</li>)}</ul>}
      {!candidate.original.record&&<p className="info">원본 record가 없는 후보입니다. 아래 입력은 화면용 임시 초안이며, 공통 MedicationRecord를 생성하거나 서버로 보내지 않습니다.</p>}
      {field('product','제품명')}
      <fieldset><legend>성분별 제품 함량</legend>
@@ -94,7 +95,7 @@ export function ImageReviewPanel(props:Props) {
      <p>사용자 수정: {modified.length}개 항목 · 공란은 미확인 값으로 유지됩니다.</p>
      <label className="check"><input type="checkbox" checked={candidate.acknowledged} onChange={e=>dispatch({type:'acknowledge',key:candidate.key,value:e.target.checked})}/>후보 {index+1}의 추출 내용과 수정값을 원본과 대조했습니다.</label>
      {candidate.attempted&&!candidate.user_confirmed&&<p role="alert" className="field-error">표시된 입력 오류를 확인하고 원본 대조에 체크해 주세요.</p>}
-     <div className="candidate-actions"><button className="primary" type="submit" disabled={candidate.user_confirmed}>추출 내용 확인 완료 (로컬)</button><button type="button" onClick={()=>dispatch({type:'defer',key:candidate.key})}>확인 보류</button><button type="button" onClick={()=>dispatch({type:'restore',key:candidate.key})}>AI 추출값으로 되돌리기</button></div>
+     <div className="candidate-actions"><button className="primary" type="submit" disabled={candidate.user_confirmed||candidate.original.status==='FAILED'}>추출 내용 확인 완료 (로컬)</button><button type="button" onClick={()=>dispatch({type:'defer',key:candidate.key})}>확인 보류</button><button type="button" onClick={()=>dispatch({type:'restore',key:candidate.key})}>AI 추출값으로 되돌리기</button></div>
      <p role="status" className="confirmation-state">{candidate.user_confirmed?'화면 확인 완료 · 로컬 user_confirmed=true':candidate.deferred?'확인 보류 · user_confirmed=false':'확인 전 · user_confirmed=false'}</p>
      <small>원본 추출 결과의 user_confirmed=false는 보존됩니다. 다시 수정하면 화면 확인도 초기화됩니다. 서버 저장·정규화·실제 복용상태에는 반영되지 않습니다.</small>
     </form>;

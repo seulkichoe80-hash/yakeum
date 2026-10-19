@@ -77,11 +77,12 @@ export function reviewReducer(state: ReviewState, action: ReviewAction): ReviewS
  if(action.type === 'finish') {
   if(state.phase !== 'loading' || state.requestId !== action.requestId) return state;
   const failed = action.results.find(r=>r.status === 'FAILED');
-  if(failed) return {...state,phase:'failed',error:failed.errors[0]?.message ?? '가상 추출 실패',candidates:[]};
+  if(failed&&action.results.every(result=>result.status==='FAILED')) return {...state,phase:'failed',error:failed.errors[0]?.message ?? '가상 추출 실패',candidates:[]};
   return {...state,phase:'ready',error:null,candidates:action.results.map((original,n)=>({key:`candidate-${n+1}`,original,draft:draftFrom(original),acknowledged:false,user_confirmed:false,deferred:false,attempted:false}))};
  }
  return {...state,candidates:state.candidates.map(candidate=>{
   if(candidate.key !== action.key) return candidate;
+  if(action.type === 'confirm' && candidate.original.status === 'FAILED') return {...candidate,attempted:true,user_confirmed:false};
   if(action.type === 'edit') return {...candidate,draft:action.draft,user_confirmed:false,acknowledged:false,deferred:false};
   if(action.type === 'acknowledge') return {...candidate,acknowledged:action.value,user_confirmed:false};
   if(action.type === 'restore') return {...candidate,draft:draftFrom(candidate.original),acknowledged:false,user_confirmed:false,deferred:false,attempted:false};

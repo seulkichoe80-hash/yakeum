@@ -109,6 +109,24 @@ async function delayed(page,pattern) {
   }
   await page.setViewportSize({width:390,height:844});
 
+  workflow=await openPhoto(page);
+  await page.route('**/api/local-demo/photos/extract',async route=>{
+   const response=await route.fetch();const value=await response.json();
+   value.results.push({status:'FAILED',record:null,warnings:[],errors:[{code:'AI_EXTRACTION_FAILED',message:'가상 혼합 응답의 실패 후보',field:null}]});
+   await route.fulfill({response,json:value});
+  },{times:1});
+  const mixed=side(workflow,'현재');await start(mixed);
+  assert.equal(await mixed.getByRole('form').count(),2);
+  const successful=mixed.getByRole('form',{name:'약품 후보 1',exact:true});
+  const failed=mixed.getByRole('form',{name:'약품 후보 2',exact:true});
+  assert.match(await failed.innerText(),/가상 혼합 응답의 실패 후보/);
+  assert.equal(await failed.getByRole('button',{name:'추출 내용 확인 완료 (로컬)',exact:true}).isDisabled(),true);
+  await successful.getByRole('checkbox').check();
+  await successful.getByRole('button',{name:'추출 내용 확인 완료 (로컬)',exact:true}).click();
+  assert.match(await successful.locator('.confirmation-state').innerText(),/로컬 user_confirmed=true/);
+  assert.match(await failed.locator('.confirmation-state').innerText(),/user_confirmed=false/);
+  checked.push('mixed extraction keeps successful and failed candidates; failure cannot be confirmed');
+
   for(const policy of ['repeat','unknown']) {
    workflow=await openPhoto(page);
    await workflow.getByRole('combobox',{name:'정책 보류 검사',exact:true}).selectOption(policy);

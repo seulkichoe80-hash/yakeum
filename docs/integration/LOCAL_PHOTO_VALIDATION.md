@@ -1,6 +1,6 @@
 # Local photo + HIRA validation — 2026-10-19
 
-## Commands and final outcomes
+## Commands and final outcomes (f7e0db7 baseline)
 
 | Command / target | Final result |
 | --- | --- |
@@ -69,3 +69,19 @@ No production photo protocol, null-record manual creation, automatic repeat
 representative selection or cross-source reupload dedup policy was finalized.
 Unresolved batches are held as a whole. Existing HIRA R1–R4 policy concerns remain.
 No actual Gemini/MFDS calls, auth, permanent storage or deployment were run.
+
+## Subsequent policy audit
+
+See `TASK_D_POLICY_REVIEW.md` for the 214-item collection breakdown and why the
+five nested unittest subtests must not be added as five independent test items.
+The original 8-group browser evidence above belongs to the f7e0db7 baseline;
+it is not a screenshot/video/trace archive.
+
+The follow-up change fixes only mixed successful/FAILED candidate visibility and
+confirmation blocking. Backend code is unchanged: 78 relevant backend items plus
+5 nested subtests passed, without unnecessarily rerunning all 214. Frontend tests,
+type check and build passed. The updated integration browser suite passed 9 groups
+(the original 8 plus mixed-failure retention), and the standalone suite passed
+its 4 cases. Both retained all 4 viewport checks and had 0 runtime errors.
+The updated integration run blocked 9 inherited font requests, not 8, because
+the new case navigates one additional time. No external API attempt occurred.
