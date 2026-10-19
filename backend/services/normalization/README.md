@@ -97,3 +97,10 @@ common = to_common_results(results, family_member_id)   # family_member_id 는 �
 ## 검증 상태
 - 단위 테스트(`python -m pytest backend/services -q`)는 가상 데이터·Mock 으로만 검증한다.
 - **실제 HIRA 파일 헤더, 식약처 API URL·필드·코드 체계는 검증되지 않았다.** 확인 절차는 `VERIFICATION_PLAN.md`.
+
+## 반복 조제 진단 (repeat_report.py)
+`find_repeat_groups(common_results)`는 같은 약(mfds_product_id → drug_code → 정규화명+성분 순)이 한 시점에 여러 번 나온 그룹과 조제일을 알려 주는 **읽기 전용** 함수다. 기록을 삭제·축약·변경하지 않는다. 통합 실험에서 반복 조제가 D 비교를 `NEEDS_CONFIRMATION`+`NEW`로 갈라놓는 것이 확인되어 추가했다(대표 기록 선택은 D/통합 계층 결정). 자세한 내용은 `VERIFICATION_PLAN.md` 7절.
+
+## A → B 입력 경계 설계 / D 재현 사례
+- `DESIGN_A_TO_B.md`: AI 추출 MedicationRecord 후보를 B 정규화로 받는 경계 설계(설계 문서, 구현·통합은 팀장 확인 후)
+- `d_repro/`: D 전달용 결함 재현 사례 입력과 실행 스크립트, 관찰 결과(README)
