@@ -6,7 +6,12 @@ const {chromium} = require(process.env.YAKEUM_PLAYWRIGHT_MODULE || 'playwright')
 const base = process.env.YAKEUM_TEST_URL || 'http://127.0.0.1:4190/';
 const output = process.env.YAKEUM_SCREENSHOT_DIR;
 (async()=>{
- const browser = await chromium.launch({channel:process.env.YAKEUM_BROWSER_CHANNEL || 'msedge',headless:true});
+ const browser = await chromium.launch({
+  ...(process.env.YAKEUM_BROWSER_EXECUTABLE
+   ? {executablePath:process.env.YAKEUM_BROWSER_EXECUTABLE}
+   : {channel:process.env.YAKEUM_BROWSER_CHANNEL || 'msedge'}),
+  headless:true,
+ });
  try {
   const page = await browser.newPage({viewport:{width:390,height:844}});
   const apiRequests=[]; const runtimeErrors=[];
@@ -15,6 +20,7 @@ const output = process.env.YAKEUM_SCREENSHOT_DIR;
   await page.goto(base);
   assert.equal(await page.getByRole('heading',{name:'우리 가족 복용정보',exact:true}).count(),1);
   await page.getByRole('button',{name:/↥.*자료 등록/}).click();
+  await page.getByRole('combobox',{name:'자료 유형',exact:true}).selectOption('약봉투 사진');
   const panel=page.locator('.image-review');
   const scenario=panel.getByRole('combobox');
   const start=panel.getByRole('button',{name:'가상 추출 결과 보기',exact:true});
@@ -72,7 +78,7 @@ const output = process.env.YAKEUM_SCREENSHOT_DIR;
   await panel.getByRole('heading',{name:'약품 후보 1개 · 화면 확인 완료 0개',exact:true}).waitFor();
   await scenario.selectOption('multiple');await start.click();
   await page.getByRole('combobox',{name:'가족 구성원',exact:true}).selectOption('00000000-0000-4000-8000-000000000002');
-  await page.getByRole('heading',{name:'동의와 승인이 필요해요',exact:true}).waitFor();
+  await page.getByRole('heading',{name:/^(화면 시연용 )?동의와 승인이 필요해요$/}).waitFor();
   await page.getByRole('combobox',{name:'가족 구성원',exact:true}).selectOption('00000000-0000-4000-8000-000000000001');
   await start.waitFor();
   await page.waitForTimeout(750); // deliberately wait beyond the discarded Mock response
