@@ -85,7 +85,16 @@ export function ImageReviewPanel(props:Props) {
      <fieldset><legend>성분별 제품 함량</legend>
       {candidate.draft.ingredients.length===0&&<p>확인된 성분 정보가 없습니다. 알 수 없는 경우 빈 값으로 유지합니다.</p>}
       {candidate.draft.ingredients.map((ingredient,n)=><div className="ingredient-editor" key={n}>
-       {(['name','strength','unit'] as const).map((key)=>{const issueKey=`ingredient-${n}-${key}`;const originalIngredient=ingredient.originalIndex === null ? undefined : original.ingredients[ingredient.originalIndex];return <label className="review-field" key={key}>성분 {n+1} {key==='name'?'이름':key==='strength'?'제품 함량':'함량 단위'}<input value={ingredient[key]} inputMode={key==='strength'?'decimal':undefined} aria-invalid={!!issues[issueKey]} aria-describedby={issues[issueKey]?`${prefix}-${issueKey}-error`:undefined} onChange={e=>edit(candidate,{ingredients:candidate.draft.ingredients.map((row,i)=>i===n?{...row,[key]:e.target.value}:row)})}/><small>AI 추출값: {originalIngredient?.[key] || '미확인'}{originalIngredient?.[key]!==ingredient[key]?' · 사용자 수정':''}</small>{issues[issueKey]&&<span id={`${prefix}-${issueKey}-error`} className="field-error">{issues[issueKey]}</span>}</label>;})}
+       {(['name','strength','unit'] as const).map((key)=>{
+        const issueKey=`ingredient-${n}-${key}`;
+        const label=`성분 ${n+1} ${key==='name'?'이름':key==='strength'?'제품 함량':'함량 단위'}`;
+        const originalIngredient=ingredient.originalIndex === null ? undefined : original.ingredients[ingredient.originalIndex];
+        return <label className="review-field" key={key}>{label}
+         <input aria-label={label} value={ingredient[key]} inputMode={key==='strength'?'decimal':undefined} aria-invalid={!!issues[issueKey]} aria-describedby={`${prefix}-${issueKey}-original${issues[issueKey]?` ${prefix}-${issueKey}-error`:''}`} onChange={e=>edit(candidate,{ingredients:candidate.draft.ingredients.map((row,i)=>i===n?{...row,[key]:e.target.value}:row)})}/>
+         <small id={`${prefix}-${issueKey}-original`}>AI 추출값: {originalIngredient?.[key] || '미확인'}{originalIngredient?.[key]!==ingredient[key]?' · 사용자 수정':''}</small>
+         {issues[issueKey]&&<span id={`${prefix}-${issueKey}-error`} className="field-error">{issues[issueKey]}</span>}
+        </label>;
+       })}
        <button type="button" onClick={()=>edit(candidate,{ingredients:candidate.draft.ingredients.filter((_,i)=>i!==n)})}>성분 {n+1} 삭제</button>
       </div>)}
       <button type="button" onClick={()=>edit(candidate,{ingredients:[...candidate.draft.ingredients,{name:'',strength:'',unit:'',originalIndex:null}]})}>성분 추가</button>

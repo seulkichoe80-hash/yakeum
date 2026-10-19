@@ -85,3 +85,37 @@ type check and build passed. The updated integration browser suite passed 9 grou
 its 4 cases. Both retained all 4 viewport checks and had 0 runtime errors.
 The updated integration run blocked 9 inherited font requests, not 8, because
 the new case navigates one additional time. No external API attempt occurred.
+
+## C accessibility follow-up (2026-10-19)
+
+Starting HEAD: `5d54e88d82cf1d1bb045d08216939a98144e09cb` (clean tree).
+Selectively incorporated the ingredient accessibility code and applicable browser
+assertions from C `d797bc89de5e0fad001d9d152a81f1ff8df9875e`; this is not a full
+merge of C's branch or documentation. D's panel ID namespace, mixed FAILED
+candidate preservation and cancellation/family/stale-response guards remain.
+
+Executed from `frontend`:
+
+- `pnpm test && pnpm build`: passed, including TypeScript and Vite production build.
+- `YAKEUM_TEST_URL=http://127.0.0.1:4192/ YAKEUM_BROWSER_EXECUTABLE=/usr/bin/chromium node tests/image-review.browser.cjs`:
+  4 scenario groups passed; original/error description association, error focus,
+  preview/recovery, invalid files and file replacement while pending passed.
+  All 4 viewport checks passed; API/write requests and runtime errors were zero;
+  local/session storage remained unchanged.
+- `YAKEUM_TEST_PYTHON=/tmp/yakeum-review/venv/bin/python YAKEUM_BROWSER_EXECUTABLE=/usr/bin/chromium node tests/photo-hira-integration.browser.cjs`:
+  9 integration groups and all 4 viewport checks passed. This includes photo
+  edit → B → D → independent intake → timeline, mixed failure preservation,
+  repeated/unknown-strength holds, cancellation/family/late-response guards and
+  local synthetic HIRA XLSX → parser/B/D → intake/timeline. Runtime errors and
+  external API attempts were zero; 9 inherited font requests were blocked.
+
+These are executable browser assertions, not an archived screenshot/video/trace.
+Photo extraction/official matching used local mocks; HIRA parsing and local B/D
+processing executed with synthetic data. No live Gemini/MFDS calls were made.
+Backend code is unchanged and the full 214-item suite was not rerun for this
+frontend/documentation-only change; the earlier result remains historical evidence.
+
+`HIRA_COMPARISON_HOLD_DRAFT.md` is a proposal only: its 3 JSON examples parse,
+normalization references resolve and the full example preserves source rows and
+normalization results. No new gate, response contract or representative policy
+was implemented or behavior-tested.
