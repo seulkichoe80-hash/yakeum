@@ -19,6 +19,7 @@ import {
 } from './resultView';
 import { medicationTimeline } from './timeline';
 import { fileError, reviewError } from './validation';
+import { ImageReviewPanel } from './ImageReviewPanel';
 import './style.css';
 
 function App() {
@@ -39,10 +40,11 @@ function App() {
  const [selected, setSelected] = useState<Item | null>(null);
  const [notice, setNotice] = useState('');
  const [source, setSource] = useState('심평원 Excel');
+ const [imageSession, setImageSession] = useState(0);
  const [previousFile, setPreviousFile] = useState<File | null>(null);
  const [currentFile, setCurrentFile] = useState<File | null>(null);
  const [file, setFile] = useState<File | null>(null);
- const [date, setDate] = useState('2026-10-08');
+ const [date, setDate] = useState(() => new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()));
  const [uploadState, setUploadState] = useState<'idle' | 'review' | 'done'>('idle');
  const [product, setProduct] = useState('');
  const [strength, setStrength] = useState('');
@@ -85,6 +87,7 @@ function App() {
  const selectedTimeline = selected ? medicationTimeline(selected) : null;
 
  function resetUpload() {
+  setImageSession(value => value + 1);
   setUploadState('idle');
   setConfirmed(false);
   setProduct('');
@@ -462,23 +465,15 @@ function App() {
          resetUpload();
         }} />
        </label>
-       <button className="primary" onClick={registerDemo}>확인 화면으로 이동 (데모)</button>
-       {uploadState === 'review' && <div className="review">
-        <h2>추출 결과 수정·확정</h2>
-        <p>실제 인식 결과가 없으므로 확인할 값을 직접 입력하세요. 서버로 전송하거나 저장하지 않습니다.</p>
-        <label>제품명<input value={product} onChange={event => setProduct(event.target.value)} /></label>
-        <div className="row">
-         <label>함량 (선택)<input type="text" inputMode="decimal" value={strength} aria-describedby="review-error" onChange={event => setStrength(event.target.value)} /></label>
-         <label>단위 (선택)<input aria-describedby="review-error" value={unit} onChange={event => setUnit(event.target.value)} placeholder="예: mg" /></label>
-        </div>
-        <p id="review-error" className="field-error" role="status">{(product || strength || unit) && inputError}</p>
-        <label className="check"><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} />원본 자료와 입력 내용을 대조했습니다.</label>
-        <button className="primary" disabled={!confirmed || inputError !== null} onClick={() => {
-         setUploadState('done');
-         setNotice('사용자 확정 UI 데모 완료. 실제 저장·정규화·비교는 실행되지 않았습니다.');
-        }}>입력 내용 확정 (데모)</button>
-       </div>}
-       {uploadState === 'done' && <div className="info">{member.name} · {product} · {date} 입력을 화면 메모리에서만 확인했습니다.</div>}
+       <ImageReviewPanel
+        key={`${memberId}:${source}:${imageSession}`}
+        familyMemberId={memberId}
+        familyLabel={`${member.relationship} · ${member.name}`}
+        sourceType={source === '처방전 사진' ? 'PRESCRIPTION' : source === '건강기능식품 사진' ? 'SUPPLEMENT' : 'MEDICINE_BAG'}
+        sourceLabel={source}
+        recordDate={date}
+        file={file}
+       />
       </>}
      </section>}
      {page === 'inbox' && <section className="card">
