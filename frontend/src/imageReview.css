@@ -1,0 +1,26 @@
+.image-review{border-top:1px solid #dce7e1;margin-top:28px;padding-top:24px;min-width:0}
+.image-review .source-preview{margin:18px 0;padding:14px;border:1px solid #dce7e1;border-radius:10px}
+.image-review summary{cursor:pointer;min-height:28px}
+.image-review .source-preview img{display:block;max-width:100%;max-height:440px;object-fit:contain;margin:16px auto;background:#f1f5f2}
+.image-review .filename,.image-review p,.image-review small{overflow-wrap:anywhere}
+.image-review .demo-controls{display:flex;gap:16px;align-items:end;flex-wrap:wrap;margin:20px 0}
+.image-review .demo-controls label{display:grid;gap:8px;flex:1;min-width:160px;font-size:13px}
+.image-review button{min-height:44px}
+.image-review h3{font-size:16px;line-height:1.7;margin:8px 0 12px;overflow-wrap:anywhere}
+.image-review .candidate-card{border:1px solid #dce7e1;border-radius:13px;padding:22px;margin:22px 0;background:#fcfefd;min-width:0}
+.image-review .candidate-heading{display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap}
+.image-review .candidate-heading h3{margin:0;min-width:0;flex:1}
+.image-review .review-field{display:grid;gap:7px;font-size:13px;min-width:0;margin:16px 0}
+.image-review .review-field input{width:100%;min-width:0}
+.image-review .review-field input[aria-invalid=true]{border-color:#b45363}
+.image-review .review-field small{color:#667e72;font-size:11px;line-height:1.8}
+.image-review .review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+.image-review fieldset{border:1px solid #dce7e1;border-radius:10px;min-width:0;padding:14px;margin:20px 0}
+.image-review legend{font-size:13px;padding:0 6px}
+.image-review .ingredient-editor{padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid #e3ebe6}
+.image-review .candidate-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.image-review .confirmation-state{color:#187965;font-weight:600}
+.image-review .candidate-warnings,.image-review .image-error{padding:16px 20px;background:#fff4dd;border-radius:10px;font-size:13px;line-height:1.9;color:#76571f;overflow-wrap:anywhere}
+.image-review .candidate-warnings{padding-left:32px}
+.image-review .image-error{margin:18px 0}
+@media(max-width:720px){.image-review .candidate-card{padding:16px}.image-review .review-grid{grid-template-columns:minmax(0,1fr)}.image-review .candidate-actions{flex-direction:column}.image-review .candidate-actions button{width:100%}.image-review .demo-controls{align-items:stretch}.image-review .demo-controls>button{flex:1}.image-review .candidate-heading{display:block}.image-review .candidate-heading .badge{display:inline-block;margin:5px 0}}
