@@ -1,11 +1,14 @@
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useId, useReducer, useRef, useState } from 'react';
 import type { MedicationRecord } from './types';
 import { fileError } from './validation';
 import './imageReview.css';
-import { changedFields, demoLabels, draftFrom, draftIssues, extractionLabels, initialReviewState, mockExtraction, reviewReducer, type CandidateDraft, type CandidateReview, type DemoCase } from './imageReviewModel';
+import { changedFields, demoLabels, draftFrom, draftIssues, extractionLabels, initialReviewState, mockExtraction, reviewReducer, type CandidateDraft, type CandidateReview, type DemoCase, type ExtractionResult, type ReviewState } from './imageReviewModel';
 
-type Props = {familyMemberId:string;familyLabel:string;sourceType:MedicationRecord['source_type'];sourceLabel:string;recordDate:string;file:File|null};
+type Props = {familyMemberId:string;familyLabel:string;sourceType:MedicationRecord['source_type'];sourceLabel:string;recordDate:string;file:File|null;
+ loadResults?:(scenario:DemoCase,signal:AbortSignal)=>Promise<ExtractionResult[]>;
+ onReviewChange?:(state:ReviewState)=>void};
 export function ImageReviewPanel(props:Props) {
+ const panelId = useId();
  const [scenario,setScenario] = useState<DemoCase>('single');
  const [state,dispatch] = useReducer(reviewReducer,undefined,initialReviewState);
  const [preview,setPreview] = useState<string|null>(null);
@@ -13,6 +16,7 @@ export function ImageReviewPanel(props:Props) {
  const timer = useRef<ReturnType<typeof setTimeout>|null>(null);
  const pending = useRef(false);
  const request = useRef(0);
+ const controller = useRef<AbortController|null>(null);
  const resultHeading = useRef<HTMLHeadingElement>(null);
  const errorPanel = useRef<HTMLDivElement>(null);
  useEffect(()=>{
@@ -20,13 +24,25 @@ export function ImageReviewPanel(props:Props) {
   const url=URL.createObjectURL(props.file);setPreview(url);
   return ()=>URL.revokeObjectURL(url);
  },[props.file]);
- useEffect(()=>()=>{if(timer.current) clearTimeout(timer.current);pending.current=false;},[]);
+ useEffect(()=>()=>{if(timer.current) clearTimeout(timer.current);controller.current?.abort();pending.current=false;request.current++;},[]);
+ useEffect(()=>{props.onReviewChange?.(state);},[state,props.onReviewChange]);
  useEffect(()=>{if(state.phase==='ready') resultHeading.current?.focus();if(state.phase==='failed') errorPanel.current?.focus();},[state.phase]);
  function start() {
   if(pending.current) return;
   pending.current=true;
   const id=++request.current;
   dispatch({type:'start',requestId:id});
+  if(props.loadResults) {
+   controller.current=new AbortController();
+   props.loadResults(scenario,controller.current.signal).then(results=>{
+    if(request.current!==id||!pending.current) return;
+    dispatch({type:'finish',requestId:id,results});pending.current=false;
+   }).catch(error=>{
+    if(request.current!==id||!pending.current) return;
+    dispatch({type:'finish',requestId:id,results:[{status:'FAILED',record:null,warnings:[],errors:[{code:'AI_EXTRACTION_FAILED',message:error instanceof Error?error.message:'로컬 Mock 요청 실패',field:null}]}]});pending.current=false;
+   });
+   return;
+  }
   timer.current=setTimeout(()=>{
    const invalidFile=props.file?fileError(props.file.name,props.file.size,false):null;
    const results=invalidFile?[{status:'FAILED' as const,record:null,warnings:[],errors:[{code:'INPUT_FILE_ERROR',message:invalidFile,field:null}]}]:mockExtraction(scenario,props.familyMemberId,props.sourceType,props.recordDate);
@@ -34,11 +50,12 @@ export function ImageReviewPanel(props:Props) {
    pending.current=false;timer.current=null;
   },650);
  }
- function cancel() {if(timer.current) clearTimeout(timer.current);timer.current=null;pending.current=false;dispatch({type:'reset'});}
+ function cancel() {if(timer.current) clearTimeout(timer.current);controller.current?.abort();request.current++;timer.current=null;pending.current=false;dispatch({type:'reset'});}
  function edit(candidate:CandidateReview, patch:Partial<CandidateDraft>) { dispatch({type:'edit',key:candidate.key,draft:{...candidate.draft,...patch}}); }
  const completed=state.candidates.filter(c=>c.user_confirmed).length;
  return <div className="image-review">
   <h2>이미지 분석 결과 확인·수정</h2>
+  {props.loadResults&&<p className="info">LOCAL_MOCK 연결 · 서버의 가상 A JSON을 공통 adapter로 처리합니다. 이미지 업로드·실제 Gemini·식약처 호출은 없습니다.</p>}
   <div className="info">MOCK 시연 · 선택한 이미지에서 아래 값을 인식한 것이 아닙니다. 실제 AI 호출·전송·서버 저장은 하지 않습니다. 가상 예제로 검토 흐름을 확인하세요.</div>
   <p>가족: <strong>{props.familyLabel}</strong> · 자료: {props.sourceLabel} · 기준일: {props.recordDate || '미선택'}</p>
   <details className="source-preview"><summary>원본 이미지 대조 {props.file ? '· 선택 파일' : '· 선택 사항'}</summary>
@@ -56,9 +73,9 @@ export function ImageReviewPanel(props:Props) {
    <p className="info">이곳의 확인은 <strong>추출 내용의 대조</strong>입니다. 실제 복용 여부(TAKING/NOT_TAKING/UNKNOWN), 비교 판정, 정규화 결과를 변경하지 않습니다. 모르는 값은 추측하지 말고 비워 두거나 확인을 보류하세요.</p>
    {state.candidates.map((candidate,index)=>{
     const issues=draftIssues(candidate.draft), original=draftFrom(candidate.original), modified=changedFields(candidate);
-    const prefix=candidate.key;
+    const prefix=`${panelId}-${candidate.key}`;
     const field=(key:keyof Omit<CandidateDraft,'ingredients'>,label:string,numeric=false)=><label className="review-field">{label}<input aria-label={label} value={candidate.draft[key]} inputMode={numeric?'decimal':undefined} aria-invalid={!!issues[key]} aria-describedby={`${prefix}-${key}-original${issues[key]?` ${prefix}-${key}-error`:''}`} onChange={e=>edit(candidate,{[key]:e.target.value})}/><small id={`${prefix}-${key}-original`}>AI 추출값: {original[key]===''?'미확인':original[key]}{original[key]!==candidate.draft[key]?' · 사용자 수정':''}</small>{issues[key]&&<span id={`${prefix}-${key}-error`} className="field-error">{issues[key]}</span>}</label>;
-    return <form key={prefix} className="candidate-card" noValidate onSubmit={e=>{e.preventDefault();dispatch({type:'confirm',key:prefix});if(Object.keys(issues).length)e.currentTarget.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();else if(!candidate.acknowledged)e.currentTarget.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus();}} aria-label={`약품 후보 ${index+1}`}>
+    return <form key={candidate.key} className="candidate-card" noValidate onSubmit={e=>{e.preventDefault();dispatch({type:'confirm',key:candidate.key});if(Object.keys(issues).length)e.currentTarget.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();else if(!candidate.acknowledged)e.currentTarget.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus();}} aria-label={`약품 후보 ${index+1}`}>
      <div className="candidate-heading"><h3>후보 {index+1} · {candidate.draft.product||'제품명 미확인'}</h3><span className="badge">{extractionLabels[candidate.original.status]}</span></div>
      <p>가상 출처: {candidate.original.record?.source_record_id ?? `가상 문서의 후보 ${index+1} · 원본 record 없음`} · 신뢰도: {candidate.original.record?.confidence ?? '미확인'}</p>
      {candidate.original.warnings.length>0&&<ul className="candidate-warnings">{candidate.original.warnings.map((w,n)=><li key={n}>{w.message}</li>)}</ul>}
@@ -75,9 +92,9 @@ export function ImageReviewPanel(props:Props) {
      <div className="review-grid">{field('dose','1회 투약량',true)}{field('doseUnit','투약 단위 (정·캡슐 등)')}{field('perDay','하루 투여 횟수',true)}{field('duration','투약일수',true)}</div>
      {field('directions','원본 복용법 문구')}
      <p>사용자 수정: {modified.length}개 항목 · 공란은 미확인 값으로 유지됩니다.</p>
-     <label className="check"><input type="checkbox" checked={candidate.acknowledged} onChange={e=>dispatch({type:'acknowledge',key:prefix,value:e.target.checked})}/>후보 {index+1}의 추출 내용과 수정값을 원본과 대조했습니다.</label>
+     <label className="check"><input type="checkbox" checked={candidate.acknowledged} onChange={e=>dispatch({type:'acknowledge',key:candidate.key,value:e.target.checked})}/>후보 {index+1}의 추출 내용과 수정값을 원본과 대조했습니다.</label>
      {candidate.attempted&&!candidate.user_confirmed&&<p role="alert" className="field-error">표시된 입력 오류를 확인하고 원본 대조에 체크해 주세요.</p>}
-     <div className="candidate-actions"><button className="primary" type="submit" disabled={candidate.user_confirmed}>추출 내용 확인 완료 (로컬)</button><button type="button" onClick={()=>dispatch({type:'defer',key:prefix})}>확인 보류</button><button type="button" onClick={()=>dispatch({type:'restore',key:prefix})}>AI 추출값으로 되돌리기</button></div>
+     <div className="candidate-actions"><button className="primary" type="submit" disabled={candidate.user_confirmed}>추출 내용 확인 완료 (로컬)</button><button type="button" onClick={()=>dispatch({type:'defer',key:candidate.key})}>확인 보류</button><button type="button" onClick={()=>dispatch({type:'restore',key:candidate.key})}>AI 추출값으로 되돌리기</button></div>
      <p role="status" className="confirmation-state">{candidate.user_confirmed?'화면 확인 완료 · 로컬 user_confirmed=true':candidate.deferred?'확인 보류 · user_confirmed=false':'확인 전 · user_confirmed=false'}</p>
      <small>원본 추출 결과의 user_confirmed=false는 보존됩니다. 다시 수정하면 화면 확인도 초기화됩니다. 서버 저장·정규화·실제 복용상태에는 반영되지 않습니다.</small>
     </form>;

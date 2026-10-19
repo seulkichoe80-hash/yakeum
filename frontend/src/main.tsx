@@ -20,6 +20,7 @@ import {
 import { medicationTimeline } from './timeline';
 import { fileError, reviewError } from './validation';
 import { ImageReviewPanel } from './ImageReviewPanel';
+import { PhotoWorkflow } from './PhotoWorkflow';
 import './style.css';
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
  const [notice, setNotice] = useState('');
  const [source, setSource] = useState('심평원 Excel');
  const [imageSession, setImageSession] = useState(0);
+ const [photoConnected, setPhotoConnected] = useState(false);
  const [previousFile, setPreviousFile] = useState<File | null>(null);
  const [currentFile, setCurrentFile] = useState<File | null>(null);
  const [file, setFile] = useState<File | null>(null);
@@ -58,6 +60,9 @@ function App() {
  const dialogRef = useRef<HTMLElement>(null);
  const openerRef = useRef<HTMLElement | null>(null);
  const activeMemberRef = useRef(memberId);
+ const hiraVersion = useRef(0);
+ const hiraAbort = useRef<AbortController|null>(null);
+ useEffect(()=>()=>{hiraVersion.current++;hiraAbort.current?.abort();},[]);
 
  const allowed = member.consent && member.approved;
  const backendResponse = resultView.mode === 'BACKEND' && integration.phase === 'success'
@@ -87,6 +92,7 @@ function App() {
  const selectedTimeline = selected ? medicationTimeline(selected) : null;
 
  function resetUpload() {
+  invalidatePendingHira();
   setImageSession(value => value + 1);
   setUploadState('idle');
   setConfirmed(false);
@@ -96,7 +102,17 @@ function App() {
   setNotice('');
  }
 
+ function invalidatePendingHira() {
+  hiraVersion.current++;
+  if(hiraAbort.current) {
+   hiraAbort.current.abort();hiraAbort.current=null;
+   dispatchIntegration({type:'memberChanged',memberId});
+   dispatchResultView({type:'memberChanged',memberId});
+  }
+ }
+
  function switchMember(id: string) {
+  invalidatePendingHira();
   activeMemberRef.current = id;
   setMemberId(id);
   dispatchIntegration({ type: 'memberChanged', memberId: id });
@@ -181,6 +197,9 @@ function App() {
   }
 
   const requestMemberId = memberId;
+  hiraAbort.current?.abort();
+  const controller = new AbortController();hiraAbort.current=controller;
+  const version = ++hiraVersion.current;
   dispatchIntegration({ type: 'started', memberId: requestMemberId });
   dispatchResultView({ type: 'backendStarted', memberId: requestMemberId });
   setNotice('가상 XLSX를 Backend에서 실제 처리하고 있습니다. 외부 식약처 API는 호출하지 않습니다.');
@@ -189,8 +208,9 @@ function App() {
     familyMemberId: requestMemberId,
     previousFile,
     currentFile,
+    signal: controller.signal,
    });
-   if (activeMemberRef.current !== requestMemberId) return;
+   if (activeMemberRef.current !== requestMemberId || version!==hiraVersion.current || controller.signal.aborted) return;
    setIntakeStore(current => replaceFamilyIntakeStates(
     current,
     requestMemberId,
@@ -204,14 +224,17 @@ function App() {
    setPage('overview');
    setNotice('가상 XLSX 처리 완료: deterministic parser · D 비교 · MFDS LOCAL MOCK 결과입니다.');
   } catch (error) {
-   if (activeMemberRef.current !== requestMemberId) return;
+   if (activeMemberRef.current !== requestMemberId || version!==hiraVersion.current || controller.signal.aborted) return;
    const message = error instanceof Error ? error.message : '자료 처리 요청에 실패했습니다.';
    dispatchIntegration({ type: 'failed', memberId: requestMemberId, error: message });
    setNotice(message);
+  } finally {
+   if(version===hiraVersion.current) hiraAbort.current=null;
   }
  }
 
  function showMock() {
+  invalidatePendingHira();
   const itemsForMember = mockItemsForFamily(mockResult.items, memberId);
   dispatchIntegration({ type: 'memberChanged', memberId });
   dispatchResultView({ type: 'mockSelected', memberId });
@@ -247,7 +270,7 @@ function App() {
  }
 
  function confirmCurrentIntake(item: Item, value: IntakeChoice) {
-  const recordId = item.previous_record?.record_id ?? item.current_record?.record_id;
+  const recordId = item.current_record?.record_id ?? item.previous_record?.record_id;
   if (!recordId) return;
   setIntakeStore(current => {
    const withInitial = getCurrentIntakeState(current, memberId, recordId)
@@ -434,18 +457,18 @@ function App() {
         <label className="dropzone">이전 자료
          <strong>{previousFile?.name ?? '이전 XLSX 선택'}</strong>
          <span>XLSX만 지원 · 최대 10MB</span>
-         <input type="file" accept=".xlsx" onChange={event => setPreviousFile(event.target.files?.[0] ?? null)} />
+         <input type="file" accept=".xlsx" onChange={event => {invalidatePendingHira();setPreviousFile(event.target.files?.[0] ?? null);}} />
         </label>
         <label className="dropzone">현재 자료
          <strong>{currentFile?.name ?? '현재 XLSX 선택'}</strong>
          <span>XLSX만 지원 · 최대 10MB</span>
-         <input type="file" accept=".xlsx" onChange={event => setCurrentFile(event.target.files?.[0] ?? null)} />
+         <input type="file" accept=".xlsx" onChange={event => {invalidatePendingHira();setCurrentFile(event.target.files?.[0] ?? null);}} />
         </label>
        </div>
        <button className="primary" disabled={integration.phase === 'loading'} onClick={analyzeHira}>
         {integration.phase === 'loading' ? 'Backend 처리 중…' : '가상 XLSX 분석 요청'}
        </button>
-       {integration.phase === 'loading' && <div className="loading" role="status">파일을 deterministic parser와 D 엔진으로 처리하고 있습니다.</div>}
+       {integration.phase === 'loading' && <div className="loading" role="status">파일을 deterministic parser와 D 엔진으로 처리하고 있습니다. <button onClick={()=>{invalidatePendingHira();setNotice('HIRA 요청을 취소했습니다. 늦은 결과는 반영되지 않습니다.');}}>HIRA 요청 취소</button></div>}
        {integration.phase === 'error' && <div className="error-panel" role="alert">
         <strong>자료 처리에 실패했습니다.</strong>
         <p>{integration.error}</p>
@@ -465,7 +488,16 @@ function App() {
          resetUpload();
         }} />
        </label>
-       <ImageReviewPanel
+       <button type="button" onClick={()=>setPhotoConnected(value=>!value)}>{photoConnected?'단독 화면 Mock으로 돌아가기':'로컬 Mock 전체 연결 열기'}</button>
+       {photoConnected ? <PhotoWorkflow
+        key={`connected:${memberId}:${source}:${imageSession}`}
+        familyMemberId={memberId}
+        familyLabel={`${member.relationship} · ${member.name}`}
+        sourceType={source === '처방전 사진' ? 'PRESCRIPTION' : source === '건강기능식품 사진' ? 'SUPPLEMENT' : 'MEDICINE_BAG'}
+        sourceLabel={source}
+        recordDate={date}
+        file={file}
+       /> : <ImageReviewPanel
         key={`${memberId}:${source}:${imageSession}`}
         familyMemberId={memberId}
         familyLabel={`${member.relationship} · ${member.name}`}
@@ -473,7 +505,7 @@ function App() {
         sourceLabel={source}
         recordDate={date}
         file={file}
-       />
+       />}
       </>}
      </section>}
      {page === 'inbox' && <section className="card">

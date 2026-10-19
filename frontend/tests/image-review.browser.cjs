@@ -14,6 +14,7 @@ const output = process.env.YAKEUM_SCREENSHOT_DIR;
  });
  try {
   const page = await browser.newPage({viewport:{width:390,height:844}});
+  await page.route('https://fonts.googleapis.com/**',route=>route.abort());
   const apiRequests=[]; const runtimeErrors=[];
   page.on('request',r=>{if(new URL(r.url()).pathname.startsWith('/api/')) apiRequests.push(r.url());});
   page.on('pageerror',e=>runtimeErrors.push(e.message));

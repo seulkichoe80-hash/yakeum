@@ -1,5 +1,8 @@
 # TASK D weekly integration — 2026-10-19
 
+> This file records the earlier `bcf4aba` preparation stage. For subsequent Mock
+> end-to-end integration, see `LOCAL_PHOTO_MOCK.md` and `LOCAL_PHOTO_VALIDATION.md`.
+
 ## Local branch and source revisions
 
 - Integration branch: `codex/task-d-weekly-integration`.

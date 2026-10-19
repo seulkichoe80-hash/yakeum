@@ -17,6 +17,7 @@ export type HiraComparisonInput = {
  familyMemberId: string;
  previousFile: File;
  currentFile: File;
+ signal?: AbortSignal;
 };
 
 export async function requestHiraComparison(
@@ -31,6 +32,7 @@ export async function requestHiraComparison(
  const response = await fetcher('/api/v1/reconciliations/hira', {
   method: 'POST',
   body: form,
+  signal: input.signal,
  });
  if (!response.ok) {
   let message = `자료 처리 요청에 실패했습니다. (${response.status})`;
