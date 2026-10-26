@@ -170,6 +170,20 @@ async function delayed(page,pattern) {
   await confirm(side(workflow,'현재'));await compare(workflow);
   checked.push('late normalization after edit rejected; retry and zero preserved');
 
+  // Connection failures must not leave a previously verified result on screen.
+  await workflow.getByRole('article').getByRole('button',{name:'먹고 있음',exact:true}).click();
+  await page.route('**/api/local-demo/photos/process',route=>route.fulfill({
+   status:503,json:{detail:'가상 로컬 처리 실패'},
+  }),{times:1});
+  await workflow.getByRole('button',{name:'수정 후보 B 정규화 미리보기',exact:true}).click();
+  await workflow.getByRole('alert').filter({hasText:'로컬 Mock 처리 실패'}).waitFor();
+  assert.equal(await workflow.getByRole('article').count(),0,'failed request must clear previous comparison and verified intake');
+  assert.equal(await workflow.getByRole('region',{name:'사진 처리 결과',exact:true}).count(),0);
+  await compare(workflow);
+  assert.match(await workflow.getByRole('article').innerText(),/현재 복용: 잘 모르겠음 · 확인 전/);
+  checked.push('photo request failure removes previous result and verified intake; retry starts unverified');
+
+
   // Real virtual XLSX upload, real parser and D engine; official lookup stays Mock.
   execFileSync(process.env.YAKEUM_TEST_PYTHON||'python3',['-c',
    'import sys\nfrom pathlib import Path\nfrom backend.tests.test_b_d_c_api import _xlsx,_row\nfrom backend.tests.test_hira_hold_v2 import known\np=Path(sys.argv[1])\na=known(date="2026-09-01")\nb=known(2,date="2026-09-01",code="198800001")\nc=known(date="2026-10-19")\nc[9]="2"\np.joinpath("previous.xlsx").write_bytes(_xlsx([a,b]))\np.joinpath("current.xlsx").write_bytes(_xlsx([c]))\np.joinpath("failure.xlsx").write_bytes(_xlsx([c,_row(9,"invalid",None,None)]))\np.joinpath("unknown.xlsx").write_bytes(_xlsx([_row(1,"2026-10-19","가상함량미확인","000000001")]))\nr=known(2,date="2026-10-01")\np.joinpath("repeat.xlsx").write_bytes(_xlsx([c,r]))\np.joinpath("repeat-reversed.xlsx").write_bytes(_xlsx([r,c]))\np.joinpath("empty.xlsx").write_bytes(_xlsx([]))',fixtureDir],{cwd:path.resolve(__dirname,'../..')});

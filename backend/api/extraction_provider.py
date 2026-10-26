@@ -13,7 +13,6 @@ from backend.services.extraction import (
     GeminiSettings,
     adapt_provider_call,
 )
-from backend.services.extraction.prompt import SYSTEM_PROMPT
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 IMAGE_MIME_TYPES = frozenset({"image/jpeg", "image/png", "image/webp"})
@@ -52,18 +51,9 @@ def extract_image_candidates(
 
 
 def _request_gemini(image_bytes: bytes, mime_type: str, settings: GeminiSettings) -> str:
-    from google import genai
-    from google.genai import types
+    from backend.services.extraction.sdk import request_image
 
-    with genai.Client(api_key=settings.api_key) as client:
-        response = client.models.generate_content(
-            model=settings.model_name,
-            contents=[
-                SYSTEM_PROMPT,
-                types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-            ],
-        )
-        return response.text
+    return request_image(image_bytes, mime_type, settings)
 
 
 def _failed(message: str) -> list[dict[str, Any]]:
