@@ -8,6 +8,7 @@
 import json
 import logging
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -173,8 +174,8 @@ class RealMfdsClient(MfdsClient):
                 last = f"HTTP {e.code}"
                 if e.code < 500 and e.code != 429:  # 4xx 는 재시도해도 같다
                     break
-            except Exception as e:  # noqa: BLE001 - 타임아웃/네트워크/JSON 오류 모두 재시도 대상
-                last = f"{type(e).__name__}: {e}"
+            except Exception:  # Exception text may include keyed URLs or health data.
+                last = "네트워크 또는 응답 처리 오류"
             if attempt < self.retries:
                 log.info("MFDS retry %d/%d (%s): %s", attempt + 1, self.retries, key, last)
                 self._sleep(self.backoff * (2**attempt))
@@ -187,4 +188,5 @@ class RealMfdsClient(MfdsClient):
             return
         code = str(header.get("resultCode", "00"))
         if code not in self.config.get("success_codes", ["00"]):
-            raise MfdsApiError(f"API 오류 resultCode={code} {header.get('resultMsg', '')}".strip())
+            safe_code = code if re.fullmatch(r"[0-9]{2,3}", code) else "미확인"
+            raise MfdsApiError(f"API 오류 resultCode={safe_code}")

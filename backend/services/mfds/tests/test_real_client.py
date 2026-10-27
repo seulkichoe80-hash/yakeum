@@ -130,3 +130,21 @@ def test_api_key_sent_as_param_only():
     c, t = client(DRUG_PAYLOAD)
     c.search_by_name("타이레놀")
     assert all(call[1]["serviceKey"] == "TESTKEY" for call in t.calls)
+
+
+def test_transport_error_never_exposes_request_or_private_text(caplog):
+    secret = 'SYNTHETIC-SECRET-MARKER'
+    private = 'SYNTHETIC-HEALTH-MARKER'
+    c, _ = client(RuntimeError(f'https://example.invalid?serviceKey={secret}&q={private}'), retries=1)
+    assert c.search_by_name('가상제품') == []
+    assert c.last_failed
+    assert secret not in str(c.last_warnings) + caplog.text
+    assert private not in str(c.last_warnings) + caplog.text
+
+
+def test_api_header_error_never_exposes_arbitrary_code_or_message(caplog):
+    secret = 'SYNTHETIC-SECRET-MARKER'
+    c, _ = client({'header': {'resultCode': secret, 'resultMsg': secret}}, retries=1)
+    assert c.search_by_name('가상제품') == []
+    assert c.last_failed
+    assert secret not in str(c.last_warnings) + caplog.text
