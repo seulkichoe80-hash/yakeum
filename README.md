@@ -68,3 +68,5 @@ Mock/Gemini 요청 경로를 구분합니다. 기본은 Mock이며 실제 분석
 [10월 31일 핵심 개발·11월 8일 제출 계획](docs/integration/DEADLINE_PLAN_20261031.md)에서 필수/선택 작업과 외부 연동의 남은 조건을 확인하세요.
 [컨테이너 실행·배포 준비](deploy/README.md)는 가상 자료 내부 시연용입니다. 공개 배포·운영 인증 완료를 뜻하지 않습니다.
 [이번 통합 검증 결과](docs/integration/DEADLINE_VALIDATION_20261027.md)를 별도로 기록했습니다.
+
+[Gemini 형태 가상 응답의 브라우저 검증](docs/integration/GEMINI_REPLAY_MFDS_VALIDATION.md)과 [식약처 실제 연결 준비·미확정 명세](docs/integration/MFDS_CONNECTION_PREPARATION.md)를 기록했습니다. 실제 식약처 연결은 아직 Mock입니다.

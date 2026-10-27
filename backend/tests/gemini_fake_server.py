@@ -20,6 +20,8 @@ def handler(request):
     if scenario=='timeout':raise httpx.ReadTimeout('synthetic timeout',request=request)
     if scenario=='error':return httpx.Response(503,json={'error':{'code':503,'status':'UNAVAILABLE','message':'synthetic error'}})
     data=json.loads(photo_demo._fixture('single'))
+    if scenario=='approved-shape':
+        data['medications'][0].update(dose_per_administration='2',administrations_per_day='2',duration_days='7')
     if scenario=='mixed':data['medications'].append({**data['medications'][0],'dose_per_administration':'읽기불가'})
     raw='invalid-json' if scenario=='bad-json' else json.dumps(data)
     return httpx.Response(200,json={'candidates':[{'content':{'role':'model','parts':[{'text':raw}]},'finishReason':'STOP'}]})

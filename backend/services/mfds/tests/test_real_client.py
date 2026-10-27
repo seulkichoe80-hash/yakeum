@@ -24,6 +24,10 @@ class FakeTransport:
         r = self.responses.pop(0) if len(self.responses) > 1 else self.responses[0]
         if isinstance(r, Exception):
             raise r
+        # A drug fixture is not a valid health-food response. Model that
+        # independent service as genuinely empty instead of silently dropping rows.
+        if "HtfsInfoService" in url and r == DRUG_PAYLOAD:
+            return EMPTY
         return r
 
 
@@ -148,3 +152,63 @@ def test_api_header_error_never_exposes_arbitrary_code_or_message(caplog):
     assert c.search_by_name('가상제품') == []
     assert c.last_failed
     assert secret not in str(c.last_warnings) + caplog.text
+
+
+import pytest
+
+
+@pytest.mark.parametrize('payload',[
+    {}, {'body': {'items': []}},
+    {'header': {'resultCode':'00'}, 'body': {}},
+    {'header': {'resultCode':'00'}, 'body': {'items':'not-an-array'}},
+    {'header': {'resultCode':'00'}, 'body': {'items':[{'ITEM_SEQ':'1'}]}},
+    {'header': {'resultCode':'00'}, 'body': {'items':[{'ITEM_SEQ':'1','ITEM_NAME':'가상정'}],'totalCount':2}},
+])
+def test_incomplete_or_malformed_response_is_failure_not_empty_success(payload):
+    c,_=client(payload,retries=0)
+    assert c.search_by_name('가상정')==[] and c.last_failed
+    assert c._cache=={}
+
+
+def test_fake_official_response_to_b_preserves_missing_strength_and_multiple_candidates(tmp_path):
+    import json,yaml
+    from copy import deepcopy
+    from backend.api import photo_demo
+    from backend.services.extraction import ExtractionContext,adapt_gemini_response
+    from backend.services.normalization.structured import normalize_structured_record
+    from uuid import uuid4
+    cfg=yaml.safe_load(DEFAULT_CFG.read_text());cfg['sources'].pop('health_food')
+    path=tmp_path/'cfg.yaml';path.write_text(yaml.safe_dump(cfg))
+    family=str(uuid4());raw=json.loads(photo_demo._fixture('single'))
+    raw['medications'][0]['ingredients'][0]['product_strength']=None
+    extracted=adapt_gemini_response(json.dumps(raw),ExtractionContext(family,str(uuid4()),'2026-10-27'))[0]
+    before=deepcopy(extracted)
+    item={'ITEM_SEQ':'000001','ITEM_NAME':'가상알파정','MAIN_ITEM_INGR':'가상알파성분'}
+    for rows,status in [([], 'UNMATCHED'),([item],'MATCHED'),([item,{**item,'ITEM_SEQ':'000002'}],'PARTIAL')]:
+        c,_=client({'header':{'resultCode':'00'},'body':{'items':rows,'totalCount':len(rows)}},config_path=path)
+        result=normalize_structured_record(extracted,c,expected_family_member_id=family)
+        assert result['status']==status
+        assert result['record']['ingredients'][0]['product_strength'] is None
+        assert result['record']['user_confirmed'] is False
+        assert extracted==before
+        from backend.api.hira_hold import _comparable
+        assert not _comparable(result['record'])
+
+
+def test_partial_official_service_failure_cannot_become_unique_match():
+    import json
+    from uuid import uuid4
+    from backend.api import photo_demo
+    from backend.services.extraction import ExtractionContext,adapt_gemini_response
+    from backend.services.normalization.structured import normalize_structured_record
+    family=str(uuid4())
+    source=adapt_gemini_response(photo_demo._fixture('single'),ExtractionContext(family,str(uuid4()),'2026-10-27'))[0]
+    def transport(url,params,timeout):
+        if 'HtfsInfoService' in url:raise TimeoutError('synthetic-private')
+        return {'header':{'resultCode':'00'},'body':{'items':[{'ITEM_SEQ':'1','ITEM_NAME':'가상알파정'}]}}
+    c=RealMfdsClient(api_key='SYNTHETIC-KEY',transport=transport,retries=0)
+    result=normalize_structured_record(source,c,expected_family_member_id=family)
+    assert result['status']=='UNMATCHED'
+    assert result['match']['official_id'] is None
+    assert result['record']['product_name_raw']=='가상알파정'
+    assert result['warnings']

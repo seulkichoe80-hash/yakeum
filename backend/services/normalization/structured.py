@@ -91,6 +91,9 @@ def normalize_structured_record(extraction_result: Mapping[str, Any], client, *,
     # Do not relay arbitrary client exception strings or secret-bearing warnings.
     if outcome.warnings or outcome.lookup_failed:
         warnings.append(to_error_detail("제품 조회 경고가 있습니다. 원본을 확인해 주세요."))
+    if outcome.lookup_failed:
+        # A partial service failure cannot establish uniqueness across sources.
+        return result
     if not outcome.candidates:
         warnings.append(to_error_detail("공식 데이터에서 찾지 못함 (원본 값 보존)"))
     elif len(outcome.candidates) > 1:

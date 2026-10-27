@@ -6,7 +6,8 @@ const path=require('node:path');
 const base=process.env.YAKEUM_TEST_URL||'http://127.0.0.1:4197/';
 const fs=require('node:fs');
 const scenarioFile=process.env.YAKEUM_GEMINI_FAKE_SCENARIO;if(!scenarioFile)throw new Error('Offline Gemini harness scenario path required');
-fs.writeFileSync(scenarioFile,'normal');
+const approvedShape=process.env.YAKEUM_GEMINI_REPLAY_APPROVED_SHAPE==='1';
+fs.writeFileSync(scenarioFile,approvedShape?'approved-shape':'normal');
 const password='SYNTHETIC-browser-pass-123';
 const fixture=execFileSync(process.env.YAKEUM_TEST_PYTHON||'python3',['-c',"import sys;from io import BytesIO;from PIL import Image;b=BytesIO();Image.new('RGB',(20,20),'white').save(b,format='PNG');sys.stdout.buffer.write(b.getvalue())"]);
 const file={name:'synthetic.png',mimeType:'image/png',buffer:fixture};
@@ -24,12 +25,13 @@ async function delayed(page,pattern){let release,seen,done;const gate=new Promis
  await register(page,username);const fa=await family(page,'가상 가족 A');
  await page.getByLabel('현재 사진',{exact:true}).setInputFiles(file);
  const flow=page.getByRole('region',{name:'사진 업로드 전체 연결',exact:true});await flow.getByLabel('이전 사진 선택').setInputFiles(file);await flow.getByLabel('사진 추출 방식').selectOption('GEMINI');
- for(const name of ['이전','현재']){const section=flow.getByRole('region',{name:`${name} 사진 후보`,exact:true});await section.getByRole('button',{name:'Gemini로 사진 추출 요청',exact:true}).click();await section.getByRole('form').waitFor();if(name==='현재')await section.getByRole('textbox',{name:'1회 투약량',exact:true}).fill('2');await section.getByRole('checkbox').check();await section.getByRole('button',{name:'추출 내용 확인 완료 (로컬)',exact:true}).click();}
+ for(const name of ['이전','현재']){const section=flow.getByRole('region',{name:`${name} 사진 후보`,exact:true});await section.getByRole('button',{name:'Gemini로 사진 추출 요청',exact:true}).click();await section.getByRole('form').waitFor();if(name==='현재')await section.getByRole('textbox',{name:'1회 투약량',exact:true}).fill(approvedShape?'3':'2');await section.getByRole('checkbox').check();await section.getByRole('button',{name:'추출 내용 확인 완료 (로컬)',exact:true}).click();}
  await flow.getByRole('button',{name:'수정 후보 B 정규화 미리보기',exact:true}).click();await flow.getByRole('button',{name:'정규화 결과 확인 후 D 비교',exact:true}).click();await flow.getByRole('heading',{name:'사진 처리 결과 · 비교 완료',exact:true}).waitFor();
+ await flow.getByText('사진 변경 이력',{exact:true}).click();assert.match(await flow.innerText(),/이전:/);assert.match(await flow.innerText(),/현재:/);
  await flow.getByRole('button',{name:'확인한 결과와 복용 선택 저장',exact:true}).click();await flow.getByText('개발용 DB에 저장했습니다.',{exact:false}).waitFor();
  await page.getByRole('button',{name:'저장 목록 새로고침',exact:true}).click();await page.getByRole('button',{name:/^저장 결과 1/}).click();await saved(page).getByRole('heading',{name:'저장된 약 정보 · 가상 가족 A',exact:true}).waitFor();
- assert.match(await saved(page).innerText(),/확인 전/);
- await saved(page).getByText('저장 원본·수정·정규화·후보 확인 구분',{exact:true}).click();const snapshot=JSON.parse(await saved(page).locator('pre').innerText());assert.equal(snapshot.original.current[0].record.dose_per_administration,'1');assert.equal(snapshot.edited.current[0].dose_per_administration,'2');assert.equal(snapshot.original.current[0].record.user_confirmed,false);assert.equal(snapshot.normalized.current[0].record.user_confirmed,true);pass('login -> owned family -> upload/edit/normalize/compare -> save -> original/edited/confirmed separately; intake still pending');
+ assert.match(await saved(page).innerText(),/확인 전/);assert.match(await saved(page).innerText(),/이전:/);assert.match(await saved(page).innerText(),/현재:/);
+ await saved(page).getByText('저장 원본·수정·정규화·후보 확인 구분',{exact:true}).click();const snapshot=JSON.parse(await saved(page).locator('pre').innerText());assert.equal(snapshot.original.current[0].record.dose_per_administration,approvedShape?'2':'1');assert.equal(snapshot.edited.current[0].dose_per_administration,approvedShape?'3':'2');assert.equal(snapshot.original.current[0].record.user_confirmed,false);assert.equal(snapshot.normalized.current[0].record.user_confirmed,true);pass('login -> owned family -> upload/edit/normalize/compare -> save -> original/edited/confirmed separately; intake still pending');
  await saved(page).getByRole('button',{name:'먹고 있음 저장',exact:true}).click();await saved(page).getByText('실제 복용: 먹고 있음 · 사용자 확인 완료',{exact:true}).waitFor();pass('explicit intake saved separately from extraction and comparison');
  const list=await context.request.get(base+'api/dev-account/families/'+fa+'/runs');const run=(await list.json()).runs[0].id;
  await open(page);await page.getByRole('button',{name:/^저장 결과 1/}).click();await saved(page).getByText('실제 복용: 먹고 있음 · 사용자 확인 완료',{exact:true}).waitFor();pass('page reload restores session and saved results from DB');

@@ -155,7 +155,27 @@ class RealMfdsClient(MfdsClient):
         payload = self._call_with_retry(key, cfg["url"], params)
         if payload is None:
             return []
-        items = [i for i in (parse_item(r, cfg) for r in _items(payload, cfg["items_path"])) if i]
+        try:
+            node = _dig(payload, cfg["items_path"])
+            header = _dig(payload, ["header"]) or _dig(payload, ["response", "header"])
+            if not isinstance(header, dict) or "resultCode" not in header:
+                raise ValueError()
+            if node is None or not isinstance(node, (list, dict)):
+                raise ValueError()
+            rows = _items(payload, cfg["items_path"])
+            if node and not rows:
+                raise ValueError()
+            items = [parse_item(row, cfg) for row in rows]
+            if any(item is None for item in items):
+                raise ValueError()
+            # A truncated first page cannot establish a unique product match.
+            body = _dig(payload, cfg["items_path"][:-1])
+            total = body.get("totalCount") if isinstance(body, dict) else None
+            if total is not None and (int(total) != len(rows)):
+                raise ValueError()
+        except (ValueError, TypeError, AttributeError):
+            self._fail(key, "응답 구조 또는 전체 후보 수를 확인할 수 없음 (자동 확정하지 않음)")
+            return []
         self._cache[ck] = items
         return items
 
