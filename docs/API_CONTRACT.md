@@ -446,3 +446,9 @@ Reconciliation 상태·reason_code 의미는 유지한다. 새 TASK D 화면만 
 로그인 사용자 소유 가족의 HIRA 목록·보류·비교·별도 복용 확인을 보존한다.
 사진 저장 계약은 유지한다. 입력·응답·DB v1→v2 추가 migration은
 [ACCOUNT_HIRA_STORAGE_V1.md](integration/ACCOUNT_HIRA_STORAGE_V1.md)를 따른다.
+
+## 개발용 저장 결과 삭제 추가 계약
+
+저장 사진/HIRA의 기존 경로에 소유권 검사가 있는 DELETE를 추가한다.
+선택 snapshot과 연결 복용 확인만 한 transaction에서 삭제하며 공통 약 정보 의미는 유지한다.
+범위·공유 임시 후보·백업 복원 시 제한은 [DELETION_BACKUP_REVIEW.md](integration/DELETION_BACKUP_REVIEW.md)를 따른다.

@@ -9,7 +9,7 @@ import { medicationTimeline } from './timeline';
 import type { MedicationRecord } from './types';
 import { labels, productName } from './types';
 
-type Props={familyMemberId:string;familyLabel:string;sourceType:MedicationRecord['source_type'];sourceLabel:string;recordDate:string;file:File|null;uploaded?:boolean;account?:boolean};
+type Props={familyMemberId:string;familyLabel:string;sourceType:MedicationRecord['source_type'];sourceLabel:string;recordDate:string;file:File|null;uploaded?:boolean;account?:boolean;deletedRunId?:string};
 type Side='previous'|'current';
 
 // Parent remounts this component on family/file/type/date changes. Within that
@@ -71,6 +71,7 @@ export function PhotoWorkflow(props:Props) {
   } catch(e) {if(id===generation.current&&!controller.signal.aborted) setError(e instanceof Error?e.message:'로컬 처리 실패');}
   finally {if(id===generation.current) setBusy(false);}
  }
+ useEffect(()=>{if(props.deletedRunId&&response?.account_run_id===props.deletedRunId)reset();},[props.deletedRunId,response?.account_run_id]);
  const canProcess=reviews.previous?.phase==='ready'&&reviews.current?.phase==='ready';
  return <section className="photo-workflow" aria-label={props.uploaded?'사진 업로드 전체 연결':'사진 Mock 전체 연결'}>
   <h2>{props.uploaded?'사진 업로드 · 가짜 AI 연결 검사':'사진 Mock 전체 연결 검증'}</h2>
@@ -87,7 +88,7 @@ export function PhotoWorkflow(props:Props) {
   <button type="button" disabled={!canProcess||busy} onClick={()=>process(false)}>수정 후보 B 정규화 미리보기</button>
   {busy&&<p role="status">로컬 정규화·비교 처리 중… <button onClick={invalidate}>사진 처리 취소</button></p>}
   {error&&<p role="alert">{error} 같은 버튼으로 재시도할 수 있습니다.</p>}
-  {response&&<section aria-label="사진 처리 결과">
+  {response&&(!props.deletedRunId||response.account_run_id!==props.deletedRunId)&&<section aria-label="사진 처리 결과">
    <h3>사진 처리 결과 · {response.stage==='held'?'비교 보류':response.stage==='normalized'?'정규화 검토':'비교 완료'}</h3>
    <p>{props.account?'LOCAL_MOCK · 실제 AI/식약처 조회 없음 · 명시적으로 저장한 결과만 저장 목록에서 다시 볼 수 있습니다.':'LOCAL_MOCK · 실제 AI/식약처 조회 없음 · 새로고침하면 사라집니다.'}</p>
    {props.account&&response.stage==='compared'&&<button disabled={busy} onClick={save}>확인한 결과와 복용 선택 저장</button>}

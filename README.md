@@ -55,3 +55,8 @@
 개발용 계정에서 [HIRA 결과 저장·재조회](docs/integration/ACCOUNT_HIRA_STORAGE_V1.md)도
 지원합니다. 가족별 사진/HIRA 목록은 분리되며 비교 보류와 정상 0건, 별도 복용 확인을 보존합니다.
 SQLite v1은 기존 자료를 유지하는 v2 추가 마이그레이션을 적용합니다. 가상 자료 전용입니다.
+
+저장 상세에서 사진/HIRA 결과를 확인 후 삭제할 수 있습니다.
+[삭제 범위·가상 DB 백업/복원](docs/integration/DELETION_BACKUP_REVIEW.md),
+[5~20명 가상 자료 사용자 시험 안내](docs/testing/USER_TEST_KIT.md)를 참고하세요.
+실제 사용자 참여 시험과 운영 보안·백업·삭제 정책은 아직 완료하지 않았습니다.

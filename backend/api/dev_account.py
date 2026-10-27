@@ -262,3 +262,21 @@ def verify(family: UUID,run_id: UUID,body: Choice,user: User):
         run=owned_run(db,family,run_id,user,saved=True)
         confirm_intake(db,run,user,[body])
     return {'updated':True}
+
+
+@router.delete('/families/{family}/runs/{run_id}')
+def delete_saved_photo(family: UUID,run_id: UUID,user: User):
+    with database() as db:
+        run=owned_run(db,family,run_id,user,saved=True)
+        reviews=json.loads(run['reviews'])
+        candidates={reviews[side]['document_id'] for side in ('previous','current')}
+        db.execute('DELETE FROM intake WHERE run_id=?',(str(run_id),))
+        db.execute('DELETE FROM runs WHERE id=?',(str(run_id),))
+        # Documents can be shared by preview/final/other saved runs. Preserve references.
+        referenced=set()
+        for row in db.execute('SELECT reviews FROM runs WHERE family_id=?',(str(family),)):
+            body=json.loads(row['reviews'])
+            referenced.update(body[side]['document_id'] for side in ('previous','current'))
+        for document in candidates-referenced:
+            db.execute('DELETE FROM documents WHERE id=? AND family_id=?',(document,str(family)))
+    return {'deleted':True,'source_type':'PHOTO','run_id':str(run_id)}

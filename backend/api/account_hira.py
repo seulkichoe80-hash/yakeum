@@ -88,3 +88,12 @@ def verify(family: UUID,run_id: UUID,body: Choice,user: User):
         run=owned_hira(db,family,run_id,user,saved=True)
         write_choices(db,run,user,[body])
     return {'updated':True}
+
+
+@router.delete('/hira-runs/{run_id}')
+def delete_saved_hira(family: UUID,run_id: UUID,user: User):
+    with database() as db:
+        owned_hira(db,family,run_id,user,saved=True)
+        db.execute('DELETE FROM hira_intake WHERE run_id=?',(str(run_id),))
+        db.execute('DELETE FROM hira_runs WHERE id=?',(str(run_id),))
+    return {'deleted':True,'source_type':'HIRA','run_id':str(run_id)}
