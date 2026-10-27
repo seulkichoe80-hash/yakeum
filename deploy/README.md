@@ -59,3 +59,71 @@ CA는 BuildKit 임시 mount이며 이미지에 복사하지 않는다. TLS 검�
 .github/workflows/mvp-validation.yml은 현재 작업 브랜치 push 또는 수동 실행에서 가상 검사만 수행한다.
 API 키/외부 분석/배포 단계는 없다. GitHub 실행 여부·성공은 로컬 통과와 별도 확인해야 한다.
 main/develop에 workflow를 복사하거나 병합하지 않는다.
+
+## 외부 가상 시연 권장 구성
+
+권장: **단일 Docker 컨테이너 + 영속 /data 볼륨 + HTTPS/초대 대상 접근 제한을 제공하는 앞단**.
+React 정적 파일과 FastAPI가 같은 Origin을 쓰므로 쿠키/CSRF/CORS 구성이 단순하다.
+무료 여부는 미확인이다. 호스팅은 단일 인스턴스와 영속 디스크를 지원하는 상품을 선택해야 한다.
+Vercel/GitHub Pages 같은 정적 호스팅만으로는 현재 Python API/SQLite 저장을 제공할 수 없다.
+자동 확장·다중 인스턴스·서버리스 임시 디스크는 현재 구성에 적합하지 않다.
+
+외부 게시 전에 사용자가 준비할 것:
+
+1. 컨테이너 호스팅 계정 또는 VM 계정·결제/예산 확인. 현재 실제 서비스 생성/신청하지 않음.
+2. 플랫폼 HTTPS 주소(또는 소유 도메인), /data 영속 디스크, 단일 인스턴스/worker 1.
+3. 호스팅 앞단의 초대 사용자 접근 제한. 앱의 개발용 가입·로그인은 공개 운영 인증을 대신하지 않음.
+4. 가상 자료 전용 안내, 시연 후 가상 계정·자료 삭제/보관 기한 결정. 운영 보관 정책으로 확정한 것이 아님.
+5. 외부 공개 별도 승인 후 아래 Origin/Cookie/시연 설정을 지정하고 HTTPS·권한을 실제 검증.
+
+| 환경변수 | 내부 HTTP 예행연습 | 승인 후 외부 HTTPS 가상 시연 |
+|---|---|---|
+| YAKEUM_EXTERNAL_DEMO | 0 | 1 |
+| YAKEUM_APP_MODE | development | development(운영 인증 아님) |
+| YAKEUM_SERVE_FRONTEND | 1 | 1 |
+| YAKEUM_DEV_ACCOUNT_ENABLED | 1 | 1 |
+| YAKEUM_DEV_ORIGIN | 정확한 http://127.0.0.1:포트 | 실제 https://호스트[:포트], 끝 / 없이 |
+| YAKEUM_DEV_COOKIE_SECURE | 0 | 1 |
+| YAKEUM_DEV_DB_PATH | /data/yakeum.sqlite3 | 영속 /data/yakeum.sqlite3 |
+| YAKEUM_GEMINI_LIVE_ENABLED | 0 | 0 |
+| YAKEUM_GEMINI_LIVE_MAX_REQUESTS | 1 | 1(비활성 상태의 기본 한도) |
+
+외부 시연 flag=1이면 시작 시 HTTPS Origin·보안 쿠키·위 설정과 소스 밖 DB 경로를 검사한다.
+이 검사는 실제 HTTPS 인증서·영속 볼륨·앞단 접근 제어를 만들어 주거나 검증하지 않는다.
+/api 응답은 Cache-Control:no-store, 전체 응답에 nosniff/no-referrer를 지정한다.
+이미 브라우저/프록시에 저장된 과거 캐시를 소급 삭제하는 기능은 아니다.
+
+SQLite 파일은 암호화된 운영 DB가 아니다. 같은 볼륨이면 재시작 뒤 유지되지만 디스크 삭제 시 사라진다.
+현재 scrypt/세션/가족 소유권은 개발용 검사 범위이며 운영 인증·복구·백업 자동화 완료가 아니다.
+백업/복원은 docs/integration/DELETION_BACKUP_REVIEW.md의 가상 DB 절차를 사용한다.
+
+### Compose로 내부 예행연습 (외부 공개 없음)
+
+먼저 위 방법으로 `yakeum-synthetic:local` 이미지를 빌드한다.
+
+```bash
+docker compose -f deploy/compose.yaml config --quiet
+docker compose -f deploy/compose.yaml up -d
+curl --fail http://127.0.0.1:8080/api/health
+# 종료만: 볼륨을 삭제하는 -v 옵션은 쓰지 않는다.
+docker compose -f deploy/compose.yaml down
+```
+
+Compose는 loopback 바인딩·비root 이미지·읽기 전용 루트·/tmp 임시 디스크·권한 축소·영속 볼륨을 사용한다.
+실제 Gemini/MFDS 키를 빈 값으로 고정하고 호스트의 실제 키를 전달하지 않는다.
+실제 Gemini 시험은 이 외부 Mock 시연 구성과 분리해 별도 승인된 단일 프로세스에서만 수행한다.
+Compose 변수 YAKEUM_DEMO_PORT를 바꾸면 YAKEUM_DEMO_ORIGIN도 같은 포트로 맞춘다.
+YAKEUM_DEMO_IMAGE로 검증한 이미지 태그를 선택할 수 있다.
+HTTPS 앞단 연결은 호스팅 환경에 맞게 별도 구성하며 이 파일만 실행해서 공개 링크가 생기지 않는다.
+
+### 외부 공개 직전 체크리스트 (아직 미검증)
+
+- HTTPS 인증서와 정확한 Origin, Secure/HttpOnly/SameSite 쿠키, 앞단 접근 제한 확인.
+- 가상 계정만 허용하고 사용자 2명·가족 여러 명의 조회/수정/삭제 권한 확인.
+- 사진/HIRA 정상·보류·저장·재조회·삭제 및 재시작 후 복원 확인.
+- 업로드 크기/응답 시간/서버 디스크 용량/동시 사용자 제한을 앞단과 함께 확인.
+- 앱/프록시/호스팅 로그에 URL query, 쿠키, Authorization, 사진, 약 정보가 남지 않도록 설정·검사.
+- SQLite 파일/백업은 공개 경로에 두지 않고 별도 암호화·접근 권한/보관 기간을 결정.
+- API 키·실제 데이터 없는 이미지인지 확인. 실제 건강정보 운영 사용은 계속 금지.
+
+현재는 코드/컨테이너의 로컬 예행연습까지만 검증했으며 호스팅 계정·HTTPS·외부 접근은 미검증이다.

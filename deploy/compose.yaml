@@ -1,0 +1,31 @@
+# Internal rehearsal only. Does not publish an external URL or configure HTTPS/access control.
+name: yakeum-synthetic-demo
+services:
+  app:
+    image: ${YAKEUM_DEMO_IMAGE:-yakeum-synthetic:local}
+    ports:
+      - "127.0.0.1:${YAKEUM_DEMO_PORT:-8080}:8080"
+    environment:
+      YAKEUM_APP_MODE: development
+      YAKEUM_SERVE_FRONTEND: "1"
+      YAKEUM_DEV_ACCOUNT_ENABLED: "1"
+      YAKEUM_DEV_ORIGIN: ${YAKEUM_DEMO_ORIGIN:-http://127.0.0.1:8080}
+      YAKEUM_DEV_COOKIE_SECURE: ${YAKEUM_DEMO_SECURE_COOKIE:-0}
+      YAKEUM_EXTERNAL_DEMO: ${YAKEUM_EXTERNAL_DEMO:-0}
+      YAKEUM_DEV_DB_PATH: /data/yakeum.sqlite3
+      YAKEUM_GEMINI_LIVE_ENABLED: "0"
+      YAKEUM_GEMINI_LIVE_MAX_REQUESTS: "1"
+      GEMINI_API_KEY: ""
+      MFDS_API_KEY: ""
+    volumes:
+      - synthetic-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+    stop_grace_period: 20s
+volumes:
+  synthetic-data:

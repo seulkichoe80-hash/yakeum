@@ -644,6 +644,6 @@ function App() {
 
 function Root() {
  const [account,setAccount]=useState(false);
- return <><div className="app-mode-switch"><button onClick={()=>setAccount(v=>!v)}>{account?'가상 시연 화면으로 돌아가기':'개발용 로그인·저장 열기'}</button></div>{account?<AccountWorkspace/>:<App/>}</>;
+ return <><div className="demo-scope-notice" role="note" aria-label="가상 시연 안내">가상 자료 전용 MVP · 실제 건강정보나 실제 약봉투를 입력하지 마세요. 기본 추출·식약처 매칭은 Mock입니다. Gemini는 별도 승인된 합성 이미지 시험만 지원하며, 개발용 로그인·저장은 운영 서비스가 아닙니다.</div><div className="app-mode-switch"><button onClick={()=>setAccount(v=>!v)}>{account?'가상 시연 화면으로 돌아가기':'개발용 로그인·저장 열기'}</button></div>{account?<AccountWorkspace/>:<App/>}</>;
 }
 createRoot(document.getElementById('root')!).render(<React.StrictMode><Root /></React.StrictMode>);

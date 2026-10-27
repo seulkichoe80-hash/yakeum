@@ -70,3 +70,6 @@ Mock/Gemini 요청 경로를 구분합니다. 기본은 Mock이며 실제 분석
 [이번 통합 검증 결과](docs/integration/DEADLINE_VALIDATION_20261027.md)를 별도로 기록했습니다.
 
 [Gemini 형태 가상 응답의 브라우저 검증](docs/integration/GEMINI_REPLAY_MFDS_VALIDATION.md)과 [식약처 실제 연결 준비·미확정 명세](docs/integration/MFDS_CONNECTION_PREPARATION.md)를 기록했습니다. 실제 식약처 연결은 아직 Mock입니다.
+
+[외부 가상 시연 배포 준비·검증 결과](docs/integration/EXTERNAL_DEMO_PREPARATION.md):
+Compose 예행연습, HTTPS 설정 사전 검사, 가상 자료 안내를 준비했습니다. 외부 공개·운영 배포는 하지 않았습니다.
