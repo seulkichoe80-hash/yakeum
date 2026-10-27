@@ -439,3 +439,10 @@ Reconciliation 상태·reason_code 의미는 유지한다. 새 TASK D 화면만 
 분리한다. 기존 공통 약 정보와 사진 Mock/업로드·HIRA 계약은 유지한다.
 [DEV_ACCOUNT_STORAGE_V1.md](integration/DEV_ACCOUNT_STORAGE_V1.md)의 소유권·초안/확인/복용 구분을 따른다.
 명시적 개발 설정에서만 사용하며 운영 인증·저장 계약으로 확정한 것은 아니다.
+
+## 개발용 계정 HIRA 저장 추가 계약
+
+기존 HIRA v2 결과를 변경하지 않고 `DEV_ACCOUNT_HIRA_V1` envelope에 담아
+로그인 사용자 소유 가족의 HIRA 목록·보류·비교·별도 복용 확인을 보존한다.
+사진 저장 계약은 유지한다. 입력·응답·DB v1→v2 추가 migration은
+[ACCOUNT_HIRA_STORAGE_V1.md](integration/ACCOUNT_HIRA_STORAGE_V1.md)를 따른다.

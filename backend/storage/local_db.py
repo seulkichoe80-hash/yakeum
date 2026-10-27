@@ -15,6 +15,11 @@ CREATE TABLE IF NOT EXISTS intake(run_id TEXT NOT NULL REFERENCES runs(id), reco
 CREATE TABLE IF NOT EXISTS attempts(key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires REAL NOT NULL);
 '''
 
+HIRA_SCHEMA = '''
+CREATE TABLE IF NOT EXISTS hira_runs(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), result TEXT NOT NULL, saved INTEGER NOT NULL DEFAULT 0, created TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS hira_intake(run_id TEXT NOT NULL REFERENCES hira_runs(id), record_id TEXT NOT NULL, state TEXT NOT NULL, PRIMARY KEY(run_id,record_id));
+'''
+
 
 def config():
     if os.environ.get('YAKEUM_DEV_ACCOUNT_ENABLED') != '1' or os.environ.get('YAKEUM_APP_MODE', 'development') != 'development':
@@ -39,10 +44,10 @@ def database():
     try:
         connection.execute('PRAGMA foreign_keys=ON')
         version = connection.execute('PRAGMA user_version').fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, 2):
             raise HTTPException(503, '지원하지 않는 개발 DB 버전입니다. 이전 파일을 보존하고 설정을 확인해 주세요.')
-        connection.executescript(SCHEMA)
-        connection.execute('PRAGMA user_version=1')
+        # Additive v1 -> v2 migration, committed atomically with schema version.
+        connection.executescript('BEGIN IMMEDIATE;\n' + SCHEMA + HIRA_SCHEMA + '\nPRAGMA user_version=2;\nCOMMIT;')
         connection.execute('BEGIN IMMEDIATE')
         yield connection
         connection.commit()

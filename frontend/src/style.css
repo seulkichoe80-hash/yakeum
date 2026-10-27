@@ -58,3 +58,8 @@ main details pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-
 /* Keep the explicit development-mode switch clear of the fixed sidebar. */
 .app-mode-switch{position:relative;z-index:1;height:58px;padding:8px;background:#eef7f5}
 .shell>aside{top:58px}
+
+.account-hira{min-width:0}
+.account-hira>label{display:grid;gap:6px;margin:12px 0}
+.account-hira input[type=file]{width:100%;max-width:100%}
+.account-hira button{max-width:100%;overflow-wrap:anywhere}

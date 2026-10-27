@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { accountRequest, clearAccount } from './accountApi';
+import { AccountHiraPanel } from './AccountHiraPanel';
 import { PhotoWorkflow } from './PhotoWorkflow';
 import { labels, productName, type CurrentIntakeState, type MedicationRecord } from './types';
 import { intakeChoiceLabels, verificationLabels } from './currentIntakeUi';
@@ -48,7 +49,8 @@ function FamilyWorkspace({family}:{family:Family}){
   <label>현재 기준일<input type="date" value={date} onChange={e=>{setDate(e.target.value);reset();}}/></label>
   <label>사진 자료 유형<select value={source} onChange={e=>{setSource(e.target.value as typeof source);reset();}}><option value="MEDICINE_BAG">약봉투</option><option value="PRESCRIPTION">처방전</option><option value="SUPPLEMENT">건강기능식품</option></select></label>
   <PhotoWorkflow key={epoch} uploaded account familyMemberId={family.id} familyLabel={family.name} sourceType={source} sourceLabel="가상 사진" recordDate={date} file={file}/>
-  <h3>이 가족의 저장 목록</h3><button onClick={loadList}>저장 목록 새로고침</button>{error&&<p role="alert">{error}</p>}
+  <AccountHiraPanel family={family.id} name={family.name}/>
+  <h3>이 가족의 사진 저장 목록</h3><button onClick={loadList}>저장 목록 새로고침</button>{error&&<p role="alert">{error}</p>}
   {runs.length===0&&<p>저장된 결과가 없습니다.</p>}{runs.map((r,i)=><button key={r.id} onClick={()=>detail(r.id)}>저장 결과 {i+1} · {r.created}</button>)}
   {saved&&<section aria-label="저장된 약 정보"><h3>저장된 약 정보 · {family.name}</h3>
    <details><summary>저장 원본·수정·정규화·후보 확인 구분</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({original:saved.result.original_results,edited:saved.result.edited_records,reviews:saved.reviews,normalized:saved.result.normalization_results},null,2)}</pre></details>

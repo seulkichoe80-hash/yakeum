@@ -18,7 +18,7 @@
 
 기존 사진 Mock·비로그인 합성 이미지 업로드·HIRA 비교는 그대로다.
 이전 시연 경로는 DB 계정 자료를 읽지 못하며 계속 가상 자료만 처리한다.
-**HIRA 결과의 계정별 저장 UI는 이번에 추가하지 않았다.** 기존 HIRA 비교 흐름은 유지한다.
+초기 사진 단계에는 HIRA 계정 저장이 없었다. 후속 [HIRA 저장 v1](ACCOUNT_HIRA_STORAGE_V1.md)에서 별도 목록과 보류 저장을 추가했으며 기존 HIRA 비교도 유지한다.
 실제 Gemini/MFDS 호출/실제 사진 인식/운영 배포는 실행하지 않았다.
 
 ## 실행 설정 — 개발 전용
@@ -68,7 +68,7 @@ pnpm --dir frontend dev --port 4192 --strictPort
 
 ## 저장 구분과 정책
 
-SQLite schema version 1, 외래 키 사용, 요청별 transaction, DB 권한 0600/새 디렉터리 0700.
+초기 SQLite schema version 1에서 후속 HIRA 저장의 추가 migration으로 version 2를 사용한다. 외래 키 사용, 요청별 transaction, DB 권한 0600/새 디렉터리 0700.
 지원하지 않는 DB 버전은 보존한 채 503으로 거부하며 임의 초기화하지 않는다.
 테이블 생성은 재실행 가능하다. 이후 schema 변경 시 migration을 추가해야 한다.
 
