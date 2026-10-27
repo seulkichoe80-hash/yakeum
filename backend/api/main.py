@@ -192,3 +192,8 @@ def _validate_xlsx_structure(path: Path) -> None:
         raise
     except Exception as error:  # openpyxl emits several format-specific errors
         raise UploadRejected(400, "손상되었거나 유효하지 않은 XLSX 파일입니다.") from error
+
+
+# Register after all API routes so static serving cannot shadow them.
+from backend.api.web_runtime import configure_web
+configure_web(app)

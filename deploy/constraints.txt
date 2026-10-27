@@ -1,0 +1,4 @@
+# Direct packages that were previously unpinned; versions validated in cloud.
+openpyxl==3.1.5
+PyYAML==6.0.3
+pytest==9.1.1

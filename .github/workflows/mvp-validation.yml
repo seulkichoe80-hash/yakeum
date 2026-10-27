@@ -1,0 +1,62 @@
+name: Synthetic MVP checks
+on:
+  push:
+    branches: [codex/mvp-completion]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mvp-checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  offline-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install and test without external medical APIs
+        run: |
+          python -m pip install -c deploy/constraints.txt -r backend/requirements.txt
+          python -m pytest backend -q
+          npm install --global pnpm@11.25.0
+          pnpm --dir frontend install --frozen-lockfile
+          pnpm --dir frontend test
+          pnpm --dir frontend build
+      - name: Browser dependencies
+        run: |
+          npm install --prefix "$RUNNER_TEMP/yakeum-browser" playwright@1.62.1
+          "$RUNNER_TEMP/yakeum-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Same-origin synthetic flow
+        env:
+          YAKEUM_SERVE_FRONTEND: '1'
+          YAKEUM_DEV_ACCOUNT_ENABLED: '1'
+          YAKEUM_APP_MODE: development
+          YAKEUM_DEV_ORIGIN: http://127.0.0.1:8080
+          YAKEUM_DEV_DB_PATH: ${{ runner.temp }}/yakeum/synthetic.sqlite3
+          YAKEUM_GEMINI_LIVE_ENABLED: '0'
+          YAKEUM_TEST_URL: http://127.0.0.1:8080/
+          YAKEUM_TEST_PYTHON: python
+          YAKEUM_PLAYWRIGHT_MODULE: ${{ runner.temp }}/yakeum-browser/node_modules/playwright
+        run: |
+          export YAKEUM_BROWSER_EXECUTABLE="$(node -e 'process.stdout.write(require(process.env.YAKEUM_PLAYWRIGHT_MODULE).chromium.executablePath())')"
+          python -m uvicorn backend.api.main:app --host 127.0.0.1 --port 8080 --no-access-log > "$RUNNER_TEMP/yakeum-server.log" 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid"' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/api/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8080/api/health
+          node frontend/tests/account-delete.browser.cjs
+          node frontend/tests/account-storage.browser.cjs
+          node frontend/tests/account-hira.browser.cjs
+          node frontend/tests/photo-upload.browser.cjs
+          node frontend/tests/photo-hira-integration.browser.cjs

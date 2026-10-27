@@ -118,7 +118,7 @@ def login(body: Credentials, request: Request, response: Response):
         if old: db.execute('DELETE FROM sessions WHERE token_hash=?',(digest(old),))
         db.execute('DELETE FROM sessions WHERE expires<=?',(time(),))
         db.execute('INSERT INTO sessions VALUES(?,?,?,?)',(digest(token),row['id'],csrf,time()+SESSION_SECONDS))
-    response.set_cookie(COOKIE,token,httponly=True,samesite='strict',secure=False,max_age=SESSION_SECONDS,path='/api/dev-account')
+    response.set_cookie(COOKIE,token,httponly=True,samesite='strict',secure=os.environ.get('YAKEUM_DEV_COOKIE_SECURE')=='1',max_age=SESSION_SECONDS,path='/api/dev-account')
     return {'username':row['username'],'csrf_token':csrf,'development_only':True,'response_version':VERSION}
 
 
@@ -130,7 +130,7 @@ def me(user: User):
 @router.post('/logout')
 def logout(user: User,response: Response):
     with database() as db: db.execute('DELETE FROM sessions WHERE token_hash=?',(user['token_hash'],))
-    response.delete_cookie(COOKIE,path='/api/dev-account',httponly=True,samesite='strict')
+    response.delete_cookie(COOKIE,path='/api/dev-account',httponly=True,samesite='strict',secure=os.environ.get('YAKEUM_DEV_COOKIE_SECURE')=='1')
     return {'logged_out':True}
 
 
