@@ -29,10 +29,17 @@ def validate_external_demo_settings(values=None):
         valid = False
     if not valid:
         raise RuntimeError('External synthetic demo requires one exact HTTPS origin.')
-    db = Path(values.get('YAKEUM_DEV_DB_PATH', ''))
-    checkout = Path(__file__).resolve().parents[2]
-    if not db.is_absolute() or db.resolve().is_relative_to(checkout):
-        raise RuntimeError('External synthetic demo database must be an absolute path outside source.')
+    backend=values.get('YAKEUM_STORAGE_BACKEND','sqlite')
+    if backend=='postgres':
+        from backend.storage.postgres_db import connection_settings
+        try:connection_settings(values)
+        except Exception:raise RuntimeError('External synthetic demo PostgreSQL settings are invalid.') from None
+    elif backend=='sqlite':
+        db = Path(values.get('YAKEUM_DEV_DB_PATH', ''))
+        checkout = Path(__file__).resolve().parents[2]
+        if not db.is_absolute() or db.resolve().is_relative_to(checkout):
+            raise RuntimeError('External synthetic demo database must be an absolute path outside source.')
+    else:raise RuntimeError('Unsupported synthetic demo storage backend.')
 
     username = values.get('YAKEUM_DEMO_GATE_USERNAME', '')
     password = values.get('YAKEUM_DEMO_GATE_PASSWORD', '')

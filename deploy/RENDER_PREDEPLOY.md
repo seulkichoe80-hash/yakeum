@@ -1,3 +1,5 @@
+> 이전 유료 검토 기록입니다. 현재 권장안은 [무료 Render + Supabase](FREE_DEPLOY.md)이며 유료 플랜/디스크를 선택하지 않습니다.
+
 # 추천: Render 유료 단일 Docker Web Service + 영속 디스크
 
 외부 공개 전 검토용. 서비스 생성·결제·Blueprint 연결은 아직 하지 않았다.

@@ -12,6 +12,19 @@ jobs:
   offline-integration:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_USER: synthetic
+          POSTGRES_PASSWORD: SYNTHETIC-ci-only-123
+          POSTGRES_DB: yakeum_synthetic
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U synthetic -d yakeum_synthetic"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      YAKEUM_TEST_POSTGRES_URL: postgresql://synthetic:SYNTHETIC-ci-only-123@127.0.0.1:5432/yakeum_synthetic
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:

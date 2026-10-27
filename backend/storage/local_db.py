@@ -24,6 +24,12 @@ CREATE TABLE IF NOT EXISTS hira_intake(run_id TEXT NOT NULL REFERENCES hira_runs
 def config():
     if os.environ.get('YAKEUM_DEV_ACCOUNT_ENABLED') != '1' or os.environ.get('YAKEUM_APP_MODE', 'development') != 'development':
         raise HTTPException(503, '개발용 로그인·저장이 꺼져 있습니다. 운영 인증 기능은 아직 제공하지 않습니다.')
+    backend=os.environ.get('YAKEUM_STORAGE_BACKEND','sqlite')
+    if backend=='postgres':
+        from backend.storage.postgres_db import connection_settings
+        connection_settings()
+        return None
+    if backend!='sqlite':raise HTTPException(503,'지원하지 않는 시연 저장 방식입니다.')
     location = os.environ.get('YAKEUM_DEV_DB_PATH', '')
     if not location or not Path(location).is_absolute():
         raise HTTPException(503, '개발용 DB의 절대 경로 설정이 필요합니다.')
@@ -36,6 +42,10 @@ def config():
 @contextmanager
 def database():
     path = config()
+    if path is None:
+        from backend.storage.postgres_db import postgres_database
+        with postgres_database() as connection:yield connection
+        return
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     # SQLite creates no credential-bearing config file. Keep DB outside Git.
     connection = sqlite3.connect(path, timeout=10)

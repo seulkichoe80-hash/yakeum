@@ -58,7 +58,9 @@ def copy_database(source,output,*,synthetic_only=False):
 
 
 def backup(output,*,synthetic_only=False):
-    return copy_database(config(),output,synthetic_only=synthetic_only)
+    source=config()
+    if source is None:raise BackupError('PostgreSQL은 SQLite 백업 명령을 사용할 수 없습니다.')
+    return copy_database(source,output,synthetic_only=synthetic_only)
 
 
 def restore(source,output,*,synthetic_only=False):

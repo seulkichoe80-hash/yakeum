@@ -77,3 +77,8 @@ Compose 예행연습, HTTPS 설정 사전 검사, 가상 자료 안내를 준비
 [추천 호스팅: Render 배포 직전 안내](deploy/RENDER_PREDEPLOY.md):
 유료 단일 서버·영속 디스크와 공유 비밀번호 입구를 준비했습니다.
 현재 공식 요금·호스팅 적용은 미검증이며 외부 배포는 별도 승인 후 진행합니다.
+
+현재 배포 준비안은 **Render Free + Supabase Free PostgreSQL**입니다.
+[무료 가입·연결 순서와 중지 조건 확인](deploy/FREE_DEPLOY.md),
+[SQLite/가상 PostgreSQL 검증 결과](docs/integration/FREE_POSTGRES_VALIDATION.md)를 참고하세요.
+실제 Supabase 연결·외부 배포·현재 무료 조건 확인은 아직 완료하지 않았습니다.

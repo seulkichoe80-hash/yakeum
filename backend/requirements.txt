@@ -8,3 +8,5 @@ python-multipart==0.0.32
 uvicorn==0.54.0
 
 Pillow==12.1.1
+
+psycopg[binary]==3.2.13

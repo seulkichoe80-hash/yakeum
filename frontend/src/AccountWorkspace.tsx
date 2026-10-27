@@ -17,7 +17,7 @@ export function AccountWorkspace(){
  async function login(register=false){setBusy(true);setError('');try{if(register)await accountRequest('/register','POST',{username,password});const v=await accountRequest('/login','POST',{username,password});setSession(v);setPassword('');}catch(e){setError(e instanceof Error?e.message:'로그인 실패');}finally{setBusy(false);}}
  async function logout(){setBusy(true);setError('');try{await accountRequest('/logout','POST');setSession(null);clearAccount();setPassword('');}catch(e){setError(e instanceof Error?e.message:'로그아웃 실패');}finally{setBusy(false);}}
  return <main className="account-workspace" style={{maxWidth:1000,margin:'20px auto',padding:20}}>
-  <h1>개발용 로그인·저장</h1><p className="notice">가상 사용자·가상 자료 전용 · 개발용 SQLite · 기본 추출/공식 조회는 Mock. Gemini는 별도 승인된 합성 이미지 시험 경로입니다. 운영용 인증·저장 기능은 아닙니다.</p>
+  <h1>개발용 로그인·저장</h1><p className="notice">가상 사용자·가상 자료 전용 · 개발용 데이터베이스 · 기본 추출/공식 조회는 Mock. Gemini는 별도 승인된 합성 이미지 시험 경로입니다. 운영용 인증·저장 기능은 아닙니다.</p>
   {error&&<p role="alert">{error}</p>}
   {checking?<p role="status">로그인 확인 중…</p>:session?<><p>로그인: {session.username} <button disabled={busy} onClick={logout}>로그아웃</button></p><Families key={session.username}/></>:<form onSubmit={e=>{e.preventDefault();void login();}}>
    <label>가상 계정 아이디<input autoComplete="username" pattern="[a-z0-9_-]{3,40}" required value={username} onChange={e=>setUsername(e.target.value)}/></label>
