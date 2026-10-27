@@ -73,3 +73,7 @@ Mock/Gemini 요청 경로를 구분합니다. 기본은 Mock이며 실제 분석
 
 [외부 가상 시연 배포 준비·검증 결과](docs/integration/EXTERNAL_DEMO_PREPARATION.md):
 Compose 예행연습, HTTPS 설정 사전 검사, 가상 자료 안내를 준비했습니다. 외부 공개·운영 배포는 하지 않았습니다.
+
+[추천 호스팅: Render 배포 직전 안내](deploy/RENDER_PREDEPLOY.md):
+유료 단일 서버·영속 디스크와 공유 비밀번호 입구를 준비했습니다.
+현재 공식 요금·호스팅 적용은 미검증이며 외부 배포는 별도 승인 후 진행합니다.

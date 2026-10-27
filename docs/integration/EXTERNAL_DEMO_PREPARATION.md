@@ -65,3 +65,32 @@
 4. 식약처 공개 가이드 확보 또는 www.data.go.kr 문서 도메인 허용.
 5. 공식 데이터셋 확인 후 사용자가 활용 승인/키·요금/할당량을 확인. 신청·실조회는 별도 지시 전 미실행.
 6. 키는 채팅/Git가 아니라 해당 호스팅의 비밀 설정에만 입력. Mock 시연에는 Gemini/MFDS 키가 필요 없다.
+
+## 호스팅 추천·공유 입구 후속
+
+시작 SHA 463acd53c494a0b159baff57e03134242c8371db 이후의 배포 직전 준비는
+[Render 전용 안내](../../deploy/RENDER_PREDEPLOY.md)를 따른다.
+이제 외부 flag=1에서는 공유 입구 아이디·최소 20자 비밀번호도 필수다.
+화면/API/문서 전부 입구로 보호하고 최소 health만 예외로 둔다. 앱 계정/가족 권한은 별도 유지한다.
+위 초기 검토의 '접근 제한은 별도 준비' 중 작은 초대 시연용 입구 부분을 구현했으며,
+호스팅 WAF/개별 초대/시도 제한·실제 TLS 설정 완료를 뜻하지 않는다.
+
+### 후속 실제 검사 결과
+
+- 백엔드 전체 **374 passed + 5 subtests passed**, 기존 Starlette 경고 1개.
+- 프론트 기존 7개 script와 strict TypeScript/Vite build 통과(48 modules).
+- Render YAML은 로컬 YAML 파싱/단일 인스턴스/디스크/키 비움/수동 배포 의도 검사만 통과.
+  공식 Blueprint schema 검증·계정 적용은 미실행이라 적용 가능한 파일이라고 확정하지 않는다.
+- 새 demo-gate.browser.cjs: 익명 /·/docs·/openapi.json·가족 API 401, 잘못된 입구 비밀번호 401,
+  올바른 입구 후 화면/계정 로그인 폼 표시, 입구 통과 후에도 앱 세션 없으면 401 확인.
+  로컬 HTTP 검사이며 실제 HTTPS 인증서 검증을 대신하지 않음.
+- 별도 HTTPS base_url TestClient에서 입구 + 앱 로그인 + Secure/HttpOnly/SameSite 쿠키 + CSRF 확인.
+  base_url을 이용한 의미 검사이지 실제 TLS handshake가 아님.
+- 최종 Docker 이미지 build 및 로컬 Compose의 기존 브라우저 5개 스크립트 모두 통과:
+  account-delete 13, account-storage 7, account-hira 10, photo-upload 10, photo-hira-integration 13개 묶음.
+  정상/보류/별도 복용/저장/재조회/삭제/타인·타가족 거부/취소/늦은 응답·모바일 폭 검사 포함.
+- 같은 최종 컨테이너 재시작 전후 DB 내용 집계 해시 일치. 실제 API 키 없음/실호출 꺼짐 확인.
+- 실제 외부 배포/공개, 결제/서비스 생성, Gemini 분석/모델 목록/MFDS 호출 모두 미실행(각 0회).
+  기존 Gemini 합성 1회 성공 기록과 현재 Mock 시연 범위는 구분한다.
+- 실제 TLS·호스팅 디스크 권한·요금/현행 플랜·공식 스키마·외부 주소 권한/로그는 배포 승인 후 검증.
+- 현재 SQLite/계정은 가상 자료 개발용이며 실제 건강정보의 운영 서비스가 아님.

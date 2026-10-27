@@ -127,3 +127,14 @@ HTTPS 앞단 연결은 호스팅 환경에 맞게 별도 구성하며 이 파일
 - API 키·실제 데이터 없는 이미지인지 확인. 실제 건강정보 운영 사용은 계속 금지.
 
 현재는 코드/컨테이너의 로컬 예행연습까지만 검증했으며 호스팅 계정·HTTPS·외부 접근은 미검증이다.
+
+## 구체적 호스팅 추천과 외부 입구
+
+[Render 배포 직전 안내·비용 비교·수동 설정](RENDER_PREDEPLOY.md)을 추가했다.
+Render 유료 단일 Web Service + 영속 디스크를 추천하지만 공식 가격/Blueprint 스키마 접속이 차단돼
+`render.yaml`은 미배포 초안이다. 현재 요금과 UI 검증 후 별도 승인으로만 적용한다.
+외부 시연 flag=1에는 이제 YAKEUM_DEMO_GATE_USERNAME과 최소 20자의
+YAKEUM_DEMO_GATE_PASSWORD가 필수다. 공유 입구 없이 화면/API/문서를 공개하지 않는다.
+/api/health는 최소 liveness만 공개하며 개별 가족 권한을 부여하지 않는다.
+Compose 내부 예행연습(flag=0)은 기존대로 동작한다. 외부 flag=1을 Compose에 적용하려면
+두 입구 변수를 컨테이너에 별도 전달해야 하므로 기존 파일을 그대로 외부용으로 사용하지 않는다.

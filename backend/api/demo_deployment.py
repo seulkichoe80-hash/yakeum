@@ -33,3 +33,8 @@ def validate_external_demo_settings(values=None):
     checkout = Path(__file__).resolve().parents[2]
     if not db.is_absolute() or db.resolve().is_relative_to(checkout):
         raise RuntimeError('External synthetic demo database must be an absolute path outside source.')
+
+    username = values.get('YAKEUM_DEMO_GATE_USERNAME', '')
+    password = values.get('YAKEUM_DEMO_GATE_PASSWORD', '')
+    if not username or ':' in username or len(password) < 20:
+        raise RuntimeError('External synthetic demo requires a gate username and a password of at least 20 characters.')

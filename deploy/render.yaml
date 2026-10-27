@@ -1,0 +1,45 @@
+# UNDEPLOYED DRAFT. Official Render schema/account pricing must be checked before applying.
+# Do not connect a Blueprint until external deployment is explicitly authorized.
+services:
+  - type: web
+    name: yakeum-synthetic-demo
+    runtime: docker
+    plan: starter
+    region: singapore
+    branch: codex/mvp-completion
+    autoDeploy: false
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    numInstances: 1
+    disk:
+      name: synthetic-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: YAKEUM_EXTERNAL_DEMO
+        value: "1"
+      - key: YAKEUM_APP_MODE
+        value: development
+      - key: YAKEUM_SERVE_FRONTEND
+        value: "1"
+      - key: YAKEUM_DEV_ACCOUNT_ENABLED
+        value: "1"
+      - key: YAKEUM_DEV_COOKIE_SECURE
+        value: "1"
+      - key: YAKEUM_DEV_DB_PATH
+        value: /data/yakeum.sqlite3
+      - key: YAKEUM_DEV_ORIGIN
+        sync: false
+      - key: YAKEUM_DEMO_GATE_USERNAME
+        sync: false
+      - key: YAKEUM_DEMO_GATE_PASSWORD
+        sync: false
+      - key: YAKEUM_GEMINI_LIVE_ENABLED
+        value: "0"
+      - key: YAKEUM_GEMINI_LIVE_MAX_REQUESTS
+        value: "1"
+      - key: GEMINI_API_KEY
+        value: ""
+      - key: MFDS_API_KEY
+        value: ""
