@@ -59,3 +59,16 @@ D 공통 adapter/parser/models/config/prompt는 유지한다. 따라서 원격 A
 
 구체적 반영 파일·검사·A 수정 요청은
 [D 통합 보고서](../../../docs/integration/A_PUBLISHED_SDK_INTEGRATION.md)를 따른다.
+
+## 팀장 주도 MVP 후속 보완 (2026-10-27)
+
+위 2026-10-26 기록은 당시 통합 범위다. `codex/mvp-completion`에서는 팀장의
+A/B/C/D 후속 개발 승인에 따라 parser 내부의 실패 후보 슬롯을 추가했다.
+유효한 JSON/medications 배열에서 제품별 형식 오류는 그 후보의 FAILED로 남기고,
+정상 후보와 원본 순번을 보존한다. 실패 결과의 record는 계속 null이다.
+최상위 구조·호출자·가족 오류는 전체 실패다. 공통 ExtractionResult 필드는 그대로다.
+빈 성분/불완전한 성분은 원본을 보존하고 기존 경고와 NEEDS_CONFIRMATION으로 표시한다.
+로컬 A d85e537은 변경하거나 가져오지 않았다.
+신뢰도 0.1의 상태는 임의 임계값을 정하지 않고 기존대로 유지한다. 신뢰도는 검증된
+정확도가 아니며 SUCCESS라도 user_confirmed=false다. 모든 후보는 사용자 확인을 거친다.
+사진 UI는 여전히 LOCAL_MOCK이며 실제 이미지 업로드·공식 자료 연결 완료는 아니다.

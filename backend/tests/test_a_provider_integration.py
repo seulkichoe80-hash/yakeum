@@ -9,7 +9,6 @@ from unittest.mock import patch
 
 from google import genai
 import httpx
-import pytest
 
 from backend.api import extraction_provider, photo_demo
 from backend.services.extraction import ExtractionContext, GeminiSettings
@@ -99,17 +98,18 @@ def test_provider_failure_after_success_returns_no_previous_comparison():
     assert 'private-provider-marker' not in json.dumps(failed)
 
 
-def test_known_a_mixed_numeric_failure_is_recorded_not_repaired():
-    """Characterization, not acceptance of a final A recovery policy; see handoff."""
+def test_mixed_numeric_failure_preserves_valid_candidate():
+    """The original defect is a regular regression after leader authorization."""
     value = json.loads(photo_demo._fixture('single'))
     value['medications'].append({**deepcopy(value['medications'][0]),
                                 'dose_per_administration': '읽기불가'})
     doc = photo_demo.DocumentInput.model_validate(document('current'))
     result = run_fake_extraction(FAMILY, doc, raw=json.dumps(value, ensure_ascii=False))
-    assert len(result) == 1
-    assert result[0]['status'] == 'FAILED'
-    assert result[0]['record'] is None
-    assert result[0]['errors'][0]['code'] == 'AI_EXTRACTION_FAILED'
+    assert len(result) == 2
+    assert result[0]['status'] == 'SUCCESS'
+    assert result[1]['status'] == 'FAILED'
+    assert result[1]['record'] is None
+    assert result[1]['errors'][0]['code'] == 'AI_EXTRACTION_FAILED'
 
 
 def test_fake_sdk_context_and_source_ids_remain_caller_owned():
@@ -123,8 +123,7 @@ def test_fake_sdk_context_and_source_ids_remain_caller_owned():
     assert all(r['record']['mfds_product_id'] is None for r in result)
 
 
-@pytest.mark.xfail(strict=True, reason='A remote 2787918 loses valid candidates on numeric error; awaiting A-published follow-up, not local d85e537')
-def test_a_requested_mixed_candidate_recovery_pending_remote_fix():
+def test_a_requested_mixed_candidate_recovery():
     """Desired behavior stays visible as a strict expected failure, not a weakened test."""
     value = json.loads(photo_demo._fixture('single'))
     value['medications'].append({**deepcopy(value['medications'][0]),
@@ -136,3 +135,21 @@ def test_a_requested_mixed_candidate_recovery_pending_remote_fix():
     assert result[0]['record']['source_record_id'] == f'{doc.document_id}:1'
     assert result[1]['status'] == 'FAILED'
     assert result[1]['record'] is None
+
+
+def test_recovered_mixed_candidates_reach_d_hold_without_deleting_good_record():
+    value = json.loads(photo_demo._fixture('single'))
+    value['medications'].append({**deepcopy(value['medications'][0]),
+                                'dose_per_administration': '읽기불가'})
+    raw = json.dumps(value, ensure_ascii=False)
+    with patch.object(photo_demo, 'extract_virtual', side_effect=lambda family, doc:
+                      run_fake_extraction(family, doc, raw=raw)):
+        result = process(payload(confirmed=True))
+    assert result['stage'] == 'held'
+    assert result['reconciliation_result'] is None
+    assert result['current_intake_states'] == []
+    for side in ('previous', 'current'):
+        originals = result['original_results'][side]
+        assert len(originals) == 2
+        assert originals[0]['record']['product_name_raw'] == '가상알파정'
+        assert originals[1]['status'] == 'FAILED'

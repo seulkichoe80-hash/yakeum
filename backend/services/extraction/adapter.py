@@ -9,7 +9,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, Callable
 
-from .models import ExtractedDocument, ExtractedIngredient, ExtractedMedication
+from .models import ExtractedDocument, ExtractedIngredient, ExtractedMedication, FailedMedication
 from .parser import ExtractionPayloadError, parse_gemini_response
 
 EXTRACTION_STATUSES = frozenset({"SUCCESS", "NEEDS_CONFIRMATION", "FAILED"})
@@ -95,6 +95,9 @@ def adapt_extracted_document(
 
     results: list[dict[str, Any]] = []
     for index, medication in enumerate(document.medications, start=1):
+        if isinstance(medication, FailedMedication):
+            results.append(_failed_result(f"후보 {index}의 정보 형식을 확인할 수 없습니다. 원본을 확인하고 다시 처리해 주세요."))
+            continue
         if source_type is None:
             results.append(
                 _needs_confirmation(None, "자료 유형을 확인할 수 없습니다.", "source_type")
@@ -134,7 +137,15 @@ def adapt_extracted_document(
                     "ingredients",
                 )
             )
-        for ingredient in medication.ingredients:
+        for ingredient_index, ingredient in enumerate(medication.ingredients):
+            if (ingredient.ingredient_name_raw is None
+                    or ingredient.product_strength is None
+                    or ingredient.product_strength_unit is None):
+                warnings.append(_error_detail(
+                    "REQUIRED_FIELD_MISSING",
+                    f"성분 {ingredient_index + 1}의 이름·함량·단위 중 미확인 정보가 있습니다. 원본을 확인해 주세요.",
+                    f"ingredients[{ingredient_index}]",
+                ))
             if ingredient.product_strength is not None and ingredient.product_strength_unit is None:
                 warnings.append(
                     _error_detail(

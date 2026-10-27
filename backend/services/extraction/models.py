@@ -26,7 +26,12 @@ class ExtractedMedication:
 
 
 @dataclass(frozen=True)
+class FailedMedication:
+    """An unreadable candidate slot; never contains provider text or secrets."""
+
+
+@dataclass(frozen=True)
 class ExtractedDocument:
     document_type_raw: str | None
-    medications: tuple[ExtractedMedication, ...] = field(default_factory=tuple)
+    medications: tuple[ExtractedMedication | FailedMedication, ...] = field(default_factory=tuple)
     claimed_family_member_id: str | None = None

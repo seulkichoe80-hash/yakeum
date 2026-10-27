@@ -6,7 +6,7 @@ import json
 from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping
 
-from .models import ExtractedDocument, ExtractedIngredient, ExtractedMedication
+from .models import ExtractedDocument, ExtractedIngredient, ExtractedMedication, FailedMedication
 
 
 class ExtractionPayloadError(ValueError):
@@ -36,10 +36,16 @@ def parse_gemini_response(raw_response: str) -> ExtractedDocument:
     if not isinstance(medication_values, list):
         raise ExtractionPayloadError("medications는 배열이어야 합니다.")
 
-    medications = tuple(_parse_medication(value) for value in medication_values)
+    medications = []
+    for value in medication_values:
+        try:
+            medications.append(_parse_medication(value))
+        except ExtractionPayloadError:
+            # Keep the original slot so subsequent source IDs never shift.
+            medications.append(FailedMedication())
     return ExtractedDocument(
         document_type_raw=_text(payload.get("document_type")),
-        medications=medications,
+        medications=tuple(medications),
         claimed_family_member_id=_text(payload.get("family_member_id")),
     )
 
