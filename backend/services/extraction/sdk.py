@@ -43,6 +43,6 @@ def request_image(image_bytes: bytes, mime_type: str, settings: GeminiSettings) 
             model=settings.model_name,
             contents=[SYSTEM_PROMPT, types.Part.from_bytes(
                 data=image_bytes, mime_type=mime_type)],
-            config=types.GenerateContentConfig(response_mime_type='application/json'),
+            config=types.GenerateContentConfig(response_mime_type='application/json',max_output_tokens=4096),
         )
         return response.text

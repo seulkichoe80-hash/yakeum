@@ -452,3 +452,10 @@ Reconciliation 상태·reason_code 의미는 유지한다. 새 TASK D 화면만 
 저장 사진/HIRA의 기존 경로에 소유권 검사가 있는 DELETE를 추가한다.
 선택 snapshot과 연결 복용 확인만 한 transaction에서 삭제하며 공통 약 정보 의미는 유지한다.
 범위·공유 임시 후보·백업 복원 시 제한은 [DELETION_BACKUP_REVIEW.md](integration/DELETION_BACKUP_REVIEW.md)를 따른다.
+
+## 계정 Gemini 추출 경로 추가
+
+공통 추출/약 정보/비교 계약은 유지한다. 별도 보호된 photos/gemini-extract 경로와
+DEV_ACCOUNT_V1의 extraction_source/공식 매칭 출처, 계정 결과의 extraction_sources로
+Gemini 요청 경로와 Mock을 구분한다. 서버 활성화·설정·시도 한도가 없으면 실패하며 fallback하지 않는다.
+[Gemini 준비·출처·실호출 승인 전제](integration/GEMINI_PHOTO_PREPARATION.md)를 따른다.

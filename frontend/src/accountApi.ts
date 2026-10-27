@@ -14,10 +14,11 @@ export async function accountRequest(path:string,method='GET',body?:unknown,sign
  if(value.csrf_token)csrf=value.csrf_token;
  return value;
 }
-export async function accountUpload(family:string,file:File,date:string,source:MedicationRecord['source_type'],scenario:string,signal:AbortSignal):Promise<{document:UploadDocument;results:ExtractionResult[]}>{
+export async function accountUpload(family:string,file:File,date:string,source:MedicationRecord['source_type'],scenario:string,signal:AbortSignal,gemini=false):Promise<{document:UploadDocument;results:ExtractionResult[]}>{
  const error=fileError(file.name,file.size,false);if(error)throw new Error(error);
- const body=new FormData();body.append('file',file);body.append('record_date',date);body.append('source_type',source);body.append('scenario',scenario);
- const v=await accountRequest(`/families/${family}/photos/extract`,'POST',body,signal);
+ const body=new FormData();body.append('file',file);body.append('record_date',date);body.append('source_type',source);if(!gemini)body.append('scenario',scenario);
+ const v=await accountRequest(`/families/${family}/photos/${gemini?'gemini-extract':'extract'}`,'POST',body,signal);
+ if(v.extraction_source!==(gemini?'GEMINI':'MOCK'))throw new Error('추출 출처가 요청과 다릅니다.');
  if(v.response_version!=='DEV_ACCOUNT_V1'||!Array.isArray(v.results)||!v.results.length)throw new Error('개발용 사진 응답이 올바르지 않습니다.');
  for(const r of v.results)if(r.record&&r.record.family_member_id!==family)throw new Error('후보 가족이 다릅니다.');
  return {document:{document_id:v.document_id,upload_token:v.document_id,record_date:date,source_type:source,scenario:'single'},results:v.results};
@@ -32,3 +33,5 @@ export async function saveAccountResult(family:string,run:string,states:Record<s
  const intake_confirmations=Object.values(states).filter(s=>s.verification_status==='USER_VERIFIED').map(s=>({record_id:s.medication_record_id,choice:s.intake_status}));
  return accountRequest(`/families/${family}/runs/${run}/save`,'POST',{intake_confirmations},signal);
 }
+
+export const accountGeminiUpload=(family:string,file:File,date:string,source:MedicationRecord['source_type'],scenario:string,signal:AbortSignal)=>accountUpload(family,file,date,source,scenario,signal,true);

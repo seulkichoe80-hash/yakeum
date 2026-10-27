@@ -156,23 +156,43 @@ def create_family(body: FamilyInput,user: User):
     return {'id':family,'name':name}
 
 
-@router.post('/families/{family}/photos/extract')
-async def extract(family: UUID,user: User,file: Annotated[UploadFile,File()],record_date: Annotated[date,Form()],
-                  source_type: Annotated[photo_upload.SourceType,Form()],scenario: Annotated[photo_upload.UploadScenario,Form()]='single'):
+async def extract_document(family: UUID,user: User,file: Annotated[UploadFile,File()],record_date: Annotated[date,Form()],
+                  source_type: Annotated[photo_upload.SourceType,Form()],scenario: Annotated[photo_upload.UploadScenario,Form()]='single', *, gemini=False):
     try:
         with database() as db: owned_family(db,family,user)
         data,mime=await photo_upload.validated_image(file)
         doc=photo_demo.DocumentInput(document_id=uuid4(),record_date=record_date,source_type=source_type,scenario='single')
-        results=adapt_provider_call(lambda:photo_upload.fake_response(data,mime,scenario,source_type),ExtractionContext(str(family),str(doc.document_id),record_date.isoformat()))
+        context=ExtractionContext(str(family),str(doc.document_id),record_date.isoformat())
+        if gemini:
+            from starlette.concurrency import run_in_threadpool
+            from backend.api.gemini_bridge import extract_approved_image
+            results=await run_in_threadpool(extract_approved_image,data,mime,context)
+        else:
+            results=adapt_provider_call(lambda:photo_upload.fake_response(data,mime,scenario,source_type),context)
+        metadata=doc.model_dump(mode='json')
+        if gemini: metadata['_extraction_source']='GEMINI'
         with database() as db:
             owned_family(db,family,user)
             db.execute('DELETE FROM documents WHERE expires<=?',(time(),))
             if db.execute('SELECT count(*) FROM documents WHERE family_id=?',(str(family),)).fetchone()[0]>=128:
                 raise HTTPException(503,'임시 자료가 많습니다. 15분 후 다시 등록해 주세요.')
-            db.execute('INSERT INTO documents VALUES(?,?,?,?,?)',(str(doc.document_id),str(family),doc.model_dump_json(),json.dumps(results),time()+900))
-        return {'response_version':VERSION,'development_only':True,'document_id':str(doc.document_id),'results':results}
+            db.execute('INSERT INTO documents VALUES(?,?,?,?,?)',(str(doc.document_id),str(family),json.dumps(metadata),json.dumps(results),time()+900))
+        return {'response_version':VERSION,'development_only':True,'document_id':str(doc.document_id),'results':results,
+                'extraction_source':'GEMINI' if gemini else 'MOCK','official_data_mode':'LOCAL_MOCK'}
     finally:
         await file.close()
+
+
+@router.post('/families/{family}/photos/extract')
+async def extract(family: UUID,user: User,file: Annotated[UploadFile,File()],record_date: Annotated[date,Form()],
+                  source_type: Annotated[photo_upload.SourceType,Form()],scenario: Annotated[photo_upload.UploadScenario,Form()]='single'):
+    return await extract_document(family,user,file,record_date,source_type,scenario)
+
+
+@router.post('/families/{family}/photos/gemini-extract')
+async def extract_gemini(family: UUID,user: User,file: Annotated[UploadFile,File()],record_date: Annotated[date,Form()],
+                         source_type: Annotated[photo_upload.SourceType,Form()]):
+    return await extract_document(family,user,file,record_date,source_type,gemini=True)
 
 
 class AccountBatch(photo_demo.LocalModel):
@@ -188,7 +208,7 @@ class Processing(photo_demo.LocalModel):
 
 @router.post('/families/{family}/photos/process')
 def process(family: UUID,body: Processing,user: User):
-    sources={};batches={}
+    sources={};batches={};extraction_sources={}
     with database() as db:
         owned_family(db,family,user)
         for side in ('previous','current'):
@@ -196,8 +216,11 @@ def process(family: UUID,body: Processing,user: User):
             row=db.execute('SELECT * FROM documents WHERE id=? AND family_id=? AND expires>?',(str(batch.document_id),str(family),time())).fetchone()
             if not row: raise HTTPException(410,'현재 가족의 사진 자료가 없거나 만료되었습니다. 다시 등록해 주세요.')
             sources[side]=json.loads(row['originals'])
-            batches[side]=photo_demo.Batch(**json.loads(row['metadata']),reviews=batch.reviews)
+            metadata=json.loads(row['metadata'])
+            extraction_sources[side]=metadata.pop('_extraction_source','MOCK')
+            batches[side]=photo_demo.Batch(**metadata,reviews=batch.reviews)
     result=photo_demo.process_virtual(photo_demo.ProcessInput(family_member_id=family,normalization_confirmed=body.normalization_confirmed,**batches),sources=sources)
+    if 'GEMINI' in extraction_sources.values():result['extraction_sources']=extraction_sources
     run_id=str(uuid4());created=datetime.now(timezone.utc).isoformat()
     with database() as db:
         owned_family(db,family,user)

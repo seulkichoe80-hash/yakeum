@@ -153,3 +153,11 @@ DB/인증은 여전히 미완료다. 계약·사용법·최종 285개 검사 및
 5~20명 사용자 시험 키트도 준비했다. 실제 참여자는 아직 없으며 운영 정책은 확정하지 않았다.
 현재 검사(백엔드 332개와 브라우저 13/7/10/10/13 그룹)는
 [DELETION_BACKUP_REVIEW.md](DELETION_BACKUP_REVIEW.md)를 따른다.
+
+## Gemini 경로 준비 (2026-10-27)
+
+기존 provider/SDK에 계정 사진 업로드를 연결하고 Mock/Gemini 요청 경로 출처를 저장한다.
+기본 Mock, 실제 호출은 별도 flag·키·모델·한도가 필요하다. 실제 Gemini/모델 조회는 실행하지 않았다.
+백엔드 344개와 새 오프라인 Gemini 브라우저 13개 그룹, 기존 저장/삭제/HIRA 회귀가 통과했다.
+실호출 준비·비용 미확정·네트워크 확인·보류 사진 저장 제한은
+[GEMINI_PHOTO_PREPARATION.md](GEMINI_PHOTO_PREPARATION.md)를 따른다.

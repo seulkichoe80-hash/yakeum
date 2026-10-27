@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { accountUpload, accountProcess, saveAccountResult } from './accountApi';
+import { accountUpload, accountGeminiUpload, accountProcess, saveAccountResult } from './accountApi';
 import { uploadPhoto, processUploads, type UploadDocument } from './uploadPhotoApi';
 import { ImageReviewPanel } from './ImageReviewPanel';
 import type { DemoCase, ReviewState } from './imageReviewModel';
@@ -15,6 +15,7 @@ type Side='previous'|'current';
 // Parent remounts this component on family/file/type/date changes. Within that
 // session every edit or new request invalidates preview and intake confirmation.
 export function PhotoWorkflow(props:Props) {
+ const [gemini,setGemini]=useState(false);
  const [previousFile,setPreviousFile]=useState<File|null>(null);
  const [previousDate,setPreviousDate]=useState('2026-09-01');
  const [policy,setPolicy]=useState<'normal'|'repeat'|'unknown'|'mixed'>('normal');
@@ -35,7 +36,7 @@ export function PhotoWorkflow(props:Props) {
   if(props.uploaded) {
    const file=side==='previous'?previousFile:props.file;
    if(!file) throw new Error('이전과 현재 사진을 각각 선택해 주세요.');
-   const result=await (props.account?accountUpload:uploadPhoto)(props.familyMemberId,file,side==='previous'?previousDate:props.recordDate,props.sourceType,policy==='normal'?scenario:policy,signal);
+   const result=await (props.account?(gemini?accountGeminiUpload:accountUpload):uploadPhoto)(props.familyMemberId,file,side==='previous'?previousDate:props.recordDate,props.sourceType,policy==='normal'?scenario:policy,signal);
    if(!signal.aborted) documents.current[side]=result.document;
    return result.results;
   }
@@ -43,7 +44,7 @@ export function PhotoWorkflow(props:Props) {
   const results=await extractPhoto(props.familyMemberId,document,signal);
   if(!signal.aborted) documents.current[side]=document;
   return results;
- },[invalidate,previousDate,props.recordDate,props.sourceType,props.familyMemberId,policy,props.uploaded,props.file,previousFile,props.account]);
+ },[invalidate,previousDate,props.recordDate,props.sourceType,props.familyMemberId,policy,props.uploaded,props.file,previousFile,props.account,gemini]);
  const previousLoader=useCallback((scenario:DemoCase,signal:AbortSignal)=>load('previous',scenario,signal),[load]);
  const currentLoader=useCallback((scenario:DemoCase,signal:AbortSignal)=>load('current',scenario,signal),[load]);
  function reset() {invalidate();setReviews({});documents.current={};setEpoch(v=>v+1);}
@@ -74,23 +75,25 @@ export function PhotoWorkflow(props:Props) {
  useEffect(()=>{if(props.deletedRunId&&response?.account_run_id===props.deletedRunId)reset();},[props.deletedRunId,response?.account_run_id]);
  const canProcess=reviews.previous?.phase==='ready'&&reviews.current?.phase==='ready';
  return <section className="photo-workflow" aria-label={props.uploaded?'사진 업로드 전체 연결':'사진 Mock 전체 연결'}>
-  <h2>{props.uploaded?'사진 업로드 · 가짜 AI 연결 검사':'사진 Mock 전체 연결 검증'}</h2>
-  {props.uploaded?<p className="info">가상 사진만 사용하세요. PNG·JPEG·WebP, 최대 10MB · 2천만 화소 이하 정지 사진. 후보는 가짜 AI 응답이며 실제 인식 결과가 아닙니다. {props.account?'사진 파일은 저장하지 않으며 원본 후보·수정·결과는 개발용 로컬 DB에 구분해 저장합니다. 현재 계정 소유 가족에만 접근할 수 있습니다.':'사진은 영구 저장하지 않고 후보만 서버 메모리에 15분간 유지합니다. 로그인·권한 기능은 없습니다.'}</p>:<p className="info">LOCAL_MOCK 전용 · 두 가상 자료를 직접 이전/현재로 지정합니다. 가상 A 응답 → 공통 adapter → 사용자 수정 → B 정규화 → D 비교를 실제 로컬 API로 실행합니다. 이미지·키를 전송하거나 외부 API를 호출하지 않으며 결과는 저장되지 않습니다.</p>}
+  <h2>{gemini?'사진 업로드 · Gemini 추출 경로':props.uploaded?'사진 업로드 · 가짜 AI 연결 검사':'사진 Mock 전체 연결 검증'}</h2>
+  {props.account&&<label>사진 추출 방식<select value={gemini?'GEMINI':'MOCK'} onChange={e=>{setGemini(e.target.value==='GEMINI');reset();}}><option value="MOCK">Mock · 가짜 응답</option><option value="GEMINI">Gemini · 별도 승인과 서버 설정 필요</option></select></label>}
+  {gemini&&<p className="notice">Gemini 요청 경로입니다. 승인된 가상 이미지만 사용하세요. 서버 활성화·키·모델 설정이 없으면 실패하며 Mock으로 바꾸지 않습니다. 최대 60초·자동 재시도 없음. 추출 성공도 사용자 확인이나 정확도 보장이 아닙니다. 정규화 공식 매칭은 여전히 Mock입니다.</p>}
+  {props.uploaded&&!gemini?<p className="info">가상 사진만 사용하세요. PNG·JPEG·WebP, 최대 10MB · 2천만 화소 이하 정지 사진. 후보는 가짜 AI 응답이며 실제 인식 결과가 아닙니다. {props.account?'사진 파일은 저장하지 않으며 원본 후보·수정·결과는 개발용 로컬 DB에 구분해 저장합니다. 현재 계정 소유 가족에만 접근할 수 있습니다.':'사진은 영구 저장하지 않고 후보만 서버 메모리에 15분간 유지합니다. 로그인·권한 기능은 없습니다.'}</p>:!gemini&&<p className="info">LOCAL_MOCK 전용 · 두 가상 자료를 직접 이전/현재로 지정합니다. 가상 A 응답 → 공통 adapter → 사용자 수정 → B 정규화 → D 비교를 실제 로컬 API로 실행합니다. 이미지·키를 전송하거나 외부 API를 호출하지 않으며 결과는 저장되지 않습니다.</p>}
   <label>이전 가상 자료 기준일<input type="date" value={previousDate} onChange={e=>{setPreviousDate(e.target.value);reset();}}/></label>
-  <label>정책 보류 검사<select value={policy} onChange={e=>{setPolicy(e.target.value as typeof policy);reset();}}><option value="normal">일반 후보</option><option value="repeat">반복 조제 · 대표 정책 미합의</option><option value="unknown">함량 미확인</option>{props.uploaded&&<option value="mixed">정상 + 숫자 오류 후보</option>}</select></label>
+  {!gemini&&<label>정책 보류 검사<select value={policy} onChange={e=>{setPolicy(e.target.value as typeof policy);reset();}}><option value="normal">일반 후보</option><option value="repeat">반복 조제 · 대표 정책 미합의</option><option value="unknown">함량 미확인</option>{props.uploaded&&<option value="mixed">정상 + 숫자 오류 후보</option>}</select></label>}
   {props.uploaded&&<label>이전 사진 선택<input type="file" accept=".png,.jpg,.jpeg,.webp" onChange={e=>{setPreviousFile(e.target.files?.[0]??null);reset();}}/></label>}
   <section aria-label="이전 사진 후보"><h3>이전 가상 자료 (직접 지정)</h3>
-   <ImageReviewPanel key={`previous:${epoch}`} {...props} file={props.uploaded?previousFile:null} recordDate={previousDate} loadResults={previousLoader} onReviewChange={changedPrevious}/>
+   <ImageReviewPanel key={`previous:${epoch}`} {...props} gemini={gemini} file={props.uploaded?previousFile:null} recordDate={previousDate} loadResults={previousLoader} onReviewChange={changedPrevious}/>
   </section>
   <section aria-label="현재 사진 후보"><h3>현재 가상 자료 (직접 지정)</h3>
-   <ImageReviewPanel key={`current:${epoch}`} {...props} loadResults={currentLoader} onReviewChange={changedCurrent}/>
+   <ImageReviewPanel key={`current:${epoch}`} {...props} gemini={gemini} loadResults={currentLoader} onReviewChange={changedCurrent}/>
   </section>
   <button type="button" disabled={!canProcess||busy} onClick={()=>process(false)}>수정 후보 B 정규화 미리보기</button>
   {busy&&<p role="status">로컬 정규화·비교 처리 중… <button onClick={invalidate}>사진 처리 취소</button></p>}
   {error&&<p role="alert">{error} 같은 버튼으로 재시도할 수 있습니다.</p>}
   {response&&(!props.deletedRunId||response.account_run_id!==props.deletedRunId)&&<section aria-label="사진 처리 결과">
    <h3>사진 처리 결과 · {response.stage==='held'?'비교 보류':response.stage==='normalized'?'정규화 검토':'비교 완료'}</h3>
-   <p>{props.account?'LOCAL_MOCK · 실제 AI/식약처 조회 없음 · 명시적으로 저장한 결과만 저장 목록에서 다시 볼 수 있습니다.':'LOCAL_MOCK · 실제 AI/식약처 조회 없음 · 새로고침하면 사라집니다.'}</p>
+   <p>{response.extraction_sources?`추출 출처: 이전 ${response.extraction_sources.previous} / 현재 ${response.extraction_sources.current} · 공식 매칭 LOCAL_MOCK · 실제 호출 검증과 별도` : props.account?'LOCAL_MOCK · 실제 AI/식약처 조회 없음 · 명시적으로 저장한 결과만 저장 목록에서 다시 볼 수 있습니다.':'LOCAL_MOCK · 실제 AI/식약처 조회 없음 · 새로고침하면 사라집니다.'}</p>
    {props.account&&response.stage==='compared'&&<button disabled={busy} onClick={save}>확인한 결과와 복용 선택 저장</button>}
    {saved&&<p role="status">{saved}</p>}
    <details><summary>원본·수정 초안·정규화 결과 확인</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({original:response.original_results,edited:response.edited_records,normalized:response.normalization_results},null,2)}</pre></details>

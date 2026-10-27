@@ -5,7 +5,7 @@ import './imageReview.css';
 import { changedFields, demoLabels, draftFrom, draftIssues, extractionLabels, initialReviewState, mockExtraction, reviewReducer, type CandidateDraft, type CandidateReview, type DemoCase, type ExtractionResult, type ReviewState } from './imageReviewModel';
 
 type Props = {familyMemberId:string;familyLabel:string;sourceType:MedicationRecord['source_type'];sourceLabel:string;recordDate:string;file:File|null;
- uploaded?:boolean;account?:boolean;
+ uploaded?:boolean;account?:boolean;gemini?:boolean;
  loadResults?:(scenario:DemoCase,signal:AbortSignal)=>Promise<ExtractionResult[]>;
  onReviewChange?:(state:ReviewState)=>void};
 export function ImageReviewPanel(props:Props) {
@@ -57,18 +57,18 @@ export function ImageReviewPanel(props:Props) {
  return <div className="image-review">
   <h2>이미지 분석 결과 확인·수정</h2>
   {props.loadResults&&!props.uploaded&&<p className="info">LOCAL_MOCK 연결 · 서버의 가상 A JSON을 공통 adapter로 처리합니다. 이미지 업로드·실제 Gemini·식약처 호출은 없습니다.</p>}
-  {props.uploaded?<div className="info">사진 업로드 연결 검사 · 선택 사진을 로컬 서버로 전송합니다. 후보는 이미지에서 인식한 값이 아닌 가짜 AI 응답입니다. {props.account?'외부 API 호출 없이 원본 후보는 개발용 로컬 DB에 보관합니다.':'외부 API·영구 저장은 없습니다.'}</div>:<div className="info">MOCK 시연 · 선택한 이미지에서 아래 값을 인식한 것이 아닙니다. 실제 AI 호출·전송·서버 저장은 하지 않습니다. 가상 예제로 검토 흐름을 확인하세요.</div>}
+  {props.gemini?<div className="info">Gemini 추출 후보 · 이미지가 외부로 전송될 수 있습니다. 모든 후보를 원본과 대조하고 확인하세요. 표시된 모델 신뢰도는 검증된 정확도가 아닙니다.</div>:props.uploaded?<div className="info">사진 업로드 연결 검사 · 선택 사진을 로컬 서버로 전송합니다. 후보는 이미지에서 인식한 값이 아닌 가짜 AI 응답입니다. {props.account?'외부 API 호출 없이 원본 후보는 개발용 로컬 DB에 보관합니다.':'외부 API·영구 저장은 없습니다.'}</div>:<div className="info">MOCK 시연 · 선택한 이미지에서 아래 값을 인식한 것이 아닙니다. 실제 AI 호출·전송·서버 저장은 하지 않습니다. 가상 예제로 검토 흐름을 확인하세요.</div>}
   <p>가족: <strong>{props.familyLabel}</strong> · 자료: {props.sourceLabel} · 기준일: {props.recordDate || '미선택'}</p>
   <details className="source-preview"><summary>원본 이미지 대조 {props.file ? '· 선택 파일' : '· 선택 사항'}</summary>
    {preview && !badImage ? <img src={preview} alt="사용자가 선택한 원본 이미지 대조용 미리보기" onError={()=>setBadImage(true)}/> : <p>{badImage ? '이미지를 표시할 수 없습니다. 다른 파일을 선택해 주세요.' : '위에서 이미지를 선택하면 미리 볼 수 있습니다. 개인정보 없는 가상 이미지를 사용하세요.'}</p>}
-   {props.file && <p className="filename">선택 파일: {props.file.name} · 아래 후보는 이 파일과 무관한 가상 값입니다.</p>}
+   {props.file && <p className="filename">선택 파일: {props.file.name} · {props.gemini?'추출 후보를 원본과 대조해 주세요.':'아래 후보는 이 파일과 무관한 가상 값입니다.'}</p>}
   </details>
-  <div className="demo-controls"><label>가상 추출 사례<select value={scenario} disabled={state.phase==='loading'} onChange={e=>{setScenario(e.target.value as DemoCase);dispatch({type:'reset'});}}>{(Object.keys(demoLabels) as DemoCase[]).map(key=><option key={key} value={key}>{demoLabels[key]}</option>)}</select></label>
-   <button className="primary" onClick={start} disabled={state.phase==='loading'||!props.recordDate}>{state.phase==='loading'?'가상 분석 중…':props.uploaded?'사진 업로드 후 가짜 후보 보기':'가상 추출 결과 보기'}</button>
+  <div className="demo-controls">{!props.gemini&&<label>가상 추출 사례<select value={scenario} disabled={state.phase==='loading'} onChange={e=>{setScenario(e.target.value as DemoCase);dispatch({type:'reset'});}}>{(Object.keys(demoLabels) as DemoCase[]).map(key=><option key={key} value={key}>{demoLabels[key]}</option>)}</select></label>}
+   <button className="primary" onClick={start} disabled={state.phase==='loading'||!props.recordDate}>{state.phase==='loading'?(props.gemini?'Gemini 요청 중…':'가상 분석 중…'):props.gemini?'Gemini로 사진 추출 요청':props.uploaded?'사진 업로드 후 가짜 후보 보기':'가상 추출 결과 보기'}</button>
   </div>
   {!props.recordDate&&<p role="alert" className="field-error">자료 기준일을 선택해 주세요.</p>}
-  {state.phase==='loading' && <div role="status" className="info">가상 결과를 준비하고 있습니다. 실제 이미지 분석 요청은 없습니다. <button onClick={cancel}>가상 분석 취소</button></div>}
-  {state.phase==='failed' && <div ref={errorPanel} className="image-error" role="alert" tabIndex={-1}><h3>가상 이미지 분석에 실패했습니다</h3><p>{state.error}</p><button onClick={start}>같은 사례 재시도</button><p>성공 흐름은 위 사례를 정상 제품으로 바꿔 확인할 수 있습니다.</p></div>}
+  {state.phase==='loading' && <div role="status" className="info">{props.gemini?'Gemini 요청 중입니다. 최대 60초이며 취소해도 이미 전송된 요청/비용은 취소되지 않을 수 있습니다.':'가상 결과를 준비하고 있습니다. 실제 이미지 분석 요청은 없습니다.'} <button onClick={cancel}>{props.gemini?'Gemini 요청 화면 취소':'가상 분석 취소'}</button></div>}
+  {state.phase==='failed' && <div ref={errorPanel} className="image-error" role="alert" tabIndex={-1}><h3>{props.gemini?'Gemini 추출을 완료하지 못했습니다':'가상 이미지 분석에 실패했습니다'}</h3><p>{state.error}</p><button onClick={start}>{props.gemini?'Gemini 요청 재시도 (추가 호출)':'같은 사례 재시도'}</button><p>{props.gemini?'실패 또는 시간 초과일 수 있습니다. 서버 설정·호출 한도와 원본을 확인하세요. 자동 재시도하지 않습니다.':'성공 흐름은 위 사례를 정상 제품으로 바꿔 확인할 수 있습니다.'}</p></div>}
   {state.phase==='ready' && <>
    <h3 ref={resultHeading} tabIndex={-1}>약품 후보 {state.candidates.length}개 · 화면 확인 완료 {completed}개</h3>
    <p className="info">이곳의 확인은 <strong>추출 내용의 대조</strong>입니다. 실제 복용 여부(TAKING/NOT_TAKING/UNKNOWN), 비교 판정, 정규화 결과를 변경하지 않습니다. 모르는 값은 추측하지 말고 비워 두거나 확인을 보류하세요.</p>
@@ -78,7 +78,7 @@ export function ImageReviewPanel(props:Props) {
     const field=(key:keyof Omit<CandidateDraft,'ingredients'>,label:string,numeric=false)=><label className="review-field">{label}<input aria-label={label} value={candidate.draft[key]} inputMode={numeric?'decimal':undefined} aria-invalid={!!issues[key]} aria-describedby={`${prefix}-${key}-original${issues[key]?` ${prefix}-${key}-error`:''}`} onChange={e=>edit(candidate,{[key]:e.target.value})}/><small id={`${prefix}-${key}-original`}>AI 추출값: {original[key]===''?'미확인':original[key]}{original[key]!==candidate.draft[key]?' · 사용자 수정':''}</small>{issues[key]&&<span id={`${prefix}-${key}-error`} className="field-error">{issues[key]}</span>}</label>;
     return <form key={candidate.key} className="candidate-card" noValidate onSubmit={e=>{e.preventDefault();dispatch({type:'confirm',key:candidate.key});if(Object.keys(issues).length)e.currentTarget.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();else if(!candidate.acknowledged)e.currentTarget.querySelector<HTMLInputElement>('input[type="checkbox"]')?.focus();}} aria-label={`약품 후보 ${index+1}`}>
      <div className="candidate-heading"><h3>후보 {index+1} · {candidate.draft.product||'제품명 미확인'}</h3><span className="badge">{extractionLabels[candidate.original.status]}</span></div>
-     <p>가상 출처: {candidate.original.record?.source_record_id ?? `가상 문서의 후보 ${index+1} · 원본 record 없음`} · 신뢰도: {candidate.original.record?.confidence ?? '미확인'}</p>
+     <p>{props.gemini?'추출 출처':'가상 출처'}: {candidate.original.record?.source_record_id ?? `가상 문서의 후보 ${index+1} · 원본 record 없음`} · 신뢰도: {candidate.original.record?.confidence ?? '미확인'}</p>
      {candidate.original.warnings.length>0&&<ul className="candidate-warnings">{candidate.original.warnings.map((w,n)=><li key={n}>{w.message}</li>)}</ul>}
      {candidate.original.errors.length>0&&<ul className="field-error" role="alert">{candidate.original.errors.map((error,n)=><li key={n}>{error.message}</li>)}</ul>}
      {!candidate.original.record&&<p className="info">원본 record가 없는 후보입니다. 아래 입력은 화면용 임시 초안이며, 공통 MedicationRecord를 생성하거나 서버로 보내지 않습니다.</p>}

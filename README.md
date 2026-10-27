@@ -60,3 +60,7 @@ SQLite v1은 기존 자료를 유지하는 v2 추가 마이그레이션을 적�
 [삭제 범위·가상 DB 백업/복원](docs/integration/DELETION_BACKUP_REVIEW.md),
 [5~20명 가상 자료 사용자 시험 안내](docs/testing/USER_TEST_KIT.md)를 참고하세요.
 실제 사용자 참여 시험과 운영 보안·백업·삭제 정책은 아직 완료하지 않았습니다.
+
+[Gemini 사진 연결 준비](docs/integration/GEMINI_PHOTO_PREPARATION.md): 계정 사진 화면에서
+Mock/Gemini 요청 경로를 구분합니다. 기본은 Mock이며 실제 분석·모델 조회는 검증하지 않았습니다.
+서버 활성화·키·모델·호출 예산과 별도 승인이 필요합니다. 공식 약품 매칭은 계속 Mock입니다.
