@@ -35,3 +35,12 @@ venv/
 .DS_Store
 Thumbs.db
 *.log
+
+# Development account databases and sidecars
+*.sqlite
+*.sqlite3
+*.db
+*.db-*
+*.sqlite-*
+*.sqlite3-*
+.local/

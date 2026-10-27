@@ -54,3 +54,7 @@ button{min-height:42px}
 }
 /* Source snapshots are read-only and may include long original values. */
 main details pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-width:100%}
+
+/* Keep the explicit development-mode switch clear of the fixed sidebar. */
+.app-mode-switch{position:relative;z-index:1;height:58px;padding:8px;background:#eef7f5}
+.shell>aside{top:58px}

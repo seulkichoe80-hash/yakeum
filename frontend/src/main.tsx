@@ -22,6 +22,7 @@ import { fileError, reviewError } from './validation';
 import { ImageReviewPanel } from './ImageReviewPanel';
 import { PhotoWorkflow } from './PhotoWorkflow';
 import './style.css';
+import { AccountWorkspace } from './AccountWorkspace';
 
 function App() {
  const [members, setMembers] = useState(initialMembers);
@@ -137,7 +138,7 @@ function App() {
  useEffect(() => {
   if (!selected || !allowed) return;
   const oldOverflow = document.body.style.overflow;
-  const background = Array.from(document.querySelectorAll<HTMLElement>('aside, main'))
+  const background = Array.from(document.querySelectorAll<HTMLElement>('aside, main, .app-mode-switch'))
    .map(element => ({ element, wasInert: element.inert }));
   background.forEach(({ element }) => { element.inert = true; });
   document.body.style.overflow = 'hidden';
@@ -641,4 +642,8 @@ function App() {
  </div>;
 }
 
-createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);
+function Root() {
+ const [account,setAccount]=useState(false);
+ return <><div className="app-mode-switch"><button onClick={()=>setAccount(v=>!v)}>{account?'가상 시연 화면으로 돌아가기':'개발용 로그인·저장 열기'}</button></div>{account?<AccountWorkspace/>:<App/>}</>;
+}
+createRoot(document.getElementById('root')!).render(<React.StrictMode><Root /></React.StrictMode>);

@@ -10,11 +10,15 @@ from uuid import UUID
 
 import openpyxl
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.responses import JSONResponse
 
 from backend.api.pipeline import process_hira_comparison
 from backend.api.schemas import VerticalSliceResponse, HiraV2Response
 from backend.api.photo_demo import router as photo_demo_router
 from backend.api.photo_upload import router as photo_upload_router
+from backend.api.dev_account import router as dev_account_router
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
 MAX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
@@ -35,12 +39,29 @@ app = FastAPI(
     title="Yakeum B-D-C Integration API",
     version="0.1.0",
     description=(
-        "Local integration PoC. It has no authentication, authorization, "
-        "database persistence, or live MFDS connection."
+        "Mock integration and explicitly enabled development-only accounts/SQLite. "
+        "No live medical API or production authentication/storage."
     ),
 )
 app.include_router(photo_demo_router)
 app.include_router(photo_upload_router)
+app.include_router(dev_account_router)
+
+
+@app.exception_handler(RequestValidationError)
+async def safe_validation_error(request, error):
+    if request.url.path.startswith('/api/dev-account'):
+        # Do not reflect passwords or uploaded form values in validation errors.
+        return JSONResponse(status_code=422, content={"detail": "입력 형식과 필수 항목을 확인해 주세요."})
+    return await request_validation_exception_handler(request, error)
+
+
+@app.middleware("http")
+async def private_account_responses(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api/dev-account"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 async def _reconcile_hira_files(

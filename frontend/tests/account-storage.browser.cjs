@@ -1,0 +1,41 @@
+// Synthetic accounts and images only. Tests actual SQLite-backed HTTP endpoints.
+const assert=require('node:assert/strict');
+const {chromium}=require(process.env.YAKEUM_PLAYWRIGHT_MODULE||'playwright');
+const {execFileSync}=require('node:child_process');
+const path=require('node:path');
+const base=process.env.YAKEUM_TEST_URL||'http://127.0.0.1:4197/';
+const password='SYNTHETIC-browser-pass-123';
+const fixture=execFileSync(process.env.YAKEUM_TEST_PYTHON||'python3',['-c',"import sys;from io import BytesIO;from PIL import Image;b=BytesIO();Image.new('RGB',(20,20),'white').save(b,format='PNG');sys.stdout.buffer.write(b.getvalue())"]);
+const file={name:'synthetic.png',mimeType:'image/png',buffer:fixture};
+let browser;const errors=[],external=[];let groups=0;const pass=s=>{groups++;console.log('passed:',s);};
+const username=`qa_${Date.now()}`;
+async function open(page){await page.goto(base);await page.getByRole('button',{name:'개발용 로그인·저장 열기',exact:true}).click();}
+async function register(page,name){await open(page);await page.getByLabel('가상 계정 아이디').fill(name);await page.getByLabel('비밀번호',{exact:true}).fill(password);await page.getByRole('button',{name:'가상 계정 가입 후 로그인',exact:true}).click();await page.getByRole('heading',{name:'내 가족 자료',exact:true}).waitFor();}
+const saved=p=>p.getByRole('region',{name:'저장된 약 정보',exact:true});
+async function family(page,name){await page.getByLabel('가족 표시 이름').fill(name);await page.getByRole('button',{name:'내 가족 추가',exact:true}).click();await page.getByRole('heading',{name:`${name} · 사진 연결과 저장`,exact:true}).waitFor();return page.getByRole('combobox',{name:'저장할 가족',exact:true}).inputValue();}
+async function delayed(page,pattern){let release,seen,done;const gate=new Promise(r=>release=r),arrived=new Promise(r=>seen=r),complete=new Promise(r=>done=r);await page.route(pattern,async route=>{const response=await route.fetch();seen();await gate;try{await route.fulfill({response});}catch{}done();},{times:1});return {arrived:Promise.race([arrived,new Promise((_,rej)=>setTimeout(()=>rej(new Error('request interception timed out')),10000).unref())]),release:async()=>{release();await complete;}};}
+(async()=>{
+ browser=await chromium.launch({headless:true,...(process.env.YAKEUM_BROWSER_EXECUTABLE?{executablePath:process.env.YAKEUM_BROWSER_EXECUTABLE}:{})});
+ const context=await browser.newContext();await context.route('**/*',r=>{const url=r.request().url();if(!url.startsWith(base)&&!url.startsWith('blob:')&&!url.startsWith('data:')){if(!url.includes('fonts.'))external.push(new URL(url).hostname);return r.abort();}return r.continue();});
+ const page=await context.newPage();page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
+ await register(page,username);const fa=await family(page,'가상 가족 A');
+ await page.getByLabel('현재 사진',{exact:true}).setInputFiles(file);
+ const flow=page.getByRole('region',{name:'사진 업로드 전체 연결',exact:true});await flow.getByLabel('이전 사진 선택').setInputFiles(file);
+ for(const name of ['이전','현재']){const section=flow.getByRole('region',{name:`${name} 사진 후보`,exact:true});await section.getByRole('button',{name:'사진 업로드 후 가짜 후보 보기',exact:true}).click();await section.getByRole('form').waitFor();if(name==='현재')await section.getByRole('textbox',{name:'1회 투약량',exact:true}).fill('2');await section.getByRole('checkbox').check();await section.getByRole('button',{name:'추출 내용 확인 완료 (로컬)',exact:true}).click();}
+ await flow.getByRole('button',{name:'수정 후보 B 정규화 미리보기',exact:true}).click();await flow.getByRole('button',{name:'정규화 결과 확인 후 D 비교',exact:true}).click();await flow.getByRole('heading',{name:'사진 처리 결과 · 비교 완료',exact:true}).waitFor();
+ await flow.getByRole('button',{name:'확인한 결과와 복용 선택 저장',exact:true}).click();await flow.getByText('개발용 DB에 저장했습니다.',{exact:false}).waitFor();
+ await page.getByRole('button',{name:'저장 목록 새로고침',exact:true}).click();await page.getByRole('button',{name:/^저장 결과 1/}).click();await saved(page).getByRole('heading',{name:'저장된 약 정보 · 가상 가족 A',exact:true}).waitFor();
+ assert.match(await saved(page).innerText(),/확인 전/);
+ await saved(page).getByText('저장 원본·수정·정규화·후보 확인 구분',{exact:true}).click();const snapshot=JSON.parse(await saved(page).locator('pre').innerText());assert.equal(snapshot.original.current[0].record.dose_per_administration,'1');assert.equal(snapshot.edited.current[0].dose_per_administration,'2');assert.equal(snapshot.original.current[0].record.user_confirmed,false);assert.equal(snapshot.normalized.current[0].record.user_confirmed,true);pass('login -> owned family -> upload/edit/normalize/compare -> save -> original/edited/confirmed separately; intake still pending');
+ await saved(page).getByRole('button',{name:'먹고 있음 저장',exact:true}).click();await saved(page).getByText('실제 복용: 먹고 있음 · 사용자 확인 완료',{exact:true}).waitFor();pass('explicit intake saved separately from extraction and comparison');
+ const list=await context.request.get(base+'api/dev-account/families/'+fa+'/runs');const run=(await list.json()).runs[0].id;
+ await open(page);await page.getByRole('button',{name:/^저장 결과 1/}).click();await saved(page).getByText('실제 복용: 먹고 있음 · 사용자 확인 완료',{exact:true}).waitFor();pass('page reload restores session and saved results from DB');
+ const fb=await family(page,'가상 가족 B');assert.equal(await saved(page).count(),0);assert.equal(await page.getByRole('button',{name:/^저장 결과 1/}).count(),0);
+ await page.getByRole('combobox',{name:'저장할 가족',exact:true}).selectOption(fa);await page.getByRole('button',{name:/^저장 결과 1/}).waitFor();
+ let gate=await delayed(page,'**/api/dev-account/families/*/runs/*');await page.getByRole('button',{name:/^저장 결과 1/}).click();await gate.arrived;await page.getByRole('combobox',{name:'저장할 가족',exact:true}).selectOption(fb);await gate.release();assert.equal(await saved(page).count(),0);pass('family switch removes old data and rejects late saved-result response');
+ const other=await browser.newContext();await other.route('**/*',r=>r.request().url().startsWith(base)?r.continue():r.abort());const second=await other.newPage();second.setDefaultTimeout(10000);second.on('pageerror',e=>errors.push(e.message));await register(second,username+'_b');await family(second,'다른 계정 가족');const me=await (await other.request.get(base+'api/dev-account/me')).json();assert.equal((await other.request.get(base+`api/dev-account/families/${fa}/runs/${run}`)).status(),404);assert.equal((await other.request.post(base+`api/dev-account/families/${fa}/runs/${run}/save`,{headers:{Origin:new URL(base).origin,'X-CSRF-Token':me.csrf_token},data:{}})).status(),404);pass('second logged-in user cannot read or modify first user family/results');await other.close();
+ await page.getByRole('combobox',{name:'저장할 가족',exact:true}).selectOption(fa);await page.getByRole('button',{name:/^저장 결과 1/}).waitFor();gate=await delayed(page,'**/api/dev-account/families/*/runs/*');await page.getByRole('button',{name:/^저장 결과 1/}).click();await gate.arrived;await page.getByRole('button',{name:'로그아웃',exact:true}).click();await page.getByLabel('가상 계정 아이디').waitFor();await gate.release();assert.equal(await saved(page).count(),0);assert.equal((await context.request.get(base+`api/dev-account/families/${fa}/runs/${run}`)).status(),401);pass('logout revokes server session and clears UI; late response discarded');
+ await page.getByLabel('가상 계정 아이디').fill(username);await page.getByLabel('비밀번호',{exact:true}).fill(password);await page.getByRole('button',{name:'로그인',exact:true}).click();await page.getByRole('button',{name:/^저장 결과 1/}).click();await saved(page).getByText('실제 복용: 먹고 있음 · 사용자 확인 완료',{exact:true}).waitFor();pass('relogin retrieves prior saved family/medication/intake without auto-confirming new input');
+ for(const width of [360,390,768,1280]){await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
+ if(process.env.YAKEUM_SCREENSHOT)await page.screenshot({path:process.env.YAKEUM_SCREENSHOT});assert.deepEqual(errors,[]);assert.deepEqual(external,[]);console.log(JSON.stringify({result:'passed',groups,runtimeErrors:0,externalApiRequests:0}));
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{await browser?.close();});

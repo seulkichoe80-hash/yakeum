@@ -432,3 +432,10 @@ Reconciliation 상태·reason_code 의미는 유지한다. 새 TASK D 화면만 
 `UPLOADED_PHOTO_V1` 응답 버전을 추가한다. 이미지 검사·후보 snapshot·검토·비교 연결은
 [PHOTO_UPLOAD_V1.md](integration/PHOTO_UPLOAD_V1.md)를 따른다.
 실제 AI 인식/영구 저장/로그인/가족 권한/운영 공개를 제공하는 계약은 아니다.
+
+## 개발용 계정·저장 추가 계약
+
+`/api/dev-account`의 `DEV_ACCOUNT_V1` envelope로 로그인·세션·소유 가족·사진 결과 저장을
+분리한다. 기존 공통 약 정보와 사진 Mock/업로드·HIRA 계약은 유지한다.
+[DEV_ACCOUNT_STORAGE_V1.md](integration/DEV_ACCOUNT_STORAGE_V1.md)의 소유권·초안/확인/복용 구분을 따른다.
+명시적 개발 설정에서만 사용하며 운영 인증·저장 계약으로 확정한 것은 아니다.
