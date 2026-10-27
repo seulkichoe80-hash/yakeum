@@ -14,6 +14,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from backend.api.pipeline import process_hira_comparison
 from backend.api.schemas import VerticalSliceResponse, HiraV2Response
 from backend.api.photo_demo import router as photo_demo_router
+from backend.api.photo_upload import router as photo_upload_router
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
 MAX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
@@ -39,6 +40,7 @@ app = FastAPI(
     ),
 )
 app.include_router(photo_demo_router)
+app.include_router(photo_upload_router)
 
 
 async def _reconcile_hira_files(

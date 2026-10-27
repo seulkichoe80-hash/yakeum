@@ -16,6 +16,7 @@ from uuid import UUID
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
+from backend.api.hira_hold import _comparable
 from backend.services.extraction import ExtractionContext, adapt_gemini_response
 from backend.services.mfds.mock_client import MockMfdsClient
 from backend.services.mfds.models import OfficialIngredient, OfficialItem
@@ -161,14 +162,14 @@ def _edited(original: dict, draft: Draft):
     return r
 
 
-def process_virtual(request: ProcessInput):
+def process_virtual(request: ProcessInput, *, sources: dict | None = None):
     family = str(request.family_member_id)
     reasons, snapshots = [], {"previous": [], "current": []}
     batches = {"previous": [], "current": []}
     originals = {"previous": [], "current": []}
     for side in ("previous", "current"):
         batch = getattr(request, side)
-        source = extract_virtual(family, batch)
+        source = deepcopy(sources[side]) if sources is not None else extract_virtual(family, batch)
         originals[side] = deepcopy(source)
         indices = [review.index for review in batch.reviews]
         if len(indices) != len(set(indices)) or set(indices) != set(range(len(source))):
@@ -194,6 +195,8 @@ def process_virtual(request: ProcessInput):
             r = result["record"]
             if r is None or result["status"] in {"FAILED", "PARTIAL"}:
                 reasons.append({"side": side, "message": "정규화 실패 또는 복수/부분 매칭은 비교 정책 확정 전 보류합니다."})
+            elif sources is not None and not _comparable(r):
+                reasons.append({"side": side, "message": "성분·함량·단위·1회 투약량·하루 횟수 중 비교 필수값이 미확인입니다. 원본을 확인하고 다시 처리해 주세요."})
             elif not r["ingredients"] or any(
                 not i["ingredient_name_normalized"] or i["product_strength"] is None or not i["product_strength_unit"]
                 for i in r["ingredients"]

@@ -41,3 +41,8 @@
 - [실행 준비·설정 변수·3분 시연 순서](docs/integration/MVP_DEMO.md)
 - [1차 MVP 마감 검토](docs/integration/MVP_CLOSEOUT_REVIEW.md)
 - [HIRA 비교 보류 v2 — TASK D 통합안](docs/integration/HIRA_COMPARISON_HOLD_V2.md)
+
+사진 파일을 로컬 서버로 업로드하고 가짜 AI 후보의 수정·정규화·비교까지 연결하는
+[사진 업로드 검사 경로](docs/integration/PHOTO_UPLOAD_V1.md)를 추가했습니다.
+자료 등록에서 **사진 업로드 연결 열기 (가짜 AI)**를 선택합니다.
+실제 인식/공식 조회·저장·로그인은 아직 제공하지 않습니다. 가상 사진만 사용하세요.

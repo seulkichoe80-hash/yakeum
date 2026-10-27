@@ -5,6 +5,7 @@ import './imageReview.css';
 import { changedFields, demoLabels, draftFrom, draftIssues, extractionLabels, initialReviewState, mockExtraction, reviewReducer, type CandidateDraft, type CandidateReview, type DemoCase, type ExtractionResult, type ReviewState } from './imageReviewModel';
 
 type Props = {familyMemberId:string;familyLabel:string;sourceType:MedicationRecord['source_type'];sourceLabel:string;recordDate:string;file:File|null;
+ uploaded?:boolean;
  loadResults?:(scenario:DemoCase,signal:AbortSignal)=>Promise<ExtractionResult[]>;
  onReviewChange?:(state:ReviewState)=>void};
 export function ImageReviewPanel(props:Props) {
@@ -55,15 +56,15 @@ export function ImageReviewPanel(props:Props) {
  const completed=state.candidates.filter(c=>c.user_confirmed).length;
  return <div className="image-review">
   <h2>이미지 분석 결과 확인·수정</h2>
-  {props.loadResults&&<p className="info">LOCAL_MOCK 연결 · 서버의 가상 A JSON을 공통 adapter로 처리합니다. 이미지 업로드·실제 Gemini·식약처 호출은 없습니다.</p>}
-  <div className="info">MOCK 시연 · 선택한 이미지에서 아래 값을 인식한 것이 아닙니다. 실제 AI 호출·전송·서버 저장은 하지 않습니다. 가상 예제로 검토 흐름을 확인하세요.</div>
+  {props.loadResults&&!props.uploaded&&<p className="info">LOCAL_MOCK 연결 · 서버의 가상 A JSON을 공통 adapter로 처리합니다. 이미지 업로드·실제 Gemini·식약처 호출은 없습니다.</p>}
+  {props.uploaded?<div className="info">사진 업로드 연결 검사 · 선택 사진을 로컬 서버로 전송합니다. 후보는 이미지에서 인식한 값이 아닌 가짜 AI 응답입니다. 외부 API·영구 저장은 없습니다.</div>:<div className="info">MOCK 시연 · 선택한 이미지에서 아래 값을 인식한 것이 아닙니다. 실제 AI 호출·전송·서버 저장은 하지 않습니다. 가상 예제로 검토 흐름을 확인하세요.</div>}
   <p>가족: <strong>{props.familyLabel}</strong> · 자료: {props.sourceLabel} · 기준일: {props.recordDate || '미선택'}</p>
   <details className="source-preview"><summary>원본 이미지 대조 {props.file ? '· 선택 파일' : '· 선택 사항'}</summary>
-   {preview && !badImage ? <img src={preview} alt="사용자가 선택한 원본 이미지 대조용 미리보기" onError={()=>setBadImage(true)}/> : <p>{badImage ? '이미지를 표시할 수 없습니다. 다른 파일을 선택해 주세요.' : '위에서 이미지를 선택하면 이 브라우저 안에서만 미리 봅니다. 개인정보 없는 가상 이미지를 사용하세요.'}</p>}
+   {preview && !badImage ? <img src={preview} alt="사용자가 선택한 원본 이미지 대조용 미리보기" onError={()=>setBadImage(true)}/> : <p>{badImage ? '이미지를 표시할 수 없습니다. 다른 파일을 선택해 주세요.' : '위에서 이미지를 선택하면 미리 볼 수 있습니다. 개인정보 없는 가상 이미지를 사용하세요.'}</p>}
    {props.file && <p className="filename">선택 파일: {props.file.name} · 아래 후보는 이 파일과 무관한 가상 값입니다.</p>}
   </details>
   <div className="demo-controls"><label>가상 추출 사례<select value={scenario} disabled={state.phase==='loading'} onChange={e=>{setScenario(e.target.value as DemoCase);dispatch({type:'reset'});}}>{(Object.keys(demoLabels) as DemoCase[]).map(key=><option key={key} value={key}>{demoLabels[key]}</option>)}</select></label>
-   <button className="primary" onClick={start} disabled={state.phase==='loading'||!props.recordDate}>{state.phase==='loading'?'가상 분석 중…':'가상 추출 결과 보기'}</button>
+   <button className="primary" onClick={start} disabled={state.phase==='loading'||!props.recordDate}>{state.phase==='loading'?'가상 분석 중…':props.uploaded?'사진 업로드 후 가짜 후보 보기':'가상 추출 결과 보기'}</button>
   </div>
   {!props.recordDate&&<p role="alert" className="field-error">자료 기준일을 선택해 주세요.</p>}
   {state.phase==='loading' && <div role="status" className="info">가상 결과를 준비하고 있습니다. 실제 이미지 분석 요청은 없습니다. <button onClick={cancel}>가상 분석 취소</button></div>}

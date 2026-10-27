@@ -424,3 +424,11 @@ Reconciliation 상태·reason_code 의미는 유지한다. 새 TASK D 화면만 
 실행 여부·전체 보류 사유·원본 참조와 nullable 결과 계약은
 [HIRA_COMPARISON_HOLD_V2.md](integration/HIRA_COMPARISON_HOLD_V2.md)를 따른다.
 보류는 `comparison.executed=false`, 결과 null이며 정상 비교 0건과 구분한다.
+
+## 로컬 합성 사진 업로드 연결 (추가 계약)
+
+기존 공통 결과 및 HIRA v1/v2, 사진 Mock 계약은 유지한다.
+승인된 가상 검사 범위에서 별도 `/api/local-demo/photo-uploads/*`와
+`UPLOADED_PHOTO_V1` 응답 버전을 추가한다. 이미지 검사·후보 snapshot·검토·비교 연결은
+[PHOTO_UPLOAD_V1.md](integration/PHOTO_UPLOAD_V1.md)를 따른다.
+실제 AI 인식/영구 저장/로그인/가족 권한/운영 공개를 제공하는 계약은 아니다.

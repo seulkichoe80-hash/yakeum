@@ -42,6 +42,7 @@ function App() {
  const [notice, setNotice] = useState('');
  const [source, setSource] = useState('심평원 Excel');
  const [imageSession, setImageSession] = useState(0);
+ const [photoUploaded,setPhotoUploaded] = useState(false);
  const [photoConnected, setPhotoConnected] = useState(false);
  const [previousFile, setPreviousFile] = useState<File | null>(null);
  const [currentFile, setCurrentFile] = useState<File | null>(null);
@@ -494,7 +495,7 @@ function App() {
         <button onClick={analyzeHira}>같은 파일로 재시도</button>
        </div>}
       </> : <>
-       <div className="notice inline-notice">비정형 자료 Backend는 아직 연결되지 않았습니다. 아래 흐름은 저장되지 않는 UI 데모입니다.</div>
+       <div className="notice inline-notice">사진은 가짜 AI 응답으로 업로드부터 비교까지 검사할 수 있습니다. 실제 AI 인식·영구 저장·로그인은 아직 제공하지 않습니다.</div>
        <label>자료 기준일<input type="date" value={date} onChange={event => {
         setDate(event.target.value);
         resetUpload();
@@ -507,8 +508,14 @@ function App() {
          resetUpload();
         }} />
        </label>
-       <button type="button" onClick={()=>setPhotoConnected(value=>!value)}>{photoConnected?'단독 화면 Mock으로 돌아가기':'로컬 Mock 전체 연결 열기'}</button>
-       {photoConnected ? <PhotoWorkflow
+       <button type="button" onClick={()=>{setPhotoUploaded(false);setPhotoConnected(value=>!value);}}>{photoConnected?'단독 화면 Mock으로 돌아가기':'로컬 Mock 전체 연결 열기'}</button>
+       <button type="button" onClick={()=>{setPhotoUploaded(v=>!v);setPhotoConnected(false);}}>{photoUploaded?'사진 업로드 검사 닫기':'사진 업로드 연결 열기 (가짜 AI)'}</button>
+       {photoUploaded ? <PhotoWorkflow uploaded
+        key={`uploaded:${memberId}:${source}:${imageSession}`}
+        familyMemberId={memberId} familyLabel={`${member.relationship} · ${member.name}`}
+        sourceType={source === '처방전 사진' ? 'PRESCRIPTION' : source === '건강기능식품 사진' ? 'SUPPLEMENT' : 'MEDICINE_BAG'}
+        sourceLabel={source} recordDate={date} file={file}
+       /> : photoConnected ? <PhotoWorkflow
         key={`connected:${memberId}:${source}:${imageSession}`}
         familyMemberId={memberId}
         familyLabel={`${member.relationship} · ${member.name}`}

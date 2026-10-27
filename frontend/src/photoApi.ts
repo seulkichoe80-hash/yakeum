@@ -41,6 +41,10 @@ export function reviewBatch(document:PhotoDocument,candidates:CandidateReview[])
 
 export async function processPhotos(family:string,previous:PhotoBatch,current:PhotoBatch,confirmed:boolean,signal:AbortSignal):Promise<PhotoResponse> {
  const value=await post('process',{family_member_id:family,previous,current,normalization_confirmed:confirmed},signal);
+ return validatePhotoResponse(value,family);
+}
+
+export function validatePhotoResponse(value:any,family:string):PhotoResponse {
  if(!['normalized','compared','held'].includes(value.stage)||!Array.isArray(value.pending_decisions)||!Array.isArray(value.current_intake_states)) throw new Error('사진 처리 응답이 다릅니다.');
  for(const side of ['previous','current'] as const) {
   if(!Array.isArray(value.normalization_results?.[side])) throw new Error('정규화 응답이 다릅니다.');
