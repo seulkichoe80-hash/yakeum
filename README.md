@@ -82,3 +82,6 @@ Compose 예행연습, HTTPS 설정 사전 검사, 가상 자료 안내를 준비
 [무료 가입·연결 순서와 중지 조건 확인](deploy/FREE_DEPLOY.md),
 [SQLite/가상 PostgreSQL 검증 결과](docs/integration/FREE_POSTGRES_VALIDATION.md)를 참고하세요.
 실제 Supabase 연결·외부 배포·현재 무료 조건 확인은 아직 완료하지 않았습니다.
+
+배포 후 DB 연결 오류는 [Render DB 안전 진단 안내](deploy/DB_DIAGNOSTICS.md)를 참고하세요.
+주소·비밀번호·예외 원문 대신 고정된 오류 분류와 처리 단계만 서버 로그에 남깁니다.

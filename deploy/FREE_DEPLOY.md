@@ -111,3 +111,6 @@ SQLite용 백업/복원 검증이 Supabase 백업 검증을 대신하지 않는�
 연결의 TCP 경로도 확인해야 한다. PostgreSQL은 HTTPS API 호출이 아니므로 실제 cloud 작업 공간에서
 추후 검사하려면 pooler host의 PostgreSQL TCP 포트 허용과 TLS 신뢰가 필요하다.
 HTTP 도메인 허용만으로 DB 연결이 된다고 판단하지 않는다. Render→Supabase의 해당 경로도 실제 배포 후 별도 검사다.
+
+실제 배포 후 DB 503 오류는 [비밀값 없는 진단·재배포 절차](DB_DIAGNOSTICS.md)를 따른다.
+주소/예외 원문 대신 YAKEUM_DB_FAILURE의 고정 category·phase만 확인한다. SSL/가족 권한을 끄지 않는다.

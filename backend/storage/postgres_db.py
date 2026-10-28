@@ -5,6 +5,7 @@ import os
 import sqlite3
 from urllib.parse import urlsplit
 from fastapi import HTTPException
+from backend.storage.db_diagnostics import classify_db_error, report_db_failure
 
 
 def connection_settings(values=None):
@@ -23,6 +24,7 @@ def connection_settings(values=None):
             options['sslrootcert']=values.get('YAKEUM_PG_SSLROOTCERT','/etc/ssl/certs/ca-certificates.crt')
         return raw,options
     except (ValueError,TypeError):
+        report_db_failure('CONFIGURATION','CONFIG')
         raise HTTPException(503,'PostgreSQL 비밀 연결 설정이 필요합니다. 주소나 비밀번호를 화면에 입력하지 마세요.') from None
 
 
@@ -57,11 +59,13 @@ def postgres_database():
     from backend.storage.local_db import SCHEMA,HIRA_SCHEMA
     raw,options=connection_settings()
     connection=None
+    phase='CONNECT'
     def rollback():
         if connection:
             with suppress(psycopg.Error):connection.rollback()
     try:
         connection=psycopg.connect(raw,row_factory=dict_row,**options)
+        phase='INITIALIZE'
         connection.execute("SET LOCAL statement_timeout='10s'")
         # Like BEGIN IMMEDIATE locally: serialize short demo transactions and schema creation.
         connection.execute('SELECT pg_advisory_xact_lock(1948031027)')
@@ -71,6 +75,7 @@ def postgres_database():
         connection.execute('CREATE TABLE IF NOT EXISTS schema_version(version INTEGER NOT NULL)')
         rows=connection.execute('SELECT version FROM schema_version').fetchall()
         if rows and (len(rows)!=1 or rows[0]['version']!=2):
+            report_db_failure('SCHEMA_VERSION','INITIALIZE')
             raise HTTPException(503,'지원하지 않는 시연 DB 버전입니다. 기존 자료를 보존하고 설정을 확인해 주세요.')
         if not rows:
             schema=(SCHEMA+HIRA_SCHEMA).replace('REAL','DOUBLE PRECISION')
@@ -78,12 +83,16 @@ def postgres_database():
             for statement in schema.split(';'):
                 if statement.strip():connection.execute(statement)
             connection.execute('INSERT INTO schema_version VALUES(2)')
+        phase='QUERY'
         yield Connection(connection)
+        phase='COMMIT'
         connection.commit()
     except psycopg.IntegrityError:
+        report_db_failure('CONSTRAINT',phase)
         rollback()
         raise sqlite3.IntegrityError('Synthetic storage constraint conflict') from None
-    except psycopg.Error:
+    except psycopg.Error as error:
+        report_db_failure(classify_db_error(error,phase),phase)
         rollback()
         raise HTTPException(503,'시연 데이터베이스에 연결하거나 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.') from None
     except BaseException:
