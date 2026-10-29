@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');
+const {recordSummary,medicationSnapshot}=require('../src/timeline.ts');
+const {contractMock}=require('../src/mock.ts');
+assert.equal(recordSummary(null,'이전'),'이전: 기록 없음');
+assert.equal(recordSummary(null,'현재'),'현재: 기록 없음');
+assert.equal(recordSummary(undefined,'현재'),'현재: 기록 확인 필요');
+const record=structuredClone(contractMock.items[0].current_record);record.dose_per_administration=null;
+assert.equal(medicationSnapshot(record).presence,'present');
+assert.match(recordSummary(record,'현재'),/미확인$/);
+assert(!recordSummary(record,'현재').includes('기록 없음'));
+record.dose_per_administration='';assert.match(recordSummary(record,'현재'),/미확인$/);
+record.ingredients[0].product_strength='';assert.equal(medicationSnapshot(record).productStrength,'미확인');
+const before=JSON.stringify(record);recordSummary(record,'이전');assert.equal(JSON.stringify(record),before);
+assert.equal(medicationSnapshot(null).presence,'absent');
+assert.equal(medicationSnapshot(undefined).presence,'unknown');
+console.log('Explicit absent record, unknown structure and present-but-missing value display checks passed.');

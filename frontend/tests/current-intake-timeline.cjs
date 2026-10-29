@@ -93,9 +93,10 @@ test('8. timeline contains previous and current medication details', () => {
  assert.equal(timeline.status, 'DOSE_CHANGED');
 });
 
-test('9. null values stay unknown instead of becoming zero', () => {
+test('9. absent records and unknown field values stay distinct from zero', () => {
  const snapshot = medicationSnapshot(null);
- for (const value of Object.values(snapshot)) assert.equal(value, '미확인');
+ assert.equal(snapshot.presence,'absent');
+ for (const [key,value] of Object.entries(snapshot)) if(key!=='presence') assert.equal(value, '미확인');
  const record = structuredClone(pendingItem.previous_record);
  record.ingredients[0].product_strength = null;
  record.dose_per_administration = null;

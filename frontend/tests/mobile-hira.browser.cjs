@@ -50,7 +50,7 @@ async function delayed(page,pattern){let release,seen,done;const gate=new Promis
  await analyze(page);assert.equal(await panel(page).getByText(/HIRA 작업 중/).count(),0);pass('HIRA failure releases busy; explicit retry succeeds and releases busy');
  let gate=await delayed(page,'**/hira/process');await panel(page).getByRole('button',{name:'HIRA 파일 처리',exact:true}).click();await gate.arrived;await panel(page).getByRole('button',{name:'HIRA 작업 취소',exact:true}).click();await gate.release();assert.equal(await result(page).count(),0);assert.equal(await panel(page).getByText(/HIRA 작업 중/).count(),0);pass('HIRA cancel clears busy and rejects late response');
  await analyze(page);
- await page.clock.install();await page.clock.pauseAt(new Date());
+ await page.clock.install({time:new Date('2026-10-29T00:00:00Z')});await page.clock.pauseAt(new Date('2026-10-29T00:01:00Z'));
  let posts=0;page.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/save'))posts++;});
  gate=await delayed(page,'**/hira-runs/*/save');await result(page).getByRole('button',{name:'이 HIRA 결과 저장 (보류 포함)',exact:true}).click();await gate.arrived;
  await page.clock.fastForward(10001);await panel(page).getByText(/응답이 지연되고 있습니다/).waitFor();

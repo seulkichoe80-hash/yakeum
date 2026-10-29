@@ -1,4 +1,4 @@
-import { ComparisonBadge, ComparisonChanges, ComparisonNotice } from './ComparisonDisplay';
+import { ComparisonBadge, ComparisonChanges, ComparisonNotice, RecordSummary } from './ComparisonDisplay';
 import { koreanSavedTime } from './display';
 import { useEffect, useRef, useState } from 'react';
 import { DeleteSavedResult } from './DeleteSavedResult';
@@ -7,7 +7,6 @@ import { parseHiraV2Response } from './api';
 import { fileError } from './validation';
 import { labels, productName, type HiraV2Response, type CurrentIntakeState } from './types';
 import { intakeChoiceLabels, verificationLabels } from './currentIntakeUi';
-import { medicationTimeline } from './timeline';
 
 type Snapshot={run_id:string;saved:boolean;result:HiraV2Response;intake_states:CurrentIntakeState[]};
 function parse(value:any,family:string):Snapshot{
@@ -27,6 +26,7 @@ function parse(value:any,family:string):Snapshot{
 export function AccountHiraPanel({family,name}:{family:string;name:string}){
  const [previous,setPrevious]=useState<File|null>(null),[current,setCurrent]=useState<File|null>(null);
  const [snapshot,setSnapshot]=useState<Snapshot|null>(null),[rows,setRows]=useState<{id:string;created:string}[]>([]);
+ const [rowsKnown,setRowsKnown]=useState(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [deleting,setDeleting]=useState(false),[slow,setSlow]=useState(false),[uncertainRun,setUncertainRun]=useState('');
  const version=useRef(0),controller=useRef<AbortController|null>(null);
@@ -49,7 +49,7 @@ export function AccountHiraPanel({family,name}:{family:string;name:string}){
  }
  function finish(id:number,c:AbortController){if(active(id,c)){stopTimers();operation.current=null;setBusy(false);setDeleting(false);setSlow(false);}}
  useEffect(()=>{void list();return()=>{stopTimers();version.current++;controller.current?.abort();operation.current=null;};},[family]);
- async function list(){const {id,c}=start(true);try{const v=await accountRequest(`${root}/hira-runs`,'GET',undefined,c.signal);if(active(id,c))setRows(v.runs);}catch(e){if(active(id,c))setError(e instanceof Error?e.message:'목록 조회 실패');}finally{finish(id,c);}}
+ async function list(){setRowsKnown(false);const {id,c}=start(true);try{const v=await accountRequest(`${root}/hira-runs`,'GET',undefined,c.signal);if(active(id,c)){setRows(v.runs);setRowsKnown(true);}}catch(e){if(active(id,c))setError(e instanceof Error?e.message:'목록 조회 실패');}finally{finish(id,c);}}
  async function process(){const {id,c}=start(true);try{
   if(!previous||!current)throw new Error('이전과 현재 XLSX 파일을 각각 선택해 주세요.');
   for(const file of [previous,current]){const e=fileError(file.name,file.size,true);if(e)throw new Error(e);}
@@ -61,11 +61,11 @@ export function AccountHiraPanel({family,name}:{family:string;name:string}){
   await accountRequest(`${root}/hira-runs/${run}/save`,'POST',{intake_confirmations:[]},c.signal);
   const v=await accountRequest(`${root}/hira-runs/${run}`,'GET',undefined,c.signal);
   const list=await accountRequest(`${root}/hira-runs`,'GET',undefined,c.signal);
-  if(active(id,c)){setSnapshot(parse(v,family));setRows(list.runs);setUncertainRun('');setNotice('HIRA 결과를 개발용 DB에 저장했습니다. 복용 확인과는 별개입니다.');}
+  if(active(id,c)){setSnapshot(parse(v,family));setRows(list.runs);setRowsKnown(true);setUncertainRun('');setNotice('HIRA 결과를 개발용 DB에 저장했습니다. 복용 확인과는 별개입니다.');}
  }catch(e){if(active(id,c)){setUncertainRun(run);setError('저장 요청 결과를 확인하지 못했습니다. 중복 요청을 피하도록 저장 완료 여부부터 확인해 주세요.');}}finally{finish(id,c);}}
  async function checkSave(){if(!uncertainRun||busy)return;const run=uncertainRun;const {id,c}=start(false);try{
   const list=await accountRequest(`${root}/hira-runs`,'GET',undefined,c.signal);
-  if(!active(id,c))return;setRows(list.runs);
+  if(!active(id,c))return;setRows(list.runs);setRowsKnown(true);
   if(!list.runs.some((r:{id:string})=>r.id===run)){setNotice('아직 저장 완료가 확인되지 않았습니다. 저장을 다시 보내지 말고 잠시 후 완료 여부를 다시 확인해 주세요.');return;}
   const v=await accountRequest(`${root}/hira-runs/${run}`,'GET',undefined,c.signal);
   if(active(id,c)){setSnapshot(parse(v,family));setUncertainRun('');setNotice('저장된 결과를 확인했습니다. 저장 요청을 다시 보내지 않았습니다.');}
@@ -91,13 +91,13 @@ export function AccountHiraPanel({family,name}:{family:string;name:string}){
   {uncertainRun&&<p role="status">저장 완료 여부 확인이 필요합니다. <button disabled={busy} onClick={checkSave}>HIRA 저장 완료 여부 확인</button></p>}
   {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
   <h3>이 가족의 HIRA 저장 목록</h3><button disabled={busy} onClick={list}>HIRA 저장 목록 새로고침</button>
-  {!rows.length&&<p>저장된 HIRA 결과가 없습니다.</p>}{rows.map((r,i)=><button disabled={busy} key={r.id} onClick={()=>detail(r.id)}>HIRA 저장 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
+  {rowsKnown&&!rows.length&&<p>저장된 HIRA 결과가 없습니다.</p>}{rows.map((r,i)=><button disabled={busy} key={r.id} onClick={()=>detail(r.id)}>HIRA 저장 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
   {snapshot&&<section aria-label="계정 HIRA 결과"><h3>{snapshot.saved?'저장된 HIRA 결과':'HIRA 처리 결과'}</h3><ComparisonNotice/>
    {snapshot.saved&&<DeleteSavedResult key={snapshot.run_id} kind="HIRA" family={name} created={rows.find(r=>r.id===snapshot.run_id)?.created??'저장된 자료'} run={snapshot.run_id} busy={busy} onConfirm={remove}/>}
    {!snapshot.result.comparison.executed?<><ComparisonBadge status="HELD"/><p role="status">비교 보류 · 비교 미실행</p><ul>{snapshot.result.comparison.holds.map((h,i)=><li key={i}>{h.message} · 영향 원본 {h.affected_refs.length}건</li>)}</ul></>:<p>비교 완료 · 결과 {snapshot.result.reconciliation_result!.items.length}건</p>}
    {!snapshot.saved&&<button disabled={busy||!!uncertainRun} onClick={save}>이 HIRA 결과 저장 (보류 포함)</button>}
    <details><summary>HIRA 원본·정규화·보류 사유</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({source_rows:snapshot.result.source_rows,accepted:snapshot.result.accepted_results,failed:snapshot.result.review_results,comparison:snapshot.result.comparison},null,2)}</pre></details>
-   {snapshot.result.reconciliation_result?.items.map((item,index)=>{const record=item.current_record??item.previous_record;const state=snapshot.intake_states.find(s=>s.medication_record_id===record!.record_id);const t=medicationTimeline({...item,id:`hira-saved-${index}`});return <article className="card" key={record!.record_id} aria-label={`계정 HIRA 비교 항목 ${index+1}`}><h4>{productName(record)}</h4><ComparisonBadge status={item.status}/><ComparisonChanges item={item}/><p>이전: {t.previous.recordDate} · {t.previous.productStrength} · {t.previous.dosePerAdministration}</p><p>현재: {t.current.recordDate} · {t.current.productStrength} · {t.current.dosePerAdministration}</p><p>실제 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>{snapshot.saved?Object.entries(intakeChoiceLabels).map(([choice,label])=><button disabled={busy} key={choice} onClick={()=>verify(record!.record_id,choice)}>{label} HIRA 저장</button>):<p>결과 저장 후 실제 복용 여부를 별도로 확인할 수 있습니다.</p>}</article>;})}
+   {snapshot.result.reconciliation_result?.items.map((item,index)=>{const record=item.current_record??item.previous_record;const state=snapshot.intake_states.find(s=>s.medication_record_id===record!.record_id);return <article className="card" key={record!.record_id} aria-label={`계정 HIRA 비교 항목 ${index+1}`}><h4>{productName(record)}</h4><ComparisonBadge status={item.status}/><ComparisonChanges item={item}/><RecordSummary side="이전" record={item.previous_record}/><RecordSummary side="현재" record={item.current_record}/><p>실제 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>{snapshot.saved?Object.entries(intakeChoiceLabels).map(([choice,label])=><button disabled={busy} key={choice} onClick={()=>verify(record!.record_id,choice)}>{label} HIRA 저장</button>):<p>결과 저장 후 실제 복용 여부를 별도로 확인할 수 있습니다.</p>}</article>;})}
   </section>}
  </section>;
 }

@@ -618,18 +618,18 @@ function App() {
     {tab === '변경 이력' && selectedTimeline && <>
      <div className="timeline-comparison">
       {[
-       { title: '이전 기록', snapshot: selectedTimeline.previous },
-       { title: '현재 기록', snapshot: selectedTimeline.current },
-      ].map(({ title, snapshot }) => <article key={title} className="timeline-snapshot">
+       { title: '이전 기록', side:'이전', snapshot: selectedTimeline.previous },
+       { title: '현재 기록', side:'현재', snapshot: selectedTimeline.current },
+      ].map(({ title, side, snapshot }) => <article key={title} className="timeline-snapshot">
        <h3>{title}</h3>
-       <dl>
+       {snapshot.presence==='absent'?<p>{side}: 기록 없음</p>:snapshot.presence==='unknown'?<p>{side}: 기록 확인 필요</p>:<dl>
         <dt>기록일</dt><dd>{snapshot.recordDate}</dd>
         <dt>제품명</dt><dd>{snapshot.productName}</dd>
         <dt>성분</dt><dd>{snapshot.ingredient}</dd>
         <dt>제품 함량</dt><dd>{snapshot.productStrength}</dd>
         <dt>1회 투약량</dt><dd>{snapshot.dosePerAdministration}</dd>
         <dt>하루 투여횟수</dt><dd>{snapshot.administrationsPerDay}</dd>
-       </dl>
+       </dl>}
       </article>)}
      </div>
      <div className="timeline-status">

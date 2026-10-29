@@ -1,4 +1,4 @@
-import { ComparisonBadge, ComparisonChanges, ComparisonNotice } from './ComparisonDisplay';
+import { ComparisonBadge, ComparisonChanges, ComparisonNotice, RecordSummary } from './ComparisonDisplay';
 import { extractionSourceLabel } from './display';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { accountUpload, accountGeminiUpload, accountProcess, saveAccountResult } from './accountApi';
@@ -7,7 +7,6 @@ import { ImageReviewPanel } from './ImageReviewPanel';
 import type { DemoCase, ReviewState } from './imageReviewModel';
 import { extractPhoto, processPhotos, reviewBatch, type PhotoDocument, type PhotoResponse } from './photoApi';
 import { initialCurrentIntakeState, intakeChoiceLabels, verificationLabels, verifyCurrentIntake, type CurrentIntakeStore, type IntakeChoice } from './currentIntakeUi';
-import { medicationTimeline } from './timeline';
 import type { MedicationRecord } from './types';
 import { labels, productName } from './types';
 
@@ -105,10 +104,10 @@ export function PhotoWorkflow(props:Props) {
    {response.reconciliation_result?.items.map((item,index)=>{
     const record=item.current_record??item.previous_record;
     const id=record!.record_id;const state=intakes[props.familyMemberId]?.[id];
-    const timeline=medicationTimeline({...item,id:`photo-${index}`});
+
     return <article key={id} className="card" aria-label={`사진 비교 항목 ${index+1}`}>
      <h3>{productName(record)}</h3><ComparisonBadge status={item.status}/><ComparisonChanges item={item}/><p>{item.reason_code} · 의료적 복용 지시가 아닙니다.</p>
-     <details><summary>사진 변경 이력</summary><p>이전: {timeline.previous.recordDate} · {timeline.previous.productStrength} · {timeline.previous.dosePerAdministration}</p><p>현재: {timeline.current.recordDate} · {timeline.current.productStrength} · {timeline.current.dosePerAdministration}</p></details>
+     <details><summary>사진 변경 이력</summary><RecordSummary side="이전" record={item.previous_record}/><RecordSummary side="현재" record={item.current_record}/></details>
      <p>추출·정규화 확인과 별개로 실제 복용 여부를 직접 선택해 주세요.</p>
      <p role="status">현재 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>
      {(Object.keys(intakeChoiceLabels) as IntakeChoice[]).map(choice=><button disabled={busy} key={choice} onClick={()=>{setSaved('');setIntakes(store=>verifyCurrentIntake(store,props.familyMemberId,id,choice));}}>{intakeChoiceLabels[choice]}</button>)}

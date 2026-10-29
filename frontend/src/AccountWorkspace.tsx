@@ -1,4 +1,4 @@
-import { ComparisonBadge, ComparisonChanges, ComparisonNotice } from './ComparisonDisplay';
+import { ComparisonBadge, ComparisonChanges, ComparisonNotice, RecordSummary } from './ComparisonDisplay';
 import { useEffect, useRef, useState } from 'react';
 import { accountRequest, clearAccount } from './accountApi';
 import { DeleteSavedResult } from './DeleteSavedResult';
@@ -6,7 +6,6 @@ import { AccountHiraPanel } from './AccountHiraPanel';
 import { PhotoWorkflow } from './PhotoWorkflow';
 import { labels, productName, type CurrentIntakeState, type MedicationRecord } from './types';
 import { intakeChoiceLabels, verificationLabels } from './currentIntakeUi';
-import { medicationTimeline } from './timeline';
 import { koreanSavedTime, extractionSourceLabel } from './display';
 import type { PhotoResponse } from './photoApi';
 
@@ -41,10 +40,11 @@ function FamilyWorkspace({family}:{family:Family}){
  const [file,setFile]=useState<File|null>(null),[date,setDate]=useState('2026-10-27'),[source,setSource]=useState<MedicationRecord['source_type']>('MEDICINE_BAG');
  const [epoch,setEpoch]=useState(0),[runs,setRuns]=useState<{id:string;created:string}[]>([]),[saved,setSaved]=useState<Saved|null>(null),[error,setError]=useState('');
  const [deletedPhoto,setDeletedPhoto]=useState('');
+ const [runsKnown,setRunsKnown]=useState(false);
  const [updating,setUpdating]=useState(false);
  const generation=useRef(0),abort=useRef<AbortController|null>(null);
  useEffect(()=>{void loadList();return()=>{generation.current++;abort.current?.abort();};},[]);
- async function loadList(){const id=++generation.current;abort.current?.abort();const c=new AbortController();abort.current=c;setSaved(null);setError('');try{const v=await accountRequest(`/families/${family.id}/runs`,'GET',undefined,c.signal);if(id===generation.current&&!c.signal.aborted)setRuns(v.runs);}catch(e){if(id===generation.current&&!c.signal.aborted)setError(e instanceof Error?e.message:'목록 조회 실패');}}
+ async function loadList(){setRunsKnown(false);const id=++generation.current;abort.current?.abort();const c=new AbortController();abort.current=c;setSaved(null);setError('');try{const v=await accountRequest(`/families/${family.id}/runs`,'GET',undefined,c.signal);if(id===generation.current&&!c.signal.aborted){setRuns(v.runs);setRunsKnown(true);}}catch(e){if(id===generation.current&&!c.signal.aborted)setError(e instanceof Error?e.message:'목록 조회 실패');}}
  async function detail(run:string){const id=++generation.current;abort.current?.abort();const c=new AbortController();abort.current=c;setSaved(null);setError('');try{const v=await accountRequest(`/families/${family.id}/runs/${run}`,'GET',undefined,c.signal);if(id===generation.current&&!c.signal.aborted){if(v.family_member_id!==family.id)throw new Error('저장 가족이 다릅니다.');setSaved(v);}}catch(e){if(id===generation.current&&!c.signal.aborted)setError(e instanceof Error?e.message:'자료 조회 실패');}}
  async function verify(record:string,choice:string){if(!saved)return;setUpdating(true);const run=saved.run_id;const id=++generation.current;abort.current?.abort();const c=new AbortController();abort.current=c;try{await accountRequest(`/families/${family.id}/runs/${run}/intake`,'PATCH',{record_id:record,choice},c.signal);if(id===generation.current&&!c.signal.aborted)await detail(run);}catch(e){if(id===generation.current&&!c.signal.aborted)setError(e instanceof Error?e.message:'복용 확인 저장 실패');}finally{setUpdating(false);}}
  async function removePhoto(run:string){
@@ -63,12 +63,12 @@ function FamilyWorkspace({family}:{family:Family}){
   <PhotoWorkflow key={epoch} uploaded account deletedRunId={deletedPhoto} familyMemberId={family.id} familyLabel={family.name} sourceType={source} sourceLabel="가상 사진" recordDate={date} file={file}/>
   <AccountHiraPanel family={family.id} name={family.name}/>
   <h3>이 가족의 사진 저장 목록</h3><button disabled={updating} onClick={loadList}>저장 목록 새로고침</button>{error&&<p role="alert">{error}</p>}
-  {runs.length===0&&<p>저장된 결과가 없습니다.</p>}{runs.map((r,i)=><button disabled={updating} key={r.id} onClick={()=>detail(r.id)}>저장 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
+  {runsKnown&&runs.length===0&&<p>저장된 결과가 없습니다.</p>}{runs.map((r,i)=><button disabled={updating} key={r.id} onClick={()=>detail(r.id)}>저장 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
   {saved&&<section aria-label="저장된 약 정보"><h3>저장된 약 정보 · {family.name}</h3><ComparisonNotice/>
    <p>추출 출처: 이전 {extractionSourceLabel(saved.result.extraction_sources?.previous)} / 현재 {extractionSourceLabel(saved.result.extraction_sources?.current)} · 가상 의약품 매칭</p>
    <DeleteSavedResult key={saved.run_id} kind="사진" family={family.name} created={runs.find(r=>r.id===saved.run_id)?.created??'저장된 자료'} run={saved.run_id} busy={updating} onConfirm={()=>removePhoto(saved.run_id)}/>
    <details><summary>저장 원본·수정·정규화·후보 확인 구분</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({original:saved.result.original_results,edited:saved.result.edited_records,reviews:saved.reviews,normalized:saved.result.normalization_results},null,2)}</pre></details>
-   {saved.result.reconciliation_result?.items.map((item,index)=>{const record=item.current_record??item.previous_record;const state=saved.intake_states.find(s=>s.medication_record_id===record!.record_id);const timeline=medicationTimeline({...item,id:`saved-${index}`});return <article className="card" key={record!.record_id}><h4>{productName(record)}</h4><ComparisonBadge status={item.status}/><ComparisonChanges item={item}/><p>이전: {timeline.previous.recordDate} · {timeline.previous.productStrength} · {timeline.previous.dosePerAdministration}</p><p>현재: {timeline.current.recordDate} · {timeline.current.productStrength} · {timeline.current.dosePerAdministration}</p><p>실제 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>{Object.entries(intakeChoiceLabels).map(([choice,label])=><button disabled={updating} key={choice} onClick={()=>verify(record!.record_id,choice)}>{label} 저장</button>)}</article>;})}
+   {saved.result.reconciliation_result?.items.map(item=>{const record=item.current_record??item.previous_record;const state=saved.intake_states.find(s=>s.medication_record_id===record!.record_id);return <article className="card" key={record!.record_id}><h4>{productName(record)}</h4><ComparisonBadge status={item.status}/><ComparisonChanges item={item}/><RecordSummary side="이전" record={item.previous_record}/><RecordSummary side="현재" record={item.current_record}/><p>실제 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>{Object.entries(intakeChoiceLabels).map(([choice,label])=><button disabled={updating} key={choice} onClick={()=>verify(record!.record_id,choice)}>{label} 저장</button>)}</article>;})}
   </section>}
  </section>;
 }
