@@ -1,3 +1,4 @@
+import { ComparisonBadge, ComparisonChanges, ComparisonNotice } from './ComparisonDisplay';
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -359,7 +360,7 @@ function App() {
       <small>실제 자료가 저장되거나 복구된 것처럼 표시하지 않습니다.</small>
      </section> : <>
       {backendResponse && !backendResponse.comparison.executed && <section className="card" role="alert">
-       <h2>HIRA 전체 비교 보류</h2>
+       <h2>HIRA 전체 비교 보류</h2><ComparisonBadge status="HELD"/><ComparisonNotice/>
        <p>새 비교·복용 확인 결과를 만들지 않았습니다. 이전 결과를 새 자료의 결과로 표시하지 않습니다.</p>
        {backendResponse.comparison.holds.map(hold=><p key={hold.kind}>{hold.message}</p>)}
       </section>}
@@ -384,7 +385,7 @@ function App() {
       )}</div>
       <section className="card timeline">
        <div>
-        <h2>복용정보 타임라인</h2>
+        <h2>복용정보 타임라인</h2><ComparisonNotice/>
         <p>{isBackend ? '사용자가 명시한 이전 XLSX → 현재 XLSX · D 엔진 결과' : '기준 자료: 2026년 8월 → 9월 · D 엔진 결과 Mock'}</p>
        </div>
        {!isBackend && <div className="months">{['2026-03', '2026-08', '2026-09'].map(value =>
@@ -443,17 +444,17 @@ function App() {
          </div>
          <div className="records">
           {visible.map(item =>
-           <button key={item.id} className="record" onClick={() => openDetails(item, '기본정보')}>
+           <div key={item.id}><button className="record" onClick={() => openDetails(item, '기본정보')}>
             <span className="pill-icon">◇</span>
             <span className="record-name">
              <strong>{productName(item.current_record ?? item.previous_record)}</strong>
              <small>{ingredientText(item.current_record ?? item.previous_record)} · {strengthText(item.current_record ?? item.previous_record)}</small>
              <small>{(item.current_record ?? item.previous_record)?.user_confirmed ? '사용자 확인됨' : '사용자 미확정 후보'}</small>
             </span>
-            <span className={'badge ' + item.status}>{labels[item.status]}</span>
+            <ComparisonBadge status={item.status}/>
             <span className="record-date">{item.current_record ? item.current_record.record_date : '최신 자료에서 미확인'}</span>
             <span>›</span>
-           </button>,
+           </button><ComparisonChanges item={item}/></div>,
           )}
           {visible.length === 0 && <p className="empty">{isBackend ? (backendResponse?.comparison.executed ? (items.length===0 ? '정상 비교 결과 0건입니다.' : '조건에 맞는 기록이 없습니다.') : '비교를 실행하지 않았습니다. 보류 사유를 확인해 주세요.') : '조건에 맞는 기록이 없습니다.'}</p>}
          </div>
@@ -593,7 +594,7 @@ function App() {
      <h2>{productName(selected.current_record ?? selected.previous_record)}</h2>
      <button autoFocus onClick={() => setSelected(null)} aria-label="상세 닫기">닫기 ×</button>
     </div>
-    <span className={'badge ' + selected.status}>{labels[selected.status]}</span>
+    <ComparisonBadge status={selected.status}/><ComparisonNotice/>
     <div className="tabs">{['기본정보', '성분·함량', '공식 근거', '변경 이력'].map(value =>
      <button className={tab === value ? 'active' : ''} key={value} onClick={() => setTab(value)}>{value}</button>,
     )}</div>
@@ -632,7 +633,7 @@ function App() {
       </article>)}
      </div>
      <div className="timeline-status">
-      <strong>변경 상태: {labels[selectedTimeline.status]}</strong>
+      <ComparisonBadge status={selectedTimeline.status}/><ComparisonChanges item={selected}/>
       <p>{reconciliationDescriptions[selectedTimeline.status]}</p>
       <small>엔진 사유 코드: {selected.reason_code}</small>
      </div>

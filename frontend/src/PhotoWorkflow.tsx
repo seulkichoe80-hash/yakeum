@@ -1,3 +1,4 @@
+import { ComparisonBadge, ComparisonChanges, ComparisonNotice } from './ComparisonDisplay';
 import { extractionSourceLabel } from './display';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { accountUpload, accountGeminiUpload, accountProcess, saveAccountResult } from './accountApi';
@@ -94,6 +95,7 @@ export function PhotoWorkflow(props:Props) {
   {error&&<p role="alert">{error} 같은 버튼으로 재시도할 수 있습니다.</p>}
   {response&&(!props.deletedRunId||response.account_run_id!==props.deletedRunId)&&<section aria-label="사진 처리 결과">
    <h3>사진 처리 결과 · {response.stage==='held'?'비교 보류':response.stage==='normalized'?'정규화 검토':'비교 완료'}</h3>
+   <ComparisonNotice/>{response.stage==='held'&&<ComparisonBadge status="HELD"/>}
    <p>{response.extraction_sources?`추출 출처: 이전 ${extractionSourceLabel(response.extraction_sources.previous)} / 현재 ${extractionSourceLabel(response.extraction_sources.current)} · 가상 의약품 매칭 · 실제 호출 검증과 별도` : props.account?'가상 추출·가상 의약품 매칭 · 실제 AI/식약처 조회 없음 · 명시적으로 저장한 결과만 저장 목록에서 다시 볼 수 있습니다.':'가상 추출·가상 의약품 매칭 · 실제 AI/식약처 조회 없음 · 새로고침하면 사라집니다.'}</p>
    {props.account&&response.stage==='compared'&&<button disabled={busy} onClick={save}>확인한 결과와 복용 선택 저장</button>}
    {saved&&<p role="status">{saved}</p>}
@@ -105,7 +107,7 @@ export function PhotoWorkflow(props:Props) {
     const id=record!.record_id;const state=intakes[props.familyMemberId]?.[id];
     const timeline=medicationTimeline({...item,id:`photo-${index}`});
     return <article key={id} className="card" aria-label={`사진 비교 항목 ${index+1}`}>
-     <h3>{productName(record)} · {labels[item.status]}</h3><p>{item.reason_code} · 의료적 복용 지시가 아닙니다.</p>
+     <h3>{productName(record)}</h3><ComparisonBadge status={item.status}/><ComparisonChanges item={item}/><p>{item.reason_code} · 의료적 복용 지시가 아닙니다.</p>
      <details><summary>사진 변경 이력</summary><p>이전: {timeline.previous.recordDate} · {timeline.previous.productStrength} · {timeline.previous.dosePerAdministration}</p><p>현재: {timeline.current.recordDate} · {timeline.current.productStrength} · {timeline.current.dosePerAdministration}</p></details>
      <p>추출·정규화 확인과 별개로 실제 복용 여부를 직접 선택해 주세요.</p>
      <p role="status">현재 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>

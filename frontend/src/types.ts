@@ -19,7 +19,7 @@ export type MedicationRecord = {
 };
 export const statuses = ['MAINTAINED', 'NEW', 'DOSE_CHANGED', 'NEEDS_CONFIRMATION'] as const;
 export type Status = typeof statuses[number];
-export const labels: Record<Status, string> = { MAINTAINED: '기록상 유지', NEW: '신규 기록', DOSE_CHANGED: '복용정보 변경', NEEDS_CONFIRMATION: '확인 필요' };
+export const labels: Record<Status, string> = { MAINTAINED: '기록 동일', NEW: '새로 확인', DOSE_CHANGED: '복용정보 변경', NEEDS_CONFIRMATION: '이전에만 있음' };
 export type ReconciliationItem = {
  status: Status; previous_record: MedicationRecord | null; current_record: MedicationRecord | null;
  reason_code: string; evidence: unknown[]; // Evidence structure is a team TODO.

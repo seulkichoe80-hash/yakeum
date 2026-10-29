@@ -78,3 +78,18 @@ main details pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-
  .account-workspace button{min-height:44px}
  .account-workspace input[type=date]{max-width:100%;min-width:0}
 }
+
+/* Record-difference badges: text and symbols carry meaning independently of color. */
+.comparison-badge{display:inline-block;border:1px solid currentColor;border-radius:999px;padding:6px 11px;font-size:14px;font-weight:700;line-height:1.5;max-width:100%;overflow-wrap:anywhere;white-space:normal}
+.comparison-same{color:#374151;background:#f3f4f6}
+.comparison-changed{color:#9a3412;background:#fff7ed}
+.comparison-new{color:#1e40af;background:#eff6ff}
+.comparison-previous{color:#6b21a8;background:#faf5ff}
+.comparison-held{color:#713f12;background:#fef9c3}
+.comparison-unknown{color:#374151;background:#fff}
+.comparison-changes{padding-left:22px;overflow-wrap:anywhere}
+.comparison-changes strong{font-weight:750}
+.comparison-notice{font-size:13px;line-height:1.6;color:#374151;margin:12px 0}
+.comparison-notice p{margin:6px 0}
+@media(max-width:720px){.record .comparison-badge{max-width:140px;flex-shrink:0}.comparison-badge{font-size:14px}}
+@media(forced-colors:active){.comparison-badge{color:CanvasText;background:Canvas;border:2px solid CanvasText}}

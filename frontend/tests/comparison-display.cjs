@@ -1,0 +1,20 @@
+const assert=require('node:assert/strict');
+const {comparisonBadge,comparisonChanges,comparisonColorNotice}=require('../src/comparisonDisplay.ts');
+const {contractMock}=require('../src/mock.ts');
+for(const [status,text,tone] of [['MAINTAINED','＝ 기록 동일','same'],['DOSE_CHANGED','↔ 복용정보 변경','changed'],['NEW','＋ 새로 확인','new'],['NEEDS_CONFIRMATION','－ 이전에만 있음','previous'],['HELD','! 추가 확인 필요','held']])assert.deepEqual(comparisonBadge(status),{text,tone});
+for(const status of ['PARTIAL','FAILED','NEEDS_CONFIRMATION_OTHER','__proto__'])assert.equal(comparisonBadge(status).tone,'unknown');
+const item=structuredClone(contractMock.items.find(i=>i.status==='MAINTAINED'));
+item.current_record=structuredClone(item.previous_record);
+assert.deepEqual(comparisonChanges(item),[]);
+item.current_record.dose_per_administration='1.000';assert.deepEqual(comparisonChanges(item),[]);
+item.current_record.dose_per_administration='2';item.current_record.administrations_per_day='3';
+const before=JSON.stringify(item);const rows=comparisonChanges(item);
+assert(rows.some(r=>r.label==='1회 투약량'&&r.before.includes('1')&&r.after.includes('2')));
+assert(rows.some(r=>r.label==='하루 횟수'&&r.after==='3회'));
+assert.equal(JSON.stringify(item),before);assert.equal(item.status,'MAINTAINED'); // display never reclassifies an item
+item.current_record.dose_per_administration='1';item.current_record.administrations_per_day=item.previous_record.administrations_per_day;
+item.current_record.duration_days='999';assert.equal(comparisonChanges(item)[0].label,'투약 기간');assert.equal(comparisonBadge(item.status).tone,'same');
+item.current_record=null;assert.deepEqual(comparisonChanges(item),[]);
+assert.match(comparisonColorNotice,/의학적 안전·위험 판정이 아닙니다/);
+assert.match(comparisonColorNotice,/복용 중단을 뜻하지 않습니다/);
+console.log('Comparison display: explicit states/hold, unknown fallback, unchanged status/data and precise differences passed.');
