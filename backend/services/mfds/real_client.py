@@ -20,6 +20,7 @@ import yaml
 
 from backend.services.mfds.client import MfdsClient
 from backend.services.mfds.models import OfficialIngredient, OfficialItem
+from backend.services.mfds.sample_mapping import parse_material
 
 log = logging.getLogger(__name__)
 DEFAULT_CONFIG = Path(__file__).parent / "api_config.yaml"
@@ -81,11 +82,23 @@ def parse_item(raw: Dict[str, Any], cfg: Dict[str, Any]) -> Optional[OfficialIte
         for part in str(raw[ing_field]).split(cfg.get("ingredient_separator", "|")):
             ing_id, n = _split_code_prefix(part)
             if n:
-                ings.append(OfficialIngredient(name=n, ingredient_id=ing_id))  # 함량은 응답에 없다고 가정 → None
+                ings.append(OfficialIngredient(name=n, ingredient_id=ing_id))
+    # Supplement only exact, unique ingredient-name alignment in the supplied
+    # sample format. Never align by row order (compound rows use another order).
+    material_field = f.get("material")
+    components = parse_material(raw.get(material_field)) if material_field else []
+    names = [i.name for i in ings]
+    material_names = [i.name for i in components]
+    if (names and len(names) == len(set(names)) and len(material_names) == len(set(material_names))
+            and set(names) == set(material_names)):
+        for ingredient in ings:
+            component = next(c for c in components if c.name == ingredient.name)
+            ingredient.amount = component.direct_amount()
+            ingredient.unit = component.unit if ingredient.amount is not None else None
     form = raw.get(f["form"]) if f.get("form") else None
     ins_field = f.get("insurance_code")
     ins = raw.get(ins_field) if ins_field else None
-    ins = str(ins).strip() if ins not in (None, "") else None
+    ins = (str(ins).strip() or None) if ins is not None else None
     return OfficialItem(cfg["source"], str(oid).strip(), str(name).strip(), ings, form or None, ins)
 
 

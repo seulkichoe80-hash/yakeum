@@ -11,7 +11,9 @@ sources:
     insurance_code_param: null
     extra_params: {type: json, pageNo: 1, numOfRows: 50}
     items_path: [body, items]
-    fields: {id: ITEM_SEQ, name: ITEM_NAME, form: CHART, ingredients: MAIN_ITEM_INGR, insurance_code: null}
+    # 2026-10-29 supplied response sample only; full official specification remains unverified.
+    # EDI_CODE is observed empty; response mapping does not enable insurance-code queries.
+    fields: {id: ITEM_SEQ, name: ITEM_NAME, form: CHART, ingredients: MAIN_ITEM_INGR, material: MATERIAL_NAME, insurance_code: EDI_CODE}
     ingredient_separator: "|"     # 예: "[M040702]아세트아미노펜|[M040703]카페인"
   health_food:                    # 건강기능식품 품목제조신고
     source: MFDS_HEALTH_FOOD
