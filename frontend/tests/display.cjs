@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const {koreanSavedTime,extractionSourceLabel}=require('../src/display.ts');
+const source='2026-10-28T09:44:12.123456+00:00';
+assert.equal(koreanSavedTime(source),'2026.10.28 18:44');
+assert.equal(source,'2026-10-28T09:44:12.123456+00:00');
+assert.equal(koreanSavedTime('2026-10-28T15:00:00Z'),'2026.10.29 00:00');
+assert.equal(koreanSavedTime('2026-10-28T18:44:00+09:00'),'2026.10.28 18:44');
+assert.equal(koreanSavedTime('저장된 자료'),'저장된 자료');
+assert.equal(koreanSavedTime('2026-10-28'),'2026-10-28');
+assert.equal(koreanSavedTime('not-a-dateZ'),'저장 시각 확인 필요');
+assert.equal(extractionSourceLabel('MOCK'),'가상 추출');
+assert.equal(extractionSourceLabel('GEMINI'),'Gemini 추출');
+assert.equal(extractionSourceLabel('unknown'),'추출 출처 확인 필요');
+console.log('Korean saved time and source display: 10 checks passed; stored values unchanged.');

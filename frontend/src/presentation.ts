@@ -14,7 +14,7 @@ export const normalizationLabels: Record<NormalizationStatus, string> = {
  FAILED: '자료 처리 실패',
 };
 
-export const localMockNotice = 'LOCAL_MOCK 환경이며 실제 식약처 조회가 수행되지 않았습니다.';
+export const localMockNotice = '가상 의약품 매칭이며 실제 식약처 조회가 수행되지 않았습니다.';
 
 export type NormalizationAttentionGroup = {
  source: 'previous' | 'current';

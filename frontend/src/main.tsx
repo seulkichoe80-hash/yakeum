@@ -226,7 +226,7 @@ function App() {
    setFilter('ALL');
    setQuery('');
    setPage('overview');
-   setNotice(response.comparison.executed ? '가상 XLSX 처리 완료: deterministic parser · D 비교 · MFDS LOCAL MOCK 결과입니다.' : '자료는 보존했으며 전체 비교를 보류했습니다. 원본을 확인하고 다시 처리해 주세요.');
+   setNotice(response.comparison.executed ? '가상 XLSX 처리 완료: deterministic parser · D 비교 · 가상 의약품 매칭 결과입니다.' : '자료는 보존했으며 전체 비교를 보류했습니다. 원본을 확인하고 다시 처리해 주세요.');
   } catch (error) {
    if (activeMemberRef.current !== requestMemberId || version!==hiraVersion.current || controller.signal.aborted) return;
    const message = error instanceof Error ? error.message : '자료 처리 요청에 실패했습니다.';
@@ -292,9 +292,9 @@ function App() {
  }
 
  const modeLabel = isBackend
-  ? 'BACKEND · 가상 XLSX · MFDS LOCAL MOCK'
+  ? 'BACKEND · 가상 XLSX · 가상 의약품 매칭'
   : isMock
-   ? 'MOCK · 명시적 미리보기'
+   ? '가상 결과 · 명시적 미리보기'
    : '결과 없음 · 재분석 필요';
 
  return <div className="shell">
@@ -644,6 +644,6 @@ function App() {
 
 function Root() {
  const [account,setAccount]=useState(false);
- return <><div className="demo-scope-notice" role="note" aria-label="가상 시연 안내">가상 자료 전용 MVP · 실제 건강정보나 실제 약봉투를 입력하지 마세요. 기본 추출·식약처 매칭은 Mock입니다. Gemini는 별도 승인된 합성 이미지 시험만 지원하며, 개발용 로그인·저장은 운영 서비스가 아닙니다.</div><div className="app-mode-switch"><button onClick={()=>setAccount(v=>!v)}>{account?'가상 시연 화면으로 돌아가기':'개발용 로그인·저장 열기'}</button></div>{account?<AccountWorkspace/>:<App/>}</>;
+ return <><div className="demo-scope-notice" role="note" aria-label="가상 시연 안내">가상 자료 전용 MVP · 실제 건강정보나 실제 약봉투를 입력하지 마세요. 기본 기능은 가상 추출·가상 의약품 매칭입니다. Gemini는 별도 승인된 합성 이미지 시험만 지원하며, 개발용 로그인·저장은 운영 서비스가 아닙니다.</div><div className="app-mode-switch"><button onClick={()=>setAccount(v=>!v)}>{account?'가상 시연 화면으로 돌아가기':'개발용 로그인·저장 열기'}</button></div>{account?<AccountWorkspace/>:<App/>}</>;
 }
 createRoot(document.getElementById('root')!).render(<React.StrictMode><Root /></React.StrictMode>);

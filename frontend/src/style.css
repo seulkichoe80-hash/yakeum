@@ -64,3 +64,17 @@ main details pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-
 .account-hira button{max-width:100%;overflow-wrap:anywhere}
 
 .demo-scope-notice { position: static; padding: 12px 20px; background: #fff7df; color: #463818; line-height: 1.6; overflow-wrap: anywhere; }
+
+/* Account forms stay paired and stacked; narrow controls never keep intrinsic widths. */
+.account-workspace{width:100%;min-width:0}
+.account-workspace label:not(.check){display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0;margin:14px 0}
+.account-workspace input:not([type=checkbox]),.account-workspace select{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.account-workspace input[type=checkbox]{flex-shrink:0}
+.account-workspace button{max-width:100%;white-space:normal;overflow-wrap:anywhere;margin:4px 8px 4px 0;vertical-align:middle}
+.account-workspace .card,.account-workspace section{min-width:0}
+@media(max-width:720px){
+ .account-workspace{padding:14px!important}
+ .account-workspace label:not(.check){width:100%}
+ .account-workspace button{min-height:44px}
+ .account-workspace input[type=date]{max-width:100%;min-width:0}
+}

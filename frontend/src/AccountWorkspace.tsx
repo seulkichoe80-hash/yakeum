@@ -6,6 +6,7 @@ import { PhotoWorkflow } from './PhotoWorkflow';
 import { labels, productName, type CurrentIntakeState, type MedicationRecord } from './types';
 import { intakeChoiceLabels, verificationLabels } from './currentIntakeUi';
 import { medicationTimeline } from './timeline';
+import { koreanSavedTime, extractionSourceLabel } from './display';
 import type { PhotoResponse } from './photoApi';
 
 type Family={id:string;name:string};
@@ -17,7 +18,7 @@ export function AccountWorkspace(){
  async function login(register=false){setBusy(true);setError('');try{if(register)await accountRequest('/register','POST',{username,password});const v=await accountRequest('/login','POST',{username,password});setSession(v);setPassword('');}catch(e){setError(e instanceof Error?e.message:'로그인 실패');}finally{setBusy(false);}}
  async function logout(){setBusy(true);setError('');try{await accountRequest('/logout','POST');setSession(null);clearAccount();setPassword('');}catch(e){setError(e instanceof Error?e.message:'로그아웃 실패');}finally{setBusy(false);}}
  return <main className="account-workspace" style={{maxWidth:1000,margin:'20px auto',padding:20}}>
-  <h1>개발용 로그인·저장</h1><p className="notice">가상 사용자·가상 자료 전용 · 개발용 데이터베이스 · 기본 추출/공식 조회는 Mock. Gemini는 별도 승인된 합성 이미지 시험 경로입니다. 운영용 인증·저장 기능은 아닙니다.</p>
+  <h1>개발용 로그인·저장</h1><p className="notice">가상 사용자·가상 자료 전용 · 개발용 데이터베이스 · 기본 기능은 가상 추출·가상 의약품 매칭. Gemini는 별도 승인된 합성 이미지 시험 경로입니다. 운영용 인증·저장 기능은 아닙니다.</p>
   {error&&<p role="alert">{error}</p>}
   {checking?<p role="status">로그인 확인 중…</p>:session?<><p>로그인: {session.username} <button disabled={busy} onClick={logout}>로그아웃</button></p><Families key={session.username}/></>:<form onSubmit={e=>{e.preventDefault();void login();}}>
    <label>가상 계정 아이디<input autoComplete="username" pattern="[a-z0-9_-]{3,40}" required value={username} onChange={e=>setUsername(e.target.value)}/></label>
@@ -61,9 +62,9 @@ function FamilyWorkspace({family}:{family:Family}){
   <PhotoWorkflow key={epoch} uploaded account deletedRunId={deletedPhoto} familyMemberId={family.id} familyLabel={family.name} sourceType={source} sourceLabel="가상 사진" recordDate={date} file={file}/>
   <AccountHiraPanel family={family.id} name={family.name}/>
   <h3>이 가족의 사진 저장 목록</h3><button disabled={updating} onClick={loadList}>저장 목록 새로고침</button>{error&&<p role="alert">{error}</p>}
-  {runs.length===0&&<p>저장된 결과가 없습니다.</p>}{runs.map((r,i)=><button disabled={updating} key={r.id} onClick={()=>detail(r.id)}>저장 결과 {i+1} · {r.created}</button>)}
+  {runs.length===0&&<p>저장된 결과가 없습니다.</p>}{runs.map((r,i)=><button disabled={updating} key={r.id} onClick={()=>detail(r.id)}>저장 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
   {saved&&<section aria-label="저장된 약 정보"><h3>저장된 약 정보 · {family.name}</h3>
-   <p>추출 출처: 이전 {saved.result.extraction_sources?.previous??'MOCK'} / 현재 {saved.result.extraction_sources?.current??'MOCK'} · 공식 매칭 LOCAL_MOCK</p>
+   <p>추출 출처: 이전 {extractionSourceLabel(saved.result.extraction_sources?.previous)} / 현재 {extractionSourceLabel(saved.result.extraction_sources?.current)} · 가상 의약품 매칭</p>
    <DeleteSavedResult key={saved.run_id} kind="사진" family={family.name} created={runs.find(r=>r.id===saved.run_id)?.created??'저장된 자료'} run={saved.run_id} busy={updating} onConfirm={()=>removePhoto(saved.run_id)}/>
    <details><summary>저장 원본·수정·정규화·후보 확인 구분</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({original:saved.result.original_results,edited:saved.result.edited_records,reviews:saved.reviews,normalized:saved.result.normalization_results},null,2)}</pre></details>
    {saved.result.reconciliation_result?.items.map((item,index)=>{const record=item.current_record??item.previous_record;const state=saved.intake_states.find(s=>s.medication_record_id===record!.record_id);const timeline=medicationTimeline({...item,id:`saved-${index}`});return <article className="card" key={record!.record_id}><h4>{productName(record)} · {labels[item.status]}</h4><p>이전: {timeline.previous.recordDate} · {timeline.previous.productStrength} · {timeline.previous.dosePerAdministration}</p><p>현재: {timeline.current.recordDate} · {timeline.current.productStrength} · {timeline.current.dosePerAdministration}</p><p>실제 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>{Object.entries(intakeChoiceLabels).map(([choice,label])=><button disabled={updating} key={choice} onClick={()=>verify(record!.record_id,choice)}>{label} 저장</button>)}</article>;})}
