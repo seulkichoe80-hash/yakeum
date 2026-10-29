@@ -76,3 +76,39 @@ gateway timeout, access denied의 **존재 분류**이며 원문을 복사하지
 기존 TLS·키 인코딩·페이지/함량 검사를 유지했다.
 앱·공통 계약·DB·저장 자료·계정 권한·프론트 변경이 없어 전체 앱/브라우저 검사를 반복하지 않았다.
 다음 실제 시도는 별도 승인 전까지 하지 않는다.
+
+## 741d1d9 보완본의 별도 승인 1회 실조회 결과
+
+같은 날 별도 승인으로 08 경로/타이레놀/첫 페이지 3건을 한 번 조회했다.
+다음은 실제 실행 출력에서 보존한 **정제된 요약**이다. 위의 헤더 미보존 사례와 별개의 시도다.
+
+```json
+{
+  "mode": "live",
+  "request_attempts": 1,
+  "automatic_retries": 0,
+  "key_registered": true,
+  "error": "HTTP_FAILURE",
+  "http_status": 503,
+  "failure_stage": "HTTP_RESPONSE",
+  "diagnostic_headers": {
+    "content_type": "text/plain",
+    "via_present": false,
+    "request_id_present": false,
+    "server": "envoy",
+    "retry_after_present": false,
+    "proxy_status_present": false
+  },
+  "origin_attribution": "UNCONFIRMED",
+  "error_body_bytes_read": 91,
+  "body_format_hint": "TEXT",
+  "body_signals": ["UPSTREAM_CONNECT_ERROR_TEXT"],
+  "error_body_status": "UNREADABLE_OR_NON_XML_REDACTED"
+}
+```
+
+인증 성공·정상 XML·제품 필드·전체/반환 건수는 미확인이다.
+Envoy가 반환한 상위 연결 실패 신호지만 어느 Envoy/게이트웨이인지,
+네트워크 경로·목적 서비스·그 외 어떤 원인인지 확정할 수 없다.
+클라우드와 사용자 PC 결과를 비교하기 위한 안내는 [MFDS_PC_COMPARISON.md](MFDS_PC_COMPARISON.md)를 따른다.
+이 기록 작성 과정의 추가 API 호출은 0회다.
