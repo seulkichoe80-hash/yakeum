@@ -1,0 +1,96 @@
+{
+  "synthetic_only": true,
+  "validated_against": "4423a96",
+  "method": "local ASGI multipart upload -> file validation -> actual parser -> B LOCAL_MOCK -> D v2",
+  "cases": [
+    {
+      "case": "01_same",
+      "upload_http": 200,
+      "parser_rows": {
+        "previous": 1,
+        "current": 1
+      },
+      "executed": true,
+      "statuses": [
+        "MAINTAINED"
+      ],
+      "hold_kinds": [],
+      "source_rows": 2,
+      "originals_preserved": true,
+      "external_api_calls": 0,
+      "database_calls": 0
+    },
+    {
+      "case": "02_changed",
+      "upload_http": 200,
+      "parser_rows": {
+        "previous": 1,
+        "current": 1
+      },
+      "executed": true,
+      "statuses": [
+        "DOSE_CHANGED"
+      ],
+      "hold_kinds": [],
+      "source_rows": 2,
+      "originals_preserved": true,
+      "external_api_calls": 0,
+      "database_calls": 0
+    },
+    {
+      "case": "03_new",
+      "upload_http": 200,
+      "parser_rows": {
+        "previous": 0,
+        "current": 1
+      },
+      "executed": true,
+      "statuses": [
+        "NEW"
+      ],
+      "hold_kinds": [],
+      "source_rows": 1,
+      "originals_preserved": true,
+      "external_api_calls": 0,
+      "database_calls": 0
+    },
+    {
+      "case": "04_previous_only",
+      "upload_http": 200,
+      "parser_rows": {
+        "previous": 1,
+        "current": 0
+      },
+      "executed": true,
+      "statuses": [
+        "NEEDS_CONFIRMATION"
+      ],
+      "hold_kinds": [],
+      "source_rows": 1,
+      "originals_preserved": true,
+      "external_api_calls": 0,
+      "database_calls": 0
+    },
+    {
+      "case": "05_hold",
+      "upload_http": 200,
+      "parser_rows": {
+        "previous": 1,
+        "current": 1
+      },
+      "executed": false,
+      "statuses": [],
+      "hold_kinds": [
+        "UNKNOWN_COMPARISON_FIELDS"
+      ],
+      "source_rows": 2,
+      "originals_preserved": true,
+      "external_api_calls": 0,
+      "database_calls": 0
+    }
+  ],
+  "empty_vs_held_distinct": true,
+  "external_api_calls": 0,
+  "database_calls": 0,
+  "render_deployed_or_tested": false
+}

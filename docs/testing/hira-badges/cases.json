@@ -1,0 +1,103 @@
+{
+  "synthetic_only": true,
+  "matching": "LOCAL_MOCK",
+  "baseline_commit": "4423a96",
+  "cases": [
+    {
+      "case": "01_same",
+      "label": "기록 동일",
+      "files": {
+        "previous": "01_same/previous.xlsx",
+        "current": "01_same/current.xlsx"
+      },
+      "rows": {
+        "previous": 1,
+        "current": 1
+      },
+      "executed": true,
+      "statuses": [
+        "MAINTAINED"
+      ],
+      "reason_codes": [
+        "SAME_INGREDIENT_SAME_STRENGTH"
+      ],
+      "hold_kind": null
+    },
+    {
+      "case": "02_changed",
+      "label": "복용정보 변경",
+      "files": {
+        "previous": "02_changed/previous.xlsx",
+        "current": "02_changed/current.xlsx"
+      },
+      "rows": {
+        "previous": 1,
+        "current": 1
+      },
+      "executed": true,
+      "statuses": [
+        "DOSE_CHANGED"
+      ],
+      "reason_codes": [
+        "STRENGTH_OR_DOSAGE_CHANGED"
+      ],
+      "hold_kind": null
+    },
+    {
+      "case": "03_new",
+      "label": "새로 확인",
+      "files": {
+        "previous": "03_new/previous.xlsx",
+        "current": "03_new/current.xlsx"
+      },
+      "rows": {
+        "previous": 0,
+        "current": 1
+      },
+      "executed": true,
+      "statuses": [
+        "NEW"
+      ],
+      "reason_codes": [
+        "NEW_RECORD"
+      ],
+      "hold_kind": null
+    },
+    {
+      "case": "04_previous_only",
+      "label": "이전에만 있음",
+      "files": {
+        "previous": "04_previous_only/previous.xlsx",
+        "current": "04_previous_only/current.xlsx"
+      },
+      "rows": {
+        "previous": 1,
+        "current": 0
+      },
+      "executed": true,
+      "statuses": [
+        "NEEDS_CONFIRMATION"
+      ],
+      "reason_codes": [
+        "NOT_FOUND_IN_LATEST_SOURCE"
+      ],
+      "hold_kind": null
+    },
+    {
+      "case": "05_hold",
+      "label": "추가 확인 필요",
+      "files": {
+        "previous": "05_hold/previous.xlsx",
+        "current": "05_hold/current.xlsx"
+      },
+      "rows": {
+        "previous": 1,
+        "current": 1
+      },
+      "executed": false,
+      "statuses": [],
+      "reason_codes": [],
+      "hold_kind": "UNKNOWN_COMPARISON_FIELDS"
+    }
+  ]
+}
