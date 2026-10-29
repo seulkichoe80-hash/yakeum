@@ -71,9 +71,10 @@ MFDS_API_KEY는 Render 프로세스 환경에서만 읽으며 브라우저 요�
 1. 검증한 최종 commit을 선택해 현재 서비스에서 수동 배포한다.
    현재 Render의 실제 배포 SHA/설정은 이 작업에서 조회하지 못했다.
 2. 앱에서 지정한 기존 계정으로 로그인한다. 브라우저가 HTTPS와 기존 공유 입구를 정상 사용하게 둔다.
-3. 같은 탭/같은 도메인에서 다음 주소로 이동한다.
-   `https://yakeum.onrender.com/api/dev-account/admin/mfds-probe/view`
-   도메인이 다르면 해당 서비스 도메인으로만 바꾼다.
+3. 로그인·저장 화면의 **식약처 관리자 검증 열기** 버튼을 누른다.
+   서버의 관리자 상태 GET에 성공한 계정에서만 버튼이 나타나며, 앱 안에서 같은 인증 요청 함수를 사용한다.
+   주소창 이동이나 토큰 복사/URL 전달은 필요 없다. 버튼을 열어도 실제 외부 조회는 실행하지 않는다.
+   기존 보호 HTML `/api/dev-account/admin/mfds-probe/view`는 보존하지만 기본 진입 경로로 안내하지 않는다.
 4. 페이지를 열거나 **저장된 상태 확인**을 눌러도 외부 API를 호출하지 않는다.
    UNUSED를 확인한다. 401은 로그인, 403은 지정 계정, 404는 활성화 설정/배포 버전을 확인한다.
    503이면 DB/비밀 설정 원인을 점검한다. 키는 화면에 입력하지 않는다.
@@ -147,3 +148,5 @@ subtests 5개와 브라우저 그룹은 독립 테스트 수로 합산하지 않
 기존 Starlette/httpx deprecation warning 1건(각 Python 실행)이 있었다.
 가상 서버는 backend.tests.mfds_admin_fake_server를 명시적인 합성 환경에서만 사용하며
 배포 Docker 이미지에는 테스트 서버/테스트 모듈을 복사하지 않는다.
+
+2026-10-30 로그인 전달 방식 대조·앱 내 진입 검증: [MFDS_ADMIN_AUTH_REVIEW.md](MFDS_ADMIN_AUTH_REVIEW.md).

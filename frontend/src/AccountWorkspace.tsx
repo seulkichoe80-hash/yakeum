@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { accountRequest, clearAccount } from './accountApi';
 import { DeleteSavedResult } from './DeleteSavedResult';
 import { AccountHiraPanel } from './AccountHiraPanel';
+import { AdminMfdsProbe } from './AdminMfdsProbe';
 import { PhotoWorkflow } from './PhotoWorkflow';
 import { labels, productName, type CurrentIntakeState, type MedicationRecord } from './types';
 import { intakeChoiceLabels, verificationLabels } from './currentIntakeUi';
@@ -20,7 +21,7 @@ export function AccountWorkspace(){
  return <main className="account-workspace" style={{maxWidth:1000,margin:'20px auto',padding:20}}>
   <h1>개발용 로그인·저장</h1><p className="notice">가상 사용자·가상 자료 전용 · 개발용 데이터베이스 · 기본 기능은 가상 추출·가상 의약품 매칭. Gemini는 별도 승인된 합성 이미지 시험 경로입니다. 운영용 인증·저장 기능은 아닙니다.</p>
   {error&&<p role="alert">{error}</p>}
-  {checking?<p role="status">로그인 확인 중…</p>:session?<><p>로그인: {session.username} <button disabled={busy} onClick={logout}>로그아웃</button></p><Families key={session.username}/></>:<form onSubmit={e=>{e.preventDefault();void login();}}>
+  {checking?<p role="status">로그인 확인 중…</p>:session?<><p>로그인: {session.username} <button disabled={busy} onClick={logout}>로그아웃</button></p><AdminMfdsProbe key={session.username}/><Families key={session.username}/></>:<form onSubmit={e=>{e.preventDefault();void login();}}>
    <label>가상 계정 아이디<input autoComplete="username" pattern="[a-z0-9_-]{3,40}" required value={username} onChange={e=>setUsername(e.target.value)}/></label>
    <label>비밀번호<input type="password" autoComplete="current-password" required minLength={12} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)}/></label>
    <p>아이디: 영문 소문자·숫자·_·- 3~40자 / 비밀번호: 12~128자. 평소 사용하는 비밀번호를 쓰지 마세요.</p>
