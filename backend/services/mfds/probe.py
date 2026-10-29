@@ -106,15 +106,84 @@ SAFE_MESSAGES = frozenset({
 })
 
 
+
+def safe_diagnostic_headers(headers):
+    """Return allowlisted enums, bounded numbers and presence flags only."""
+    headers = headers or {}
+    def value(name):
+        return str(headers.get(name, '') or '')
+    media = value('Content-Type').split(';', 1)[0].strip().lower()
+    allowed_media = {'application/xml', 'text/xml', 'application/json',
+                     'text/html', 'text/plain', 'application/problem+json'}
+    result = {'content_type': media if media in allowed_media else 'OTHER_REDACTED' if media else 'UNAVAILABLE',
+              'via_present': bool(value('Via')),
+              'request_id_present': any(value(k) for k in ('X-Request-ID', 'X-Correlation-ID', 'CF-Ray'))}
+    server = value('Server').lower().strip()
+    known_servers = {'nginx', 'envoy', 'cloudflare', 'squid', 'apache', 'istio-envoy'}
+    result['server'] = server if server in known_servers else 'OTHER_REDACTED' if server else 'UNAVAILABLE'
+    retry = value('Retry-After')
+    result['retry_after_present'] = bool(retry)
+    if re.fullmatch(r'[0-9]{1,5}', retry) and int(retry) <= 86400:
+        result['retry_after_seconds'] = int(retry)
+    cache = value('X-Cache').strip().upper()
+    if cache in {'HIT', 'MISS', 'BYPASS', 'ERROR'}:
+        result['cache_status'] = cache
+    proxy = value('Proxy-Status').lower()
+    result['proxy_status_present'] = bool(proxy)
+    # RFC proxy errors: emit only fixed category names, never proxy identities.
+    for error in ('dns_error', 'connection_timeout', 'connection_refused',
+                  'destination_unavailable', 'tls_protocol_error', 'tls_certificate_error'):
+        if re.search(r'(?:^|[; ,])error="?' + error + r'"?(?:$|[; ,])', proxy):
+            result['proxy_error_category'] = error
+            break
+    squid = value('X-Squid-Error').split(' ', 1)[0]
+    if squid in {'ERR_CONNECT_FAIL', 'ERR_DNS_FAIL', 'ERR_ACCESS_DENIED', 'ERR_SECURE_CONNECT_FAIL', 'ERR_READ_TIMEOUT'}:
+        result['squid_error_category'] = squid
+    return result
+
+
+def body_diagnostic(text):
+    """Keep useful non-XML categories without copying server text."""
+    stripped = text.lstrip().lower()
+    signals = []
+    for phrase, signal in (
+        ('upstream connect error', 'UPSTREAM_CONNECT_ERROR_TEXT'),
+        ('no healthy upstream', 'NO_HEALTHY_UPSTREAM_TEXT'),
+        ('service unavailable', 'SERVICE_UNAVAILABLE_TEXT'),
+        ('gateway timeout', 'GATEWAY_TIMEOUT_TEXT'),
+        ('access denied', 'ACCESS_DENIED_TEXT')):
+        if phrase in stripped:
+            signals.append(signal)
+    fmt = ('HTML' if stripped.startswith(('<!doctype html', '<html')) else
+           'JSON_LIKE' if stripped.startswith(('{', '[')) else
+           'XML_LIKE' if stripped.startswith('<') else 'TEXT')
+    return {'body_format_hint': fmt, 'body_signals': signals}
+
+
 def safe_http_error(exc):
-    result = {'failure_stage': 'HTTP_RESPONSE'}
+    result = {'failure_stage': 'HTTP_RESPONSE',
+              'diagnostic_headers': safe_diagnostic_headers(getattr(exc, 'headers', None)),
+              'origin_attribution': 'UNCONFIRMED'}
     try:
         raw = exc.read(16_385)
+        result['error_body_bytes_read'] = len(raw)
         if not raw:
             return {**result, 'error_body_status': 'UNAVAILABLE'}
         if len(raw) > 16_384:
             return {**result, 'error_body_status': 'TOO_LARGE_REDACTED'}
         text = raw.decode('utf-8-sig')
+        result.update(body_diagnostic(text))
+        if result['body_format_hint'] == 'JSON_LIKE':
+            try:
+                obj = json.loads(text)
+                if isinstance(obj, dict):
+                    code = str(obj.get('code', obj.get('errorCode', ''))).strip()
+                    message = obj.get('message', obj.get('error', ''))
+                    result['api_error_code'] = code if re.fullmatch(r'[0-9]{2,3}', code) else 'UNRECOGNIZED_REDACTED'
+                    result['api_error_message'] = message if isinstance(message, str) and message in SAFE_MESSAGES else 'UNRECOGNIZED_SERVER_MESSAGE_REDACTED'
+                    return {**result, 'error_body_status': 'JSON_PARSED'}
+            except (ValueError, TypeError):
+                pass
         if re.search(r'<!\s*(?:DOCTYPE|ENTITY)\b', text, re.I):
             return {**result, 'error_body_status': 'UNSUPPORTED_REDACTED'}
         root = ET.fromstring(text)

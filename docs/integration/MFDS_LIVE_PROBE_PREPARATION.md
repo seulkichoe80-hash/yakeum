@@ -101,3 +101,4 @@ python -m backend.services.mfds.probe --live --name 타이레놀 --page 1 --rows
 이 명령을 준비한 것이 현재 배포본의 Mock 표시를 실제 매칭으로 바꾸지는 않는다.
 
 후속 경로/인코딩/오류 수집 검토: [MFDS_HTTP400_REVIEW.md](MFDS_HTTP400_REVIEW.md).
+503 및 비XML 오류의 안전한 헤더/본문 요약: [MFDS_HTTP503_REVIEW.md](MFDS_HTTP503_REVIEW.md).

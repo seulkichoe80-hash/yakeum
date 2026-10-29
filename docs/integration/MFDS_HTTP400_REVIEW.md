@@ -58,3 +58,6 @@ DNS/프록시/TLS/시간 초과 분류·기존 XML/함량/페이지 검사 포�
 
 결과: **71 passed**, 기존 Starlette/httpx deprecation warning 1건.
 초기 기본 Python에는 pytest가 없어 수집 전 종료됐으며 검사 전용 venv에서 위 명령으로 통과했다.
+
+후속: 08 경로의 별도 승인 1회 조회에서 HTTP 503이 발생했다. 당시 헤더/본문은 미보존이며,
+원인 미확인 기록과 향후 비XML 진단 보완은 [MFDS_HTTP503_REVIEW.md](MFDS_HTTP503_REVIEW.md)를 따른다.

@@ -183,3 +183,72 @@ def test_safe_network_stage_classification():
     assert transport_stage(urllib.error.URLError(OSError('Tunnel connection failed: 403 Forbidden')))=='PROXY_CONNECTION'
     assert transport_stage(ssl.SSLCertVerificationError('synthetic'))=='TLS_CERTIFICATE_VERIFICATION'
     assert transport_stage(TimeoutError('synthetic'))=='TIMEOUT_STAGE_UNDETERMINED'
+
+
+def test_503_html_preserves_safe_headers_and_signals_not_raw_text():
+    from email.message import Message
+    from io import BytesIO
+    import urllib.error
+    from backend.services.mfds.probe import safe_http_error
+    headers=Message()
+    for key,value in {'Content-Type':'text/html; charset=utf-8', 'Server':'envoy',
+                      'Via':'SYNTHETIC-SECRET internal proxy', 'X-Request-ID':'SYNTHETIC-SECRET',
+                      'Set-Cookie':'session=SYNTHETIC-SECRET', 'Location':'https://private.invalid?key=SYNTHETIC-SECRET',
+                      'Retry-After':'30','Proxy-Status':'internal; error=connection_timeout'}.items():
+        headers[key]=value
+    error=urllib.error.HTTPError('private',503,'private',headers,BytesIO(
+        b'<html>Service Unavailable: upstream connect error SYNTHETIC-SECRET https://private.invalid</html>'))
+    result=safe_http_error(error)
+    assert result['diagnostic_headers']['content_type']=='text/html'
+    assert result['diagnostic_headers']['server']=='envoy'
+    assert result['diagnostic_headers']['via_present'] is True
+    assert result['diagnostic_headers']['request_id_present'] is True
+    assert result['diagnostic_headers']['retry_after_seconds']==30
+    assert result['diagnostic_headers']['proxy_error_category']=='connection_timeout'
+    assert result['body_format_hint']=='HTML'
+    assert 'UPSTREAM_CONNECT_ERROR_TEXT' in result['body_signals']
+    assert 'SERVICE_UNAVAILABLE_TEXT' in result['body_signals']
+    assert result['origin_attribution']=='UNCONFIRMED'
+    assert 'SYNTHETIC-SECRET' not in str(result) and 'https://' not in str(result)
+    assert 'Set-Cookie' not in str(result) and 'Location' not in str(result)
+
+
+def test_untrusted_header_values_never_echoed():
+    from backend.services.mfds.probe import safe_diagnostic_headers
+    headers={k:'SYNTHETIC-SECRET' for k in ['Content-Type','Server','Via','X-Request-ID',
+             'Retry-After','X-Cache','Proxy-Status','X-Squid-Error']}
+    result=safe_diagnostic_headers(headers)
+    assert 'SYNTHETIC-SECRET' not in str(result)
+    assert result['content_type']=='OTHER_REDACTED' and result['server']=='OTHER_REDACTED'
+    assert 'retry_after_seconds' not in result
+
+
+@pytest.mark.parametrize('body,fmt',[
+    (b'upstream connect error SYNTHETIC-SECRET','TEXT'),
+    (b'{"code":"10","message":"INVALID_REQUEST_PARAMETER_ERROR"}','JSON_LIKE'),
+    (b'{"code":"SYNTHETIC-SECRET","message":"https://private.invalid/SYNTHETIC-SECRET"}','JSON_LIKE')])
+def test_non_xml_errors_retain_safe_summary(body,fmt):
+    from io import BytesIO
+    import urllib.error
+    from backend.services.mfds.probe import safe_http_error
+    result=safe_http_error(urllib.error.HTTPError('private',503,'private',{},BytesIO(body)))
+    assert result['body_format_hint']==fmt and result['origin_attribution']=='UNCONFIRMED'
+    assert result['error_body_bytes_read']==len(body)
+    assert 'SYNTHETIC-SECRET' not in str(result) and 'https://' not in str(result)
+    if fmt=='JSON_LIKE':
+        assert result['error_body_status']=='JSON_PARSED'
+
+
+def test_503_summary_still_only_one_attempt_no_retry(monkeypatch,capsys):
+    from io import BytesIO
+    import urllib.error
+    monkeypatch.setenv('MFDS_API_KEY','SYNTHETIC-SECRET')
+    calls=[]
+    def fake(*args):
+        calls.append(True)
+        raise urllib.error.HTTPError('private',503,'private',{'Content-Type':'text/plain'},BytesIO(b'no healthy upstream'))
+    assert main(['--live'],transport=fake)==1
+    result=json.loads(capsys.readouterr().out)
+    assert calls==[True] and result['http_status']==503
+    assert result['body_signals']==['NO_HEALTHY_UPSTREAM_TEXT']
+    assert result['request_attempts']==1 and result['automatic_retries']==0
