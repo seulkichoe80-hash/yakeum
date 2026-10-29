@@ -106,6 +106,12 @@ def normalize_structured_record(extraction_result: Mapping[str, Any], client, *,
         result["match"] = {"source": item.source, "official_id": item.official_id, "match_method": outcome.method}
         record["mfds_product_id"] = item.official_id
         record["product_name_normalized"] = item.name
+        if item.source == "MFDS_DRUG" and outcome.method in {"NAME_EXACT", "NAME_FUZZY"}:
+            # Product-name normalization removes strength text. A single name
+            # candidate is not evidence that ingredients or strength agree.
+            warnings.append(to_error_detail(
+                "제품명 기준 단일 후보 매칭입니다. 성분·함량·단위의 공식 일치 검증은 수행하지 않았습니다. 원본과 후보를 확인해 주세요."
+            ))
         if not record["ingredients"]:
             # Empty-ingredient contract and official-strength supplementation
             # remain unresolved. Preserve the empty list rather than fabricate.
