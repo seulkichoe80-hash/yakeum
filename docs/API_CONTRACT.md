@@ -459,3 +459,10 @@ Reconciliation 상태·reason_code 의미는 유지한다. 새 TASK D 화면만 
 DEV_ACCOUNT_V1의 extraction_source/공식 매칭 출처, 계정 결과의 extraction_sources로
 Gemini 요청 경로와 Mock을 구분한다. 서버 활성화·설정·시도 한도가 없으면 실패하며 fallback하지 않는다.
 [Gemini 준비·출처·실호출 승인 전제](integration/GEMINI_PHOTO_PREPARATION.md)를 따른다.
+
+## 임시 관리자 식약처 진단 (별도 계약)
+
+공통 약 정보/사진/HIRA 계약은 변경하지 않는다. 기본 비활성인 관리자 전용
+ADMIN_MFDS_PROBE_V1과 영속 1회 실행 규칙은
+[integration/RENDER_MFDS_ADMIN_PROBE.md](integration/RENDER_MFDS_ADMIN_PROBE.md)를 따른다.
+실제 의약품 매칭 전환이나 운영 관리자 인증 완성을 뜻하지 않는다.

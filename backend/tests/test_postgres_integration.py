@@ -100,3 +100,17 @@ def test_postgres_delete_is_atomic_when_parent_delete_fails(kind):
     assert c.delete(base+'/'+run).status_code==503
     value=c.get(base+'/'+run)
     assert value.status_code==200 and value.json()['intake_states']
+
+
+@pytest.mark.parametrize('case_name',[
+    'test_success_fixed_query_persisted_and_replayed_after_new_session',
+    'test_simultaneous_requests_only_one_external_attempt',
+    'test_process_crash_leaves_consumed_record_and_blocks_restart'])
+def test_durable_admin_probe_on_disposable_postgres(monkeypatch,case_name):
+    from backend.tests import test_mfds_admin
+    from backend.api import mfds_admin
+    monkeypatch.setenv('YAKEUM_MFDS_PROBE_ENABLED','1')
+    monkeypatch.setenv('YAKEUM_MFDS_PROBE_ADMIN_USERNAME','synthetic_admin')
+    monkeypatch.setenv('MFDS_API_KEY','SYNTHETIC-SECRET')
+    monkeypatch.setattr(mfds_admin.probe,'fetch_xml',lambda *a:pytest.fail('live forbidden'))
+    getattr(test_mfds_admin,case_name)(monkeypatch)

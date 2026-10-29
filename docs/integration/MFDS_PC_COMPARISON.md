@@ -127,3 +127,8 @@ Ctrl+C로 중단할 수 있으나 요청이 이미 출발했다면 호출됐을 
 
 결과: **84 passed**(비공개 입력 도우미 신규 7개 포함), 기존 Starlette/httpx deprecation warning 1건.
 실제 PC에서의 1회 실행과 OS별 실제 터미널 동작은 사용자가 확인해야 한다.
+
+## 이후 사용자 지시
+
+PC 설치·실행 안내는 중단했다. 위 절차는 이전 기록으로만 보존한다.
+현재 준비 대상은 [Render 관리자 검증](RENDER_MFDS_ADMIN_PROBE.md)이며 PC 실행을 요구하지 않는다.

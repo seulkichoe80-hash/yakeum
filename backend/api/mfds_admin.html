@@ -1,0 +1,45 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>식약처 관리자 1회 검증 · 약이음</title>
+<style nonce="__NONCE__">body{font:18px/1.6 system-ui,sans-serif;margin:24px auto;padding:0 16px;max-width:800px;color:#173b3a}button{font:inherit;padding:12px;margin:8px 8px 8px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f5f5;padding:16px}label{display:block}input{width:22px;height:22px}button:disabled{opacity:.6}</style>
+<h1>식약처 연결 1회 검증</h1>
+<p>서버에서 지정한 관리자 전용입니다. 기존 사진·HIRA 가상 매칭은 유지됩니다.</p>
+<p>공개 제품명 ‘타이레놀’, 첫 페이지 3건을 최대 1회 조회합니다. 재시도·추가 페이지 조회는 없습니다. 이 검증은 성분·함량 검증이나 앱 실제 매칭 완료를 뜻하지 않습니다.</p>
+<p>요청 전에 실행 기록을 DB에 남깁니다. 실패·연결 끊김·서버 재시작 때도 재실행할 수 없습니다. 결과가 불명확하면 상태 조회만 하세요.</p>
+<label><input id="confirm" type="checkbox">실제 외부 조회 최대 1회 실행에 동의합니다.</label>
+<button id="run" disabled>실제 조회 1회 실행</button><button id="status">저장된 상태 확인 (외부 호출 없음)</button>
+<p id="message" role="status" aria-live="polite">관리자 권한과 저장 상태 확인 중…</p>
+<pre id="result" aria-label="안전한 진단 결과"></pre>
+<script nonce="__NONCE__">
+const base='/api/dev-account/admin/mfds-probe';
+const run=document.getElementById('run'), checkbox=document.getElementById('confirm');
+const message=document.getElementById('message'), result=document.getElementById('result');
+let unused=false, posted=false;
+function enable(){run.disabled=posted||!unused||!checkbox.checked;}
+async function read(){
+  unused=false;enable();result.textContent='';
+  try{
+    const r=await fetch(base+'/status',{cache:'no-store'});
+    if(!r.ok)throw Error('권한 또는 저장 상태를 확인하지 못했습니다. 다시 로그인하거나 관리자 설정을 확인하세요.');
+    const data=await r.json();unused=!data.consumed;
+    message.textContent=data.state==='UNUSED'?'아직 사용하지 않았습니다. 동의 후 한 번 실행할 수 있습니다.':data.state==='FINISHED'?'실행이 종료되었습니다. 저장된 결과만 표시합니다.':'실행이 시작됐거나 결과가 불명확합니다. 재실행하지 않습니다. 상태 조회만 하세요.';
+    result.textContent=JSON.stringify(data,null,2);
+  }catch(e){message.textContent=e.message;}
+  enable();
+}
+checkbox.addEventListener('change',enable);
+document.getElementById('status').addEventListener('click',read);
+run.addEventListener('click',async()=>{
+  if(run.disabled)return;
+  posted=true;enable();result.textContent='';message.textContent='1회 실행 요청 중… 응답이 늦어도 다시 실행하지 마세요.';
+  try{
+    const session=await fetch('/api/dev-account/me',{cache:'no-store'});
+    if(!session.ok)throw Error('로그인이 만료되었습니다. 다시 로그인한 뒤 저장 상태만 확인하세요.');
+    const user=await session.json();
+    const response=await fetch(base+'/execute',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':user.csrf_token},body:JSON.stringify({confirm:true}),cache:'no-store'});
+    if(!response.ok)throw Error('실행 결과를 확인하지 못했습니다. 재전송하지 말고 저장된 상태를 확인하세요.');
+    result.textContent=JSON.stringify(await response.json(),null,2);message.textContent='실행 상태와 안전한 결과입니다. 추가 호출은 하지 않습니다.';
+  }catch(e){message.textContent=e.message;}
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)read();});
+read();
+</script></html>

@@ -224,6 +224,33 @@ def transport_stage(exc):
     return 'UNCLASSIFIED_LOCAL_OR_TRANSPORT'
 
 
+
+def live_result(key, name='타이레놀', page=1, rows=3, *, transport=None):
+    """Shared safe one-request executor for CLI and administrator diagnostics."""
+    result = {'mode': 'live', 'request_attempts': 0, 'automatic_retries': 0,
+              'key_registered': bool(key)}
+    try:
+        if not key:
+            raise ProbeError('KEY_MISSING')
+        if re.search(r'%[0-9a-fA-F]{2}', key):
+            raise ProbeError('KEY_APPEARS_ENCODED_USE_DECODING_KEY')
+        if not name.strip() or len(name) > 100:
+            raise ProbeError('INVALID_PRODUCT_QUERY')
+        result['request_attempts'] = 1
+        text = (transport or fetch_xml)(key, name, page, rows)
+        result.update(inspect_xml(text, page, rows))
+    except ProbeError as exc:
+        result['error'] = str(exc)
+    except urllib.error.HTTPError as exc:
+        result['error'] = 'HTTP_FAILURE'
+        result['http_status'] = exc.code
+        result.update(safe_http_error(exc))
+    except Exception as exc:
+        result['error'] = 'TRANSPORT_OR_FILE_FAILURE'
+        result['failure_stage'] = transport_stage(exc)
+    return result
+
+
 def main(argv=None, *, transport=None):
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_mutually_exclusive_group()
@@ -246,14 +273,9 @@ def main(argv=None, *, transport=None):
                 raise ProbeError('RESPONSE_TOO_LARGE')
             text = args.xml.read_text(encoding='utf-8-sig')
         elif args.live:
-            if not key:
-                raise ProbeError('KEY_MISSING')
-            if re.search(r'%[0-9a-fA-F]{2}', key):
-                raise ProbeError('KEY_APPEARS_ENCODED_USE_DECODING_KEY')
-            if not args.name.strip() or len(args.name) > 100:
-                raise ProbeError('INVALID_PRODUCT_QUERY')
-            result['request_attempts'] = 1  # Attempt, not proof of server receipt.
-            text = (transport or fetch_xml)(key, args.name, args.page, args.rows)
+            result = live_result(key, args.name, args.page, args.rows, transport=transport)
+            print(json.dumps(result, ensure_ascii=False))
+            return 1 if 'error' in result else 0
         else:
             print(json.dumps(result, ensure_ascii=False))
             return 0

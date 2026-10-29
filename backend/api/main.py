@@ -20,6 +20,7 @@ from backend.api.photo_demo import router as photo_demo_router
 from backend.api.photo_upload import router as photo_upload_router
 from backend.api.dev_account import router as dev_account_router
 from backend.api.account_hira import router as account_hira_router
+from backend.api.mfds_admin import router as mfds_admin_router
 
 MAX_FILE_BYTES = 10 * 1024 * 1024
 MAX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
@@ -48,6 +49,7 @@ app.include_router(photo_demo_router)
 app.include_router(photo_upload_router)
 app.include_router(dev_account_router)
 app.include_router(account_hira_router)
+app.include_router(mfds_admin_router)
 
 
 @app.exception_handler(RequestValidationError)
