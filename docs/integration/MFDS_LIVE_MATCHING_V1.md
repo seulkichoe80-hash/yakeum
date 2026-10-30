@@ -119,3 +119,7 @@ Python은 /tmp/yakeum-mfdstest/bin/python을 사용했다. 각 Python 검사에�
 후속 HIRA 조회 실패의 안전한 진단·출처 저장/표시는
 [HIRA_LOOKUP_FAILURE_REVIEW.md](HIRA_LOOKUP_FAILURE_REVIEW.md)를 따른다.
 이전 결과의 상세 정보가 없으면 원인 미확인으로 유지하며 확인을 위한 재호출은 하지 않는다.
+
+모드 선택·요청 전달·저장 결과 출처 혼동에 대한 브라우저 추적과 안내 보완은
+[MFDS_MODE_TRACE_REVIEW.md](MFDS_MODE_TRACE_REVIEW.md)에 기록했다.
+실제 요청에 가상 응답이 오면 기존 검사로 거절한다. 현재 체크 상태는 과거 저장 자료의 출처를 바꾸지 않는다.
