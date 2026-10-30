@@ -477,3 +477,9 @@ MFDS_LIVE 선택을 추가하며 별도 서버 허용이 없으면 중단한다.
 실제 매칭 결과의 선택적 official_lookup(MFDS_LOOKUP_DIAGNOSTICS_V1)은
 [HIRA_LOOKUP_FAILURE_REVIEW.md](integration/HIRA_LOOKUP_FAILURE_REVIEW.md)의 안전한 출처·오류 분류를 따른다.
 구형 저장 결과의 필드 부재는 허용하며 원인을 추정해 채우지 않는다. 약 정보/비교 상태 의미는 유지한다.
+
+## 계정 HIRA 저장 전 초안 읽기
+
+본인 가족의 기존 saved=0 결과를 읽는 GET hira-drafts 목록/상세를 추가한다.
+DEV_ACCOUNT_HIRA_V1의 saved=false 결과를 재사용하며, 읽기만으로 외부 조회·저장·복용 확인을 실행하지 않는다.
+기존 저장 상세의 saved=true/소유권 검사는 유지한다. [HIRA_RESULT_RECOVERY.md](integration/HIRA_RESULT_RECOVERY.md)를 따른다.

@@ -90,6 +90,26 @@ def listing(family: UUID,user: User):
             'SELECT id,created FROM hira_runs WHERE family_id=? AND saved=1 ORDER BY created DESC',(str(family),))]}
 
 
+@router.get('/hira-drafts')
+def drafts(family: UUID,user: User):
+    with database() as db:
+        owned_family(db,family,user)
+        rows=[dict(r) for r in db.execute(
+            'SELECT id,created FROM hira_runs WHERE family_id=? AND saved=0 ORDER BY created DESC',(str(family),))]
+    return {'source_type':'HIRA','drafts':rows}
+
+
+@router.get('/hira-drafts/{run_id}')
+def draft_detail(family: UUID,run_id: UUID,user: User):
+    with database() as db:
+        run=owned_hira(db,family,run_id,user)
+        if run['saved']:raise HTTPException(404,'저장 전 처리 결과가 아닙니다. 저장 목록을 확인해 주세요.')
+        result=json.loads(run['result'])
+    return {'response_version':VERSION,'development_only':True,'source_type':'HIRA','saved':False,
+            'run_id':str(run_id),'family_member_id':str(family),'result':result,
+            'intake_states':result['current_intake_states']}
+
+
 @router.get('/hira-runs/{run_id}')
 def detail(family: UUID,run_id: UUID,user: User):
     with database() as db:

@@ -122,3 +122,11 @@ def test_live_matching_snapshot_provenance_on_disposable_postgres(monkeypatch,ki
     monkeypatch.setenv('YAKEUM_MFDS_MATCH_ENABLED','1')
     monkeypatch.setenv('MFDS_API_KEY','SYNTHETIC-SECRET')
     test_persistence_sources_and_other_owner_access(monkeypatch,kind)
+
+
+@pytest.mark.parametrize('case_name',[
+    'test_recover_unsaved_then_save_without_reprocessing',
+    'test_draft_reads_require_session_owner_and_family'])
+def test_owned_hira_draft_recovery_on_disposable_postgres(case_name):
+    from backend.tests import test_hira_draft_recovery
+    getattr(test_hira_draft_recovery,case_name)()

@@ -9,7 +9,7 @@ import { fileError } from './validation';
 import { labels, productName, type HiraV2Response, type CurrentIntakeState } from './types';
 import { intakeChoiceLabels, verificationLabels } from './currentIntakeUi';
 
-type Snapshot={run_id:string;saved:boolean;result:HiraV2Response;intake_states:CurrentIntakeState[]};
+type Snapshot={recovered?:boolean;run_id:string;saved:boolean;result:HiraV2Response;intake_states:CurrentIntakeState[]};
 function parse(value:any,family:string):Snapshot{
  if(value.response_version!=='DEV_ACCOUNT_HIRA_V1'||value.source_type!=='HIRA'||value.family_member_id!==family||typeof value.run_id!=='string'||typeof value.saved!=='boolean')throw new Error('계정 HIRA 응답이 다릅니다.');
  const mode=value.result?.processing?.official_data_mode;
@@ -30,6 +30,7 @@ export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK'}:{family
  const [previous,setPrevious]=useState<File|null>(null),[current,setCurrent]=useState<File|null>(null);
  const [snapshot,setSnapshot]=useState<Snapshot|null>(null),[rows,setRows]=useState<{id:string;created:string}[]>([]);
  const [rowsKnown,setRowsKnown]=useState(false);
+ const [drafts,setDrafts]=useState<{id:string;created:string}[]>([]),[draftsKnown,setDraftsKnown]=useState(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [deleting,setDeleting]=useState(false),[slow,setSlow]=useState(false),[uncertainRun,setUncertainRun]=useState('');
  const version=useRef(0),controller=useRef<AbortController|null>(null);
@@ -52,7 +53,15 @@ export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK'}:{family
  }
  function finish(id:number,c:AbortController){if(active(id,c)){stopTimers();operation.current=null;setBusy(false);setDeleting(false);setSlow(false);}}
  useEffect(()=>{void list();return()=>{stopTimers();version.current++;controller.current?.abort();operation.current=null;};},[family]);
- async function list(){setRowsKnown(false);const {id,c}=start(true);try{const v=await accountRequest(`${root}/hira-runs`,'GET',undefined,c.signal);if(active(id,c)){setRows(v.runs);setRowsKnown(true);}}catch(e){if(active(id,c))setError(e instanceof Error?e.message:'목록 조회 실패');}finally{finish(id,c);}}
+ async function list(){setRowsKnown(false);const {id,c}=start(false);try{const v=await accountRequest(`${root}/hira-runs`,'GET',undefined,c.signal);if(active(id,c)){setRows(v.runs);setRowsKnown(true);}}catch(e){if(active(id,c))setError(e instanceof Error?e.message:'목록 조회 실패');}finally{finish(id,c);}}
+ async function listDrafts(){setDraftsKnown(false);const {id,c}=start(false);try{
+  const v=await accountRequest(`${root}/hira-drafts`,'GET',undefined,c.signal);
+  if(active(id,c)){setDrafts(v.drafts);setDraftsKnown(true);}
+ }catch(e){if(active(id,c))setError(e instanceof Error?e.message:'저장 전 처리 목록을 확인하지 못했습니다.');}finally{finish(id,c);}}
+ async function recover(run:string){const {id,c}=start(true);try{
+  const v=await accountRequest(`${root}/hira-drafts/${run}`,'GET',undefined,c.signal);
+  if(active(id,c)){setSnapshot({...parse(v,family),recovered:true});setNotice('기존 처리 결과를 복구했습니다. 파일 처리나 식약처 조회는 다시 실행하지 않았습니다.');}
+ }catch(e){if(active(id,c))setError(e instanceof Error?e.message:'저장 전 결과가 없거나 만료되었습니다. 새 처리를 자동 실행하지 않습니다.');}finally{finish(id,c);}}
  async function process(){const {id,c}=start(true);try{
   if(!previous||!current)throw new Error('이전과 현재 XLSX 파일을 각각 선택해 주세요.');
   for(const file of [previous,current]){const e=fileError(file.name,file.size,true);if(e)throw new Error(e);}
@@ -64,7 +73,7 @@ export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK'}:{family
   await accountRequest(`${root}/hira-runs/${run}/save`,'POST',{intake_confirmations:[]},c.signal);
   const v=await accountRequest(`${root}/hira-runs/${run}`,'GET',undefined,c.signal);
   const list=await accountRequest(`${root}/hira-runs`,'GET',undefined,c.signal);
-  if(active(id,c)){setSnapshot(parse(v,family));setRows(list.runs);setRowsKnown(true);setUncertainRun('');setNotice('HIRA 결과를 개발용 DB에 저장했습니다. 복용 확인과는 별개입니다.');}
+  if(active(id,c)){setSnapshot(parse(v,family));setRows(list.runs);setRowsKnown(true);setDrafts(rows=>rows.filter(r=>r.id!==run));setUncertainRun('');setNotice('HIRA 결과를 개발용 DB에 저장했습니다. 복용 확인과는 별개입니다.');}
  }catch(e){if(active(id,c)){setUncertainRun(run);setError('저장 요청 결과를 확인하지 못했습니다. 중복 요청을 피하도록 저장 완료 여부부터 확인해 주세요.');}}finally{finish(id,c);}}
  async function checkSave(){if(!uncertainRun||busy)return;const run=uncertainRun;const {id,c}=start(false);try{
   const list=await accountRequest(`${root}/hira-runs`,'GET',undefined,c.signal);
@@ -95,7 +104,11 @@ export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK'}:{family
   {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
   <h3>이 가족의 HIRA 저장 목록</h3><button disabled={busy} onClick={list}>HIRA 저장 목록 새로고침</button>
   {rowsKnown&&!rows.length&&<p>저장된 HIRA 결과가 없습니다.</p>}{rows.map((r,i)=><button disabled={busy} key={r.id} onClick={()=>detail(r.id)}>HIRA 저장 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
-  {snapshot&&<section aria-label="계정 HIRA 결과"><p>{officialModeLabel(snapshot.result.processing.official_data_mode)}</p><MfdsLookupDiagnostics mode={snapshot.result.processing.official_data_mode} value={snapshot.result.official_lookup}/><h3>{snapshot.saved?'저장된 HIRA 결과':'HIRA 처리 결과'}</h3>{snapshot.saved&&snapshot.result.processing.official_data_mode!==officialMode&&<p role="note" aria-label="이전 저장 결과 안내">현재 선택과 다른 출처의 이전 저장 결과입니다. 체크 상태는 다음 처리에만 적용되며, 아래 결과는 그 선택으로 새로 처리한 결과가 아닙니다.</p>}<ComparisonNotice/>
+  <h3>저장 전 HIRA 처리 결과</h3><p>화면에서 사라졌어도 DB에 남은 본인 가족의 결과를 복구할 수 있습니다. 새 분석·식약처 조회는 실행하지 않습니다.</p>
+  <button disabled={busy} onClick={listDrafts}>저장 전 HIRA 처리 결과 복구</button>
+  {draftsKnown&&!drafts.length&&<p>복구할 저장 전 결과가 없습니다. 다른 가족이나 저장 목록을 확인하세요. 자동 재처리하지 않습니다.</p>}
+  {drafts.map((r,i)=><button disabled={busy} key={r.id} onClick={()=>recover(r.id)}>저장 전 HIRA 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
+  {snapshot&&<section aria-label="계정 HIRA 결과"><p>{officialModeLabel(snapshot.result.processing.official_data_mode)}</p><MfdsLookupDiagnostics mode={snapshot.result.processing.official_data_mode} value={snapshot.result.official_lookup}/><h3>{snapshot.saved?'저장된 HIRA 결과':snapshot.recovered?'복구한 저장 전 HIRA 결과':'HIRA 처리 결과'}</h3>{(snapshot.saved||snapshot.recovered)&&snapshot.result.processing.official_data_mode!==officialMode&&<p role="note" aria-label="이전 저장 결과 안내">현재 선택과 다른 출처의 이전 처리 결과입니다. 체크 상태는 다음 처리에만 적용되며, 아래 결과는 그 선택으로 새로 처리한 결과가 아닙니다.</p>}<ComparisonNotice/>
    {snapshot.saved&&<DeleteSavedResult key={snapshot.run_id} kind="HIRA" family={name} created={rows.find(r=>r.id===snapshot.run_id)?.created??'저장된 자료'} run={snapshot.run_id} busy={busy} onConfirm={remove}/>}
    {!snapshot.result.comparison.executed?<><ComparisonBadge status="HELD"/><p role="status">비교 보류 · 비교 미실행</p><ul>{snapshot.result.comparison.holds.map((h,i)=><li key={i}>{h.message} · 영향 원본 {h.affected_refs.length}건</li>)}</ul></>:<p>비교 완료 · 결과 {snapshot.result.reconciliation_result!.items.length}건</p>}
    {!snapshot.saved&&<button disabled={busy||!!uncertainRun} onClick={save}>이 HIRA 결과 저장 (보류 포함)</button>}
