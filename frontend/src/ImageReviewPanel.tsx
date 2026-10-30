@@ -67,7 +67,7 @@ export function ImageReviewPanel(props:Props) {
    <button className="primary" onClick={start} disabled={state.phase==='loading'||!props.recordDate}>{state.phase==='loading'?(props.gemini?'Gemini 요청 중…':'가상 분석 중…'):props.gemini?'Gemini로 사진 추출 요청':props.uploaded?'사진 업로드 후 가짜 후보 보기':'가상 추출 결과 보기'}</button>
   </div>
   {!props.recordDate&&<p role="alert" className="field-error">자료 기준일을 선택해 주세요.</p>}
-  {state.phase==='loading' && <div role="status" className="info">{props.gemini?'Gemini 요청 중입니다. 최대 60초이며 취소해도 이미 전송된 요청/비용은 취소되지 않을 수 있습니다.':'가상 결과를 준비하고 있습니다. 실제 이미지 분석 요청은 없습니다.'} <button onClick={cancel}>{props.gemini?'Gemini 요청 화면 취소':'가상 분석 취소'}</button></div>}
+  {state.phase==='loading' && <div role="status" className="info">{props.gemini?'Gemini 요청 중입니다. SDK 시간 제한은 60초이며 취소해도 이미 전송된 요청/비용은 취소되지 않을 수 있습니다.':'가상 결과를 준비하고 있습니다. 실제 이미지 분석 요청은 없습니다.'} <button onClick={cancel}>{props.gemini?'Gemini 요청 화면 취소':'가상 분석 취소'}</button></div>}
   {state.phase==='failed' && <div ref={errorPanel} className="image-error" role="alert" tabIndex={-1}><h3>{props.gemini?'Gemini 추출을 완료하지 못했습니다':'가상 이미지 분석에 실패했습니다'}</h3><p>{state.error}</p><button onClick={start}>{props.gemini?'Gemini 요청 재시도 (추가 호출)':'같은 사례 재시도'}</button><p>{props.gemini?'실패 또는 시간 초과일 수 있습니다. 서버 설정·호출 한도와 원본을 확인하세요. 자동 재시도하지 않습니다.':'성공 흐름은 위 사례를 정상 제품으로 바꿔 확인할 수 있습니다.'}</p></div>}
   {state.phase==='ready' && <>
    <h3 ref={resultHeading} tabIndex={-1}>약품 후보 {state.candidates.length}개 · 화면 확인 완료 {completed}개</h3>

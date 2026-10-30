@@ -1,3 +1,6 @@
+> 이 문서는 2026-10-27 당시 기록입니다. 최신 Render 시험 준비와 사용자 확인 증거는
+> [RENDER_GEMINI_VALIDATION_PLAN.md](RENDER_GEMINI_VALIDATION_PLAN.md)를 우선 확인하세요.
+
 # Gemini 사진 경로 연결 준비 — 실제 호출은 미실시
 
 2026-10-27. codex/mvp-completion, 시작 `71ed910a78fc6361c8881c8e24a79f2e61866fec`, clean.
