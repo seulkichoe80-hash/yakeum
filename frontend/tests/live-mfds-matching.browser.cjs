@@ -28,13 +28,18 @@ let browser,groups=0;const errors=[],external=[];const pass=s=>{groups++;console
  async function process(){await hp.getByRole('button',{name:'HIRA 파일 처리',exact:true}).click();await hp.getByRole('region',{name:'계정 HIRA 결과',exact:true}).waitFor();}
  fs.writeFileSync(scenario,'partial');await upload();await process();const hr=hp.getByRole('region',{name:'계정 HIRA 결과',exact:true});await hr.getByText('! 추가 확인 필요',{exact:true}).waitFor();
  await hr.getByText(/실제 식약처 조회 경로/).waitFor();await hr.getByRole('button',{name:'이 HIRA 결과 저장 (보류 포함)',exact:true}).click();await hr.getByRole('heading',{name:'저장된 HIRA 결과',exact:true}).waitFor();
- await hr.getByText(/실제 식약처 조회 경로/).waitFor();pass('HIRA partial response remains held with source provenance through save and reload');
+ await hr.getByText(/실제 식약처 조회 경로/).waitFor();
+ const diag=hr.getByRole('region',{name:'식약처 조회 진단',exact:true});await diag.locator('p').filter({hasText:'INCOMPLETE_PAGE'}).waitFor();
+ const diagnostic=JSON.parse(await diag.locator('pre').textContent());assert.equal(diagnostic.request_attempts,1);assert.equal(diagnostic.cache_reuses,1);assert.equal(diagnostic.queries[0].total_count,7);assert.equal(diagnostic.queries[0].received_count,3);
+ pass('HIRA partial response retains safe provenance, error category and counts through save and reload');
  fs.writeFileSync(scenario,'error');await process();await hp.getByRole('region',{name:'계정 HIRA 결과',exact:true}).getByText('! 추가 확인 필요',{exact:true}).waitFor();
- assert.equal(await hp.getByRole('article').count(),0);pass('official timeout remains held instead of mock success or stale comparison');
+ await hp.getByRole('region',{name:'식약처 조회 진단',exact:true}).locator('p').filter({hasText:'TIMEOUT_STAGE_UNDETERMINED'}).waitFor();assert.equal(await hp.getByRole('article').count(),0);pass('official timeout displays safe error stage and stays held without mock fallback');
  const before=Number(fs.readFileSync(counter,'utf8'));await mode.uncheck();await upload();await process();
  await hp.getByRole('region',{name:'계정 HIRA 결과',exact:true}).getByText('가상 의약품 매칭',{exact:true}).waitFor();
  assert.equal(Number(fs.readFileSync(counter,'utf8')),before);pass('switching to legacy mock clears old result and makes no official request');
  await hp.getByRole('button',{name:'HIRA 저장 목록 새로고침',exact:true}).click();await hp.getByRole('button',{name:/^HIRA 저장 결과 1/}).click();await hp.getByRole('region',{name:'계정 HIRA 결과',exact:true}).getByText(/실제 식약처 조회 경로/).waitFor();assert.equal(Number(fs.readFileSync(counter,'utf8')),before);pass('saved live result retains its own provenance while current mode is mock');
+ await p.route('**/hira-runs/*',async route=>{const response=await route.fetch();const body=await response.json();delete body.result.official_lookup;await route.fulfill({response,json:body});},{times:1});
+ await hp.getByRole('button',{name:/^HIRA 저장 결과 1/}).click();await hp.getByText('이전 버전 결과에는 상세 진단 정보가 없습니다. 실패 원인은 미확인입니다. 진단을 얻기 위해 재조회하지 마세요.',{exact:true}).waitFor();assert.equal(Number(fs.readFileSync(counter,'utf8')),before);pass('legacy stored live result preserves provenance and reports unavailable diagnosis without requery');
  for(const width of [360,390,412,1280]){await p.setViewportSize({width,height:900});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
  assert.deepEqual(errors,[]);assert.deepEqual(external,[]);console.log(JSON.stringify({result:'passed',groups,realExternalRequests:0,runtimeErrors:0}));
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{await browser?.close();});

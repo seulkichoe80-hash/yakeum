@@ -50,6 +50,7 @@ export type VerticalSliceResponse = {
 };
 export type HiraSourceRef = {side:'previous'|'current';document_id:string;input_index:number};
 export type HiraV2Response = Omit<VerticalSliceResponse,'reconciliation_result'> & {
+ official_lookup?:unknown;
  response_version:'TASK_D_HIRA_V2'|'TASK_D_HIRA_MFDS_V1'; family_member_id:string;
  comparison:{executed:boolean;holds:{kind:string;message:string;affected_refs:HiraSourceRef[]}[]};
  source_rows:{ref:HiraSourceRef;locator:{sheet_index:number|null;row:number|null}|null;raw_fields:Record<string,unknown>;normalization_ref:string}[];

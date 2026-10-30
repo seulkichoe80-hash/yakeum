@@ -36,8 +36,10 @@ def process_hira_comparison(
         current_results=[verify_result(r,official_lookup) for r in current_results]
     if version == 2:
         from backend.api.hira_hold import process_guarded
-        return process_guarded(previous_results, current_results,
+        result=process_guarded(previous_results, current_results,
                                previous_internal, current_internal, family_member_id, official_mode="MFDS_LIVE" if official_lookup is not None else "LOCAL_MOCK")
+        if official_lookup is not None:result["official_lookup"]=official_lookup.summary()
+        return result
     integrated = reconcile_normalization_results(
         previous_results,
         current_results,

@@ -84,6 +84,9 @@ def test_offline_paths_normal_or_hold_no_mock_fallback(monkeypatch,kind,case,cap
     result=response.json()['result']
     assert (result['mode'] if kind=='photo' else result['processing']['official_data_mode'])=='MFDS_LIVE'
     if kind=='hira':assert result['response_version']=='TASK_D_HIRA_MFDS_V1'
+    diag=result['official_lookup']
+    assert diag['mode']=='MFDS_LIVE' and diag['request_attempts']==1 and diag['cache_reuses']==1
+    if case in ('error','malformed'):assert diag['queries'][0]['category'] in ('TIMEOUT_STAGE_UNDETERMINED','XML_INVALID')
     assert calls==[('가상알파정',1,3)]  # Both sides reuse the operation cache, no next page/retry.
     if case=='normal':
         assert result['reconciliation_result']['items'][0]['status']=='MAINTAINED'

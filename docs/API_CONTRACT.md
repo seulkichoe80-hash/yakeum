@@ -473,3 +473,7 @@ ADMIN_MFDS_PROBE_V1과 영속 1회 실행 규칙은
 MFDS_LIVE 선택을 추가하며 별도 서버 허용이 없으면 중단한다.
 실제 HIRA 결과는 TASK_D_HIRA_MFDS_V1으로 구분한다. 공통 약 정보와 기존 공개 HIRA v2는 유지한다.
 출처·전체 보류·요청 한도·저장 영향은 [MFDS_LIVE_MATCHING_V1.md](integration/MFDS_LIVE_MATCHING_V1.md)를 따른다.
+
+실제 매칭 결과의 선택적 official_lookup(MFDS_LOOKUP_DIAGNOSTICS_V1)은
+[HIRA_LOOKUP_FAILURE_REVIEW.md](integration/HIRA_LOOKUP_FAILURE_REVIEW.md)의 안전한 출처·오류 분류를 따른다.
+구형 저장 결과의 필드 부재는 허용하며 원인을 추정해 채우지 않는다. 약 정보/비교 상태 의미는 유지한다.

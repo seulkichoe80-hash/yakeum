@@ -1,3 +1,4 @@
+import { MfdsLookupDiagnostics } from './MfdsLookupDiagnostics';
 import { ComparisonBadge, ComparisonChanges, ComparisonNotice, RecordSummary } from './ComparisonDisplay';
 import { koreanSavedTime, officialModeLabel } from './display';
 import { useEffect, useRef, useState } from 'react';
@@ -94,11 +95,11 @@ export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK'}:{family
   {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
   <h3>이 가족의 HIRA 저장 목록</h3><button disabled={busy} onClick={list}>HIRA 저장 목록 새로고침</button>
   {rowsKnown&&!rows.length&&<p>저장된 HIRA 결과가 없습니다.</p>}{rows.map((r,i)=><button disabled={busy} key={r.id} onClick={()=>detail(r.id)}>HIRA 저장 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
-  {snapshot&&<section aria-label="계정 HIRA 결과"><p>{officialModeLabel(snapshot.result.processing.official_data_mode)}</p><h3>{snapshot.saved?'저장된 HIRA 결과':'HIRA 처리 결과'}</h3><ComparisonNotice/>
+  {snapshot&&<section aria-label="계정 HIRA 결과"><p>{officialModeLabel(snapshot.result.processing.official_data_mode)}</p><MfdsLookupDiagnostics mode={snapshot.result.processing.official_data_mode} value={snapshot.result.official_lookup}/><h3>{snapshot.saved?'저장된 HIRA 결과':'HIRA 처리 결과'}</h3><ComparisonNotice/>
    {snapshot.saved&&<DeleteSavedResult key={snapshot.run_id} kind="HIRA" family={name} created={rows.find(r=>r.id===snapshot.run_id)?.created??'저장된 자료'} run={snapshot.run_id} busy={busy} onConfirm={remove}/>}
    {!snapshot.result.comparison.executed?<><ComparisonBadge status="HELD"/><p role="status">비교 보류 · 비교 미실행</p><ul>{snapshot.result.comparison.holds.map((h,i)=><li key={i}>{h.message} · 영향 원본 {h.affected_refs.length}건</li>)}</ul></>:<p>비교 완료 · 결과 {snapshot.result.reconciliation_result!.items.length}건</p>}
    {!snapshot.saved&&<button disabled={busy||!!uncertainRun} onClick={save}>이 HIRA 결과 저장 (보류 포함)</button>}
-   <details><summary>HIRA 원본·정규화·보류 사유</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({source_rows:snapshot.result.source_rows,accepted:snapshot.result.accepted_results,failed:snapshot.result.review_results,comparison:snapshot.result.comparison},null,2)}</pre></details>
+   <details><summary>HIRA 원본·정규화·보류 사유</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({response_version:snapshot.result.response_version,processing:snapshot.result.processing,official_lookup:snapshot.result.official_lookup,source_rows:snapshot.result.source_rows,accepted:snapshot.result.accepted_results,failed:snapshot.result.review_results,comparison:snapshot.result.comparison},null,2)}</pre></details>
    {snapshot.result.reconciliation_result?.items.map((item,index)=>{const record=item.current_record??item.previous_record;const state=snapshot.intake_states.find(s=>s.medication_record_id===record!.record_id);return <article className="card" key={record!.record_id} aria-label={`계정 HIRA 비교 항목 ${index+1}`}><h4>{productName(record)}</h4><ComparisonBadge status={item.status}/><ComparisonChanges item={item}/><RecordSummary side="이전" record={item.previous_record}/><RecordSummary side="현재" record={item.current_record}/><p>실제 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>{snapshot.saved?Object.entries(intakeChoiceLabels).map(([choice,label])=><button disabled={busy} key={choice} onClick={()=>verify(record!.record_id,choice)}>{label} HIRA 저장</button>):<p>결과 저장 후 실제 복용 여부를 별도로 확인할 수 있습니다.</p>}</article>;})}
   </section>}
  </section>;

@@ -5,6 +5,7 @@ import type { CandidateReview, DemoCase, ExtractionResult } from './imageReviewM
 export type PhotoDocument = {document_id:string;record_date:string;source_type:MedicationRecord['source_type'];scenario:DemoCase|'repeat'|'unknown'};
 export type PhotoBatch = PhotoDocument & {reviews:{index:number;confirmed:boolean;draft:CandidateReview['draft']}[]};
 export type PhotoResponse = {
+ official_lookup?:unknown;
  extraction_sources?:{previous:'MOCK'|'GEMINI';current:'MOCK'|'GEMINI'};
  account_run_id?:string;
  mode:'LOCAL_MOCK'|'MFDS_LIVE';persisted:false;stage:'normalized'|'compared'|'held';

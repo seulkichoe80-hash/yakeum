@@ -1,3 +1,4 @@
+import { MfdsLookupDiagnostics } from './MfdsLookupDiagnostics';
 import { ComparisonBadge, ComparisonChanges, ComparisonNotice, RecordSummary } from './ComparisonDisplay';
 import { useEffect, useRef, useState } from 'react';
 import { accountRequest, clearAccount } from './accountApi';
@@ -68,8 +69,9 @@ function FamilyWorkspace({family,officialMode}:{family:Family;officialMode:'LOCA
   {runsKnown&&runs.length===0&&<p>저장된 결과가 없습니다.</p>}{runs.map((r,i)=><button disabled={updating} key={r.id} onClick={()=>detail(r.id)}>저장 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
   {saved&&<section aria-label="저장된 약 정보"><h3>저장된 약 정보 · {family.name}</h3><ComparisonNotice/>
    <p>추출 출처: 이전 {extractionSourceLabel(saved.result.extraction_sources?.previous)} / 현재 {extractionSourceLabel(saved.result.extraction_sources?.current)} · {officialModeLabel(saved.result.mode)}</p>
+   <MfdsLookupDiagnostics mode={saved.result.mode} value={saved.result.official_lookup}/>
    <DeleteSavedResult key={saved.run_id} kind="사진" family={family.name} created={runs.find(r=>r.id===saved.run_id)?.created??'저장된 자료'} run={saved.run_id} busy={updating} onConfirm={()=>removePhoto(saved.run_id)}/>
-   <details><summary>저장 원본·수정·정규화·후보 확인 구분</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({original:saved.result.original_results,edited:saved.result.edited_records,reviews:saved.reviews,normalized:saved.result.normalization_results},null,2)}</pre></details>
+   <details><summary>저장 원본·수정·정규화·후보 확인 구분</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({mode:saved.result.mode,official_lookup:saved.result.official_lookup,original:saved.result.original_results,edited:saved.result.edited_records,reviews:saved.reviews,normalized:saved.result.normalization_results},null,2)}</pre></details>
    {saved.result.reconciliation_result?.items.map(item=>{const record=item.current_record??item.previous_record;const state=saved.intake_states.find(s=>s.medication_record_id===record!.record_id);return <article className="card" key={record!.record_id}><h4>{productName(record)}</h4><ComparisonBadge status={item.status}/><ComparisonChanges item={item}/><RecordSummary side="이전" record={item.previous_record}/><RecordSummary side="현재" record={item.current_record}/><p>실제 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>{Object.entries(intakeChoiceLabels).map(([choice,label])=><button disabled={updating} key={choice} onClick={()=>verify(record!.record_id,choice)}>{label} 저장</button>)}</article>;})}
   </section>}
  </section>;

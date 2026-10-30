@@ -2,6 +2,7 @@
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
 import os
+import logging
 import re
 import unicodedata
 import urllib.error
@@ -22,6 +23,12 @@ class NoLookup(MfdsClient):
     def search_by_name(self, name, limit=50):return []
 
 
+log=logging.getLogger(__name__)
+
+LOOKUP_FAILURE_CATEGORIES=frozenset({'API_RESULT_NOT_SUCCESS','PAGINATION_MISMATCH','PAGINATION_INVALID','PAGE_ROW_COUNT_MISMATCH','PRODUCT_FIELDS_INVALID','DUPLICATE_PRODUCT_IDS'})
+class LookupFailure(Exception):pass
+
+
 class LiveLookup:
     """One request per processing operation, cache shared across both sides.
 
@@ -30,31 +37,81 @@ class LiveLookup:
     """
     def __init__(self,key,transport=None):
         self.key=key;self.transport=transport;self.calls=0;self.cache={}
+        self.diagnostics={};self.cache_reuses=0;self.budget_skips=0
+
+    def summary(self):
+        return {'response_version':'MFDS_LOOKUP_DIAGNOSTICS_V1','mode':'MFDS_LIVE',
+                'provider':'MFDS_DRUG','service_path':probe.ENDPOINT.split('/1471000/')[-1],
+                'request_attempts':self.calls,'automatic_retries':0,'automatic_next_page_requests':0,
+                'timeout_seconds':15,'page':1,'page_size':3,
+                'cache_reuses':self.cache_reuses,'budget_skips':self.budget_skips,
+                'queries':[deepcopy(d) for d in self.diagnostics.values()]}
+
+    def error_category(self,name):
+        return self.diagnostics.get(name,{}).get('category','UNCONFIRMED')
 
     def lookup(self,name):
-        if name in self.cache:return self.cache[name]
+        if name in self.cache:
+            self.cache_reuses+=1
+            return self.cache[name]
         result=('ERROR',[])
-        if not name or len(name)>200:return result
-        if self.calls>=1:return ('BUDGET_EXHAUSTED',[])
+        if not name or len(name)>200:
+            return result
+        if self.calls>=1:
+            self.budget_skips+=1
+            return ('BUDGET_EXHAUSTED',[])
         self.calls+=1
+        diagnostic={'query_index':self.calls-1,'request_attempts':1,'outcome':'ERROR'}
+        phase='FETCH'
         try:
-            payload=parse_sample_xml((self.transport or probe.fetch_xml)(self.key,name,1,3))
-            body=payload['body'];rows=body['items']
-            if payload['header'].get('resultCode')!='00':raise ValueError()
-            if body.get('pageNo')!='1' or body.get('numOfRows')!='3':raise ValueError()
+            response=(self.transport or probe.fetch_xml)(self.key,name,1,3)
+            phase='XML_PARSE'
+            payload=parse_sample_xml(response)
+            diagnostic['xml_valid']=True
+            body=payload['body'];rows=body['items'];header=payload['header']
+            phase='API_RESULT'
+            if header.get('resultCode')!='00':
+                code=str(header.get('resultCode',''))
+                message=header.get('resultMsg','')
+                diagnostic['api_error_code']=code if re.fullmatch(r'[0-9]{2,3}',code) else 'UNRECOGNIZED_REDACTED'
+                diagnostic['api_error_message']=message if message in probe.SAFE_MESSAGES else 'UNRECOGNIZED_SERVER_MESSAGE_REDACTED'
+                raise LookupFailure('API_RESULT_NOT_SUCCESS')
+            diagnostic['api_success']=True
+            phase='PAGINATION'
+            if body.get('pageNo')!='1' or body.get('numOfRows')!='3':raise LookupFailure('PAGINATION_MISMATCH')
             total=body.get('totalCount','')
-            if not re.fullmatch(r'[0-9]+',total):raise ValueError()
+            if not re.fullmatch(r'[0-9]+',total):raise LookupFailure('PAGINATION_INVALID')
             total=int(total)
-            if len(rows)!=min(total,3):raise ValueError()
+            diagnostic.update(total_count=total,received_count=len(rows))
+            if len(rows)!=min(total,3):raise LookupFailure('PAGE_ROW_COUNT_MISMATCH')
+            phase='PRODUCT_MAPPING'
             cfg=yaml.safe_load(DEFAULT_CONFIG.read_text())['sources']['drug']
             items=[parse_item(row,cfg) for row in rows]
-            if any(i is None for i in items) or len({i.official_id for i in items})!=len(items):raise ValueError()
+            if any(i is None for i in items):raise LookupFailure('PRODUCT_FIELDS_INVALID')
+            if len({i.official_id for i in items})!=len(items):raise LookupFailure('DUPLICATE_PRODUCT_IDS')
             result=('INCOMPLETE_PAGE' if total!=len(rows) else 'COMPLETE',items)
+            diagnostic.update(outcome=result[0],category='INCOMPLETE_PAGE' if total!=len(rows) else 'LOOKUP_COMPLETED',
+                              all_candidates_received=total==len(rows))
+        except urllib.error.HTTPError as exc:
+            diagnostic.update(category='HTTP_FAILURE',http_status=exc.code,**probe.safe_http_error(exc))
+        except LookupFailure as exc:
+            diagnostic.update(category=str(exc) if str(exc) in LOOKUP_FAILURE_CATEGORIES else 'LOOKUP_VALIDATION_FAILED',failure_stage=phase)
         except Exception as exc:
-            # Never persist/log response, exception, request or key values.
-            if isinstance(exc,urllib.error.HTTPError):
-                try:exc.close()
-                except Exception:pass
+            if phase=='FETCH':
+                category=('RESPONSE_ENCODING_INVALID' if isinstance(exc,UnicodeDecodeError) else
+                          'RESPONSE_TOO_LARGE' if isinstance(exc,probe.ProbeError) and str(exc)=='RESPONSE_TOO_LARGE' else
+                          probe.transport_stage(exc))
+            else:
+                category={'XML_PARSE':'XML_INVALID','API_RESULT':'API_RESPONSE_INVALID',
+                          'PAGINATION':'PAGINATION_INVALID','PRODUCT_MAPPING':'PRODUCT_MAPPING_FAILED'}[phase]
+            diagnostic.update(category=category,failure_stage=phase)
+            if phase=='XML_PARSE' and isinstance(response,str):
+                diagnostic.update(probe.body_diagnostic(response))
+        if result[0]=='ERROR':
+            # Fixed enum/number fields only; never exception text or request values.
+            log.warning('MFDS_MATCH_FAILURE category=%s phase=%s http_status=%s',
+                        diagnostic['category'],diagnostic.get('failure_stage','UNCONFIRMED'),diagnostic.get('http_status','NONE'))
+        self.diagnostics[name]=diagnostic
         self.cache[name]=result
         return result
 
@@ -104,7 +161,7 @@ def verify_result(base,lookup):
     if kind!='COMPLETE':
         messages={'ERROR':'식약처 조회에 실패했습니다.', 'INCOMPLETE_PAGE':'전체 검색 후보를 받지 못했습니다.',
                   'BUDGET_EXHAUSTED':'이번 처리의 외부 조회 한도(1회)를 사용했습니다.'}
-        return hold(messages[kind]+' 원본을 보존하고 비교를 보류합니다.', 'UNMATCHED' if kind=='ERROR' else 'PARTIAL')
+        return hold(messages[kind]+(' 오류 분류: '+lookup.error_category(record['product_name_raw'])+'.' if kind=='ERROR' else '')+' 원본을 보존하고 비교를 보류합니다.', 'UNMATCHED' if kind=='ERROR' else 'PARTIAL')
     if not items:return hold('식약처 검색 결과가 없어 제품을 확정하지 않습니다.','UNMATCHED')
     # Do not filter several returned candidates down to a unique match.
     if len(items)!=1:return hold('복수 식약처 후보가 있어 자동 선택하지 않고 비교를 보류합니다.')

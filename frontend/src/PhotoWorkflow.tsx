@@ -1,3 +1,4 @@
+import { MfdsLookupDiagnostics } from './MfdsLookupDiagnostics';
 import { ComparisonBadge, ComparisonChanges, ComparisonNotice, RecordSummary } from './ComparisonDisplay';
 import { extractionSourceLabel, officialModeLabel } from './display';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -96,9 +97,10 @@ export function PhotoWorkflow(props:Props) {
    <h3>사진 처리 결과 · {response.stage==='held'?'비교 보류':response.stage==='normalized'?'정규화 검토':'비교 완료'}</h3>
    <ComparisonNotice/>{response.stage==='held'&&<ComparisonBadge status="HELD"/>}
    <p>추출 출처: 이전 {extractionSourceLabel(response.extraction_sources?.previous)} / 현재 {extractionSourceLabel(response.extraction_sources?.current)} · {officialModeLabel(response.mode)} · 내용 확인과 실제 복용 확인은 별개입니다.</p>
+   <MfdsLookupDiagnostics mode={response.mode} value={response.official_lookup}/>
    {props.account&&response.stage==='compared'&&<button disabled={busy} onClick={save}>확인한 결과와 복용 선택 저장</button>}
    {saved&&<p role="status">{saved}</p>}
-   <details><summary>원본·수정 초안·정규화 결과 확인</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({original:response.original_results,edited:response.edited_records,normalized:response.normalization_results},null,2)}</pre></details>
+   <details><summary>원본·수정 초안·정규화 결과 확인</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({mode:response.mode,official_lookup:response.official_lookup,original:response.original_results,edited:response.edited_records,normalized:response.normalization_results},null,2)}</pre></details>
    {response.pending_decisions.length>0&&<div role="status"><p>보류 사유가 있어 전체 사진 비교를 실행하지 않았습니다. 원본을 삭제하거나 신규/중단으로 판정하지 않습니다.</p><ul>{response.pending_decisions.map((p,i)=><li key={i}>{p.side}: {p.message}</li>)}</ul></div>}
    {response.stage==='normalized'&&<><p>추출 내용 대조와 정규화 결과 확인은 다릅니다. 보완값·경고를 검토한 뒤 진행하세요.</p><button disabled={busy} onClick={()=>process(true)}>정규화 결과 확인 후 D 비교</button></>}
    {response.reconciliation_result?.items.map((item,index)=>{

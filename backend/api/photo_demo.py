@@ -224,6 +224,7 @@ def process_virtual(request: ProcessInput, *, sources: dict | None = None, offic
     base = {"mode": "MFDS_LIVE" if official_lookup is not None else "LOCAL_MOCK", "persisted": False, "original_results": originals,
             "edited_records": snapshots, "normalization_results": batches,
             "pending_decisions": reasons, "reconciliation_result": None, "current_intake_states": []}
+    if official_lookup is not None:base["official_lookup"]=official_lookup.summary()
     if reasons:
         return {**base, "stage": "held"}
     if not request.normalization_confirmed:

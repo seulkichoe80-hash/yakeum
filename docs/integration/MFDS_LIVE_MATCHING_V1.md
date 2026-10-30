@@ -115,3 +115,7 @@ Python은 /tmp/yakeum-mfdstest/bin/python을 사용했다. 각 Python 검사에�
 기존 검사의 성공 조건을 낮추거나 문제 검사를 삭제하지 않았다.
 브라우저의 새 모드 전환 후 저장 재조회는 기존 목록 새로고침 동작을 사용했다.
 실제 Render·MFDS의 새 사진/HIRA 경로, 다제품/전체 페이지 수집은 미검증·미구현 범위로 남는다.
+
+후속 HIRA 조회 실패의 안전한 진단·출처 저장/표시는
+[HIRA_LOOKUP_FAILURE_REVIEW.md](HIRA_LOOKUP_FAILURE_REVIEW.md)를 따른다.
+이전 결과의 상세 정보가 없으면 원인 미확인으로 유지하며 확인을 위한 재호출은 하지 않는다.
