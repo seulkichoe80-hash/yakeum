@@ -15,15 +15,15 @@ const file=require('node:path').resolve(__dirname,'../../docs/integration/sample
  const f=p.getByRole('region',{name:'사진 업로드 전체 연결',exact:true});await f.getByLabel('이전 사진 선택').setInputFiles(file);await f.getByLabel('사진 추출 방식').selectOption('GEMINI');
  await f.getByLabel(/관리자 합성 검증:/).check();
  let posts=0;p.on('request',r=>{if(r.url().endsWith('/photos/gemini-extract'))posts++});
- for(const side of ['이전','현재']){const s=f.getByRole('region',{name:`${side} 사진 후보`,exact:true});await s.getByRole('button',{name:'Gemini로 사진 추출 요청',exact:true}).click();await s.getByRole('form').waitFor();await s.getByRole('checkbox').check();await s.getByRole('button',{name:'추출 내용 확인 완료 (로컬)',exact:true}).click();}
+ for(const side of ['이전','현재']){const s=f.getByRole('region',{name:`${side} 사진 후보`,exact:true});await s.getByRole('button',{name:'Gemini로 사진 추출 요청',exact:true}).click();await s.getByRole('form').waitFor();await s.getByRole('checkbox').check();await s.getByRole('button',{name:'추출 내용 확인 완료',exact:true}).click();}
  assert.equal(posts,2);
- await f.getByRole('button',{name:'수정 후보 B 정규화 미리보기',exact:true}).click();await f.getByRole('button',{name:'정규화 결과 확인 후 D 비교',exact:true}).click();await f.getByRole('heading',{name:'사진 처리 결과 · 비교 완료',exact:true}).waitFor();
+ await f.getByRole('button',{name:'확인한 내용으로 의약품 정보 검토',exact:true}).click();await f.getByRole('button',{name:'의약품 정보 확인 후 비교하기',exact:true}).click();await f.getByRole('heading',{name:'사진 처리 결과 · 비교 완료',exact:true}).waitFor();
  assert.match(await f.innerText(),/이전 Gemini 추출 \/ 현재 Gemini 추출/);assert.match(await f.innerText(),/가상 의약품 매칭/);
  await f.getByRole('button',{name:'확인한 결과와 복용 선택 저장',exact:true}).click();await f.getByText('개발용 DB에 저장했습니다.',{exact:false}).waitFor();
- await p.getByRole('button',{name:'저장 목록 새로고침',exact:true}).click();await p.getByRole('button',{name:/^저장 결과 1/}).click();await p.getByRole('region',{name:'저장된 약 정보',exact:true}).waitFor();assert.equal(posts,2);
+ await f.getByRole('button',{name:'저장한 결과 보기',exact:true}).click();await p.getByRole('button',{name:'저장 목록 새로고침',exact:true}).click();await p.getByRole('button',{name:/^저장 결과 1/}).click();await p.getByRole('region',{name:'저장된 약 정보',exact:true}).waitFor();assert.equal(posts,2);
  // Re-entry with the same approved fixture must hit the durable slot, not the SDK.
- await f.getByLabel('이전 사진 선택').setInputFiles(file);await f.getByRole('region',{name:'이전 사진 후보',exact:true}).getByRole('button',{name:'Gemini로 사진 추출 요청',exact:true}).click();await f.getByText(/이미 시작한 합성 검증입니다/).waitFor();
+ await p.getByRole('tab',{name:'사진으로 비교',exact:true}).click();await f.getByLabel('이전 사진 선택').setInputFiles({name:'synthetic-again.png',mimeType:'image/png',buffer:fs.readFileSync(file)});assert(await f.getByRole('region',{name:'이전 사진 후보',exact:true}).getByRole('button',{name:'Gemini로 사진 추출 요청',exact:true}).isDisabled());
  for(const width of [360,390,412,1280]){await p.setViewportSize({width,height:900});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
  assert.deepEqual(errors,[]);assert.equal(fs.readFileSync(process.env.YAKEUM_GEMINI_FAKE_SCENARIO.replace(/\.[^.]*$/,'')+'.calls','utf8').trim().split('\n').length,2);
- console.log('PASS: synthetic consent -> two fake SDK calls -> review/compare/save/reload -> durable replay rejection; mobile widths and provenance preserved; external calls 0');
+ console.log('PASS: synthetic consent -> two fake SDK calls -> review/compare/save/reload -> consumed-slot UI guard (durable rejection covered by backend tests); mobile widths and provenance preserved; external calls 0');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});

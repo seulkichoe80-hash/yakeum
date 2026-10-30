@@ -1,3 +1,4 @@
+import { ProcessingSource, focusVisible } from './workflowPresentation';
 import { MfdsLookupDiagnostics } from './MfdsLookupDiagnostics';
 import { ComparisonBadge, ComparisonChanges, ComparisonNotice, RecordSummary } from './ComparisonDisplay';
 import { koreanSavedTime, officialModeLabel } from './display';
@@ -26,22 +27,26 @@ function parse(value:any,family:string):Snapshot{
  }
  return {...value,result};
 }
-export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK'}:{family:string;name:string;officialMode?:'LOCAL_MOCK'|'MFDS_LIVE'}){
+export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK',tab='hira',onViewSaved}:{family:string;name:string;officialMode?:'LOCAL_MOCK'|'MFDS_LIVE';tab?:'photo'|'hira'|'saved';onViewSaved?:()=>void}){
  const [previous,setPrevious]=useState<File|null>(null),[current,setCurrent]=useState<File|null>(null);
  const [snapshot,setSnapshot]=useState<Snapshot|null>(null),[rows,setRows]=useState<{id:string;created:string}[]>([]);
  const [rowsKnown,setRowsKnown]=useState(false);
+ const [knownSources,setKnownSources]=useState<Record<string,string>>({});
+ useEffect(()=>{if(snapshot?.saved)setKnownSources(cache=>({...cache,[snapshot.run_id]:officialModeLabel(snapshot.result.processing.official_data_mode)}));},[snapshot]);
  const [drafts,setDrafts]=useState<{id:string;created:string}[]>([]),[draftsKnown,setDraftsKnown]=useState(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [deleting,setDeleting]=useState(false),[slow,setSlow]=useState(false),[uncertainRun,setUncertainRun]=useState('');
  const version=useRef(0),controller=useRef<AbortController|null>(null);
  const operation=useRef<{id:number;c:AbortController;timers:number[];saveRun?:string}|null>(null);
+ const resultTitle=useRef<HTMLHeadingElement|null>(null),focusOrigin=useRef(tab);
+ useEffect(()=>{if(snapshot&&focusOrigin.current===tab)focusVisible(resultTitle.current);},[snapshot]);
  const root=`/families/${family}`;
  const active=(id:number,c:AbortController)=>id===version.current&&!c.signal.aborted;
  function stopTimers(){operation.current?.timers.forEach(window.clearTimeout);}
  function interrupt(){const run=operation.current?.saveRun;stopTimers();version.current++;controller.current?.abort();operation.current=null;setBusy(false);setDeleting(false);setSlow(false);if(run)setUncertainRun(run);return run;}
  function clear(){const hadWork=busy;const run=interrupt();setSnapshot(null);setError('');setNotice(run?'저장 요청 대기를 취소했습니다. 서버에서 저장됐을 수 있으니 저장 완료 여부를 확인해 주세요.':hadWork?'HIRA 작업 대기를 취소했습니다. 결과를 다시 표시하지 않습니다.':'');}
  function start(clearResult:boolean,saveRun?:string,mutation?:'delete'|'intake'){
-  interrupt();const id=version.current,c=new AbortController();controller.current=c;
+  focusOrigin.current=tab;interrupt();const id=version.current,c=new AbortController();controller.current=c;
   setBusy(true);setError('');setNotice('');if(clearResult)setSnapshot(null);
   const timers=[window.setTimeout(()=>{if(active(id,c))setSlow(true);},10000),window.setTimeout(()=>{
    if(!active(id,c))return;
@@ -93,7 +98,7 @@ export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK'}:{family
   await accountRequest(`${root}/hira-runs/${run}/intake`,'PATCH',{record_id:record,choice},c.signal);
   const v=await accountRequest(`${root}/hira-runs/${run}`,'GET',undefined,c.signal);if(active(id,c))setSnapshot(parse(v,family));
  }catch(e){if(active(id,c))setError('복용 확인 결과를 확인하지 못했습니다. 저장된 결과를 다시 열어 확인해 주세요.');}finally{finish(id,c);}}
- return <section className="card account-hira" aria-label="계정 HIRA 저장"><h2>{name} · HIRA 자료 비교·저장</h2>
+ return <section className="card account-hira" aria-label="계정 HIRA 저장" hidden={tab==='photo'}><div id="work-panel-hira" role="tabpanel" aria-labelledby="work-tab-hira" hidden={tab!=='hira'}><h2>{name} · HIRA 자료 비교·저장</h2>
   <p className="info">가상 XLSX 전용 · 개발용 DB · {officialModeLabel(officialMode)}. 원본 파일은 보관하지 않고 제한된 원본 행·정규화·비교 보류 사유를 저장합니다. 저장은 내용 확인이나 실제 복용 확인을 뜻하지 않습니다.</p>
   <label>이전 HIRA 파일<input type="file" disabled={deleting} accept=".xlsx" onChange={e=>{setPrevious(e.target.files?.[0]??null);clear();}}/></label>
   <label>현재 HIRA 파일<input type="file" disabled={deleting} accept=".xlsx" onChange={e=>{setCurrent(e.target.files?.[0]??null);clear();}}/></label>
@@ -102,18 +107,19 @@ export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK'}:{family
   {slow&&busy&&<p role="status">응답이 지연되고 있습니다. 무료 서버가 깨어나는 중일 수 있습니다. 잠시 기다리거나 작업 대기를 취소할 수 있습니다.</p>}
   {uncertainRun&&<p role="status">저장 완료 여부 확인이 필요합니다. <button disabled={busy} onClick={checkSave}>HIRA 저장 완료 여부 확인</button></p>}
   {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
-  <h3>이 가족의 HIRA 저장 목록</h3><button disabled={busy} onClick={list}>HIRA 저장 목록 새로고침</button>
-  {rowsKnown&&!rows.length&&<p>저장된 HIRA 결과가 없습니다.</p>}{rows.map((r,i)=><button disabled={busy} key={r.id} onClick={()=>detail(r.id)}>HIRA 저장 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
-  <h3>저장 전 HIRA 처리 결과</h3><p>화면에서 사라졌어도 DB에 남은 본인 가족의 결과를 복구할 수 있습니다. 새 분석·식약처 조회는 실행하지 않습니다.</p>
+  </div><div id="work-hira-saved" role="region" aria-label="HIRA 저장 기록" hidden={tab!=='saved'}><h3>이 가족의 HIRA 저장 목록</h3><button disabled={busy} onClick={list}>HIRA 저장 목록 새로고침</button>
+  {rowsKnown&&!rows.length&&<p>저장된 HIRA 결과가 없습니다.</p>}<ul className="saved-list">{rows.map((r,i)=><li key={r.id}><button disabled={busy} onClick={()=>detail(r.id)}>HIRA 저장 결과 {i+1} · {koreanSavedTime(r.created)}</button><p>HIRA · 처리 시각(한국 시간) · {knownSources[r.id]??'출처는 결과를 열어 확인'}</p></li>)}</ul>
+  </div><div hidden={tab!=='hira'}><details><summary>저장 전 HIRA 결과 복구</summary><h3>저장 전 HIRA 처리 결과</h3><p>화면에서 사라졌어도 DB에 남은 본인 가족의 결과를 복구할 수 있습니다. 새 분석·식약처 조회는 실행하지 않습니다.</p>
   <button disabled={busy} onClick={listDrafts}>저장 전 HIRA 처리 결과 복구</button>
   {draftsKnown&&!drafts.length&&<p>복구할 저장 전 결과가 없습니다. 다른 가족이나 저장 목록을 확인하세요. 자동 재처리하지 않습니다.</p>}
   {drafts.map((r,i)=><button disabled={busy} key={r.id} onClick={()=>recover(r.id)}>저장 전 HIRA 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
-  {snapshot&&<section aria-label="계정 HIRA 결과"><p>{officialModeLabel(snapshot.result.processing.official_data_mode)}</p><MfdsLookupDiagnostics mode={snapshot.result.processing.official_data_mode} value={snapshot.result.official_lookup}/><h3>{snapshot.saved?'저장된 HIRA 결과':snapshot.recovered?'복구한 저장 전 HIRA 결과':'HIRA 처리 결과'}</h3>{(snapshot.saved||snapshot.recovered)&&snapshot.result.processing.official_data_mode!==officialMode&&<p role="note" aria-label="이전 저장 결과 안내">현재 선택과 다른 출처의 이전 처리 결과입니다. 체크 상태는 다음 처리에만 적용되며, 아래 결과는 그 선택으로 새로 처리한 결과가 아닙니다.</p>}<ComparisonNotice/>
+  </details></div>
+  {snapshot&&<section hidden={tab!=='hira'&&tab!=='saved'||(tab==='saved'&&!snapshot.saved)} aria-label="계정 HIRA 결과"><ProcessingSource kind="hira" mode={snapshot.result.processing.official_data_mode} saved={snapshot.saved} batches={snapshot.result.accepted_results}/>{snapshot.saved&&tab==='hira'&&<button onClick={onViewSaved}>저장한 결과 보기</button>}<p>{officialModeLabel(snapshot.result.processing.official_data_mode)}</p><MfdsLookupDiagnostics mode={snapshot.result.processing.official_data_mode} value={snapshot.result.official_lookup}/><h3 ref={resultTitle} tabIndex={-1}>{snapshot.saved?'저장된 HIRA 결과':snapshot.recovered?'복구한 저장 전 HIRA 결과':'HIRA 처리 결과'}</h3>{(snapshot.saved||snapshot.recovered)&&snapshot.result.processing.official_data_mode!==officialMode&&<p role="note" aria-label="이전 저장 결과 안내">현재 선택과 다른 출처의 이전 처리 결과입니다. 체크 상태는 다음 처리에만 적용되며, 아래 결과는 그 선택으로 새로 처리한 결과가 아닙니다.</p>}<ComparisonNotice/>
    {snapshot.saved&&<DeleteSavedResult key={snapshot.run_id} kind="HIRA" family={name} created={rows.find(r=>r.id===snapshot.run_id)?.created??'저장된 자료'} run={snapshot.run_id} busy={busy} onConfirm={remove}/>}
    {!snapshot.result.comparison.executed?<><ComparisonBadge status="HELD"/><p role="status">비교 보류 · 비교 미실행</p><ul>{snapshot.result.comparison.holds.map((h,i)=><li key={i}>{h.message} · 영향 원본 {h.affected_refs.length}건</li>)}</ul></>:<p>비교 완료 · 결과 {snapshot.result.reconciliation_result!.items.length}건</p>}
    {!snapshot.saved&&<button disabled={busy||!!uncertainRun} onClick={save}>이 HIRA 결과 저장 (보류 포함)</button>}
    <details><summary>HIRA 원본·정규화·보류 사유</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({response_version:snapshot.result.response_version,processing:snapshot.result.processing,official_lookup:snapshot.result.official_lookup,source_rows:snapshot.result.source_rows,accepted:snapshot.result.accepted_results,failed:snapshot.result.review_results,comparison:snapshot.result.comparison},null,2)}</pre></details>
-   {snapshot.result.reconciliation_result?.items.map((item,index)=>{const record=item.current_record??item.previous_record;const state=snapshot.intake_states.find(s=>s.medication_record_id===record!.record_id);return <article className="card" key={record!.record_id} aria-label={`계정 HIRA 비교 항목 ${index+1}`}><h4>{productName(record)}</h4><ComparisonBadge status={item.status}/><ComparisonChanges item={item}/><RecordSummary side="이전" record={item.previous_record}/><RecordSummary side="현재" record={item.current_record}/><p>실제 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>{snapshot.saved?Object.entries(intakeChoiceLabels).map(([choice,label])=><button disabled={busy} key={choice} onClick={()=>verify(record!.record_id,choice)}>{label} HIRA 저장</button>):<p>결과 저장 후 실제 복용 여부를 별도로 확인할 수 있습니다.</p>}</article>;})}
+   {snapshot.result.reconciliation_result?.items.map((item,index)=>{const record=item.current_record??item.previous_record;const state=snapshot.intake_states.find(s=>s.medication_record_id===record!.record_id);return <article className="card" key={record!.record_id} aria-label={`계정 HIRA 비교 항목 ${index+1}`}><h4>{productName(record)}</h4><ComparisonBadge status={item.status}/><ComparisonChanges item={item}/><div className="record-pair"><RecordSummary side="이전" record={item.previous_record}/><RecordSummary side="현재" record={item.current_record}/></div><h5 className="intake-heading">실제 복용 상태 (기록 비교와 별도)</h5><p>실제 복용: {state?intakeChoiceLabels[state.intake_status]:'잘 모르겠음'} · {state?verificationLabels[state.verification_status]:'확인 전'}</p>{snapshot.saved?Object.entries(intakeChoiceLabels).map(([choice,label])=><button disabled={busy} key={choice} onClick={()=>verify(record!.record_id,choice)}>{label} HIRA 저장</button>):<p>결과 저장 후 실제 복용 여부를 별도로 확인할 수 있습니다.</p>}</article>;})}
   </section>}
  </section>;
 }

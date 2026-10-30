@@ -35,20 +35,20 @@ async function confirm(section) {
   const form=forms.nth(i);
   if(await form.getByRole('textbox',{name:'제품명',exact:true}).inputValue()==='') await form.getByRole('textbox',{name:'제품명',exact:true}).fill('가상 보완 입력');
   await form.getByRole('checkbox').check();
-  await form.getByRole('button',{name:'추출 내용 확인 완료 (로컬)',exact:true}).click();
+  await form.getByRole('button',{name:'추출 내용 확인 완료',exact:true}).click();
  }
 }
 async function ready(workflow,scenario='single') {
  for(const name of ['이전','현재']) {const section=side(workflow,name);await start(section,scenario);await confirm(section);}
 }
 async function preview(workflow) {
- await workflow.getByRole('button',{name:'수정 후보 B 정규화 미리보기',exact:true}).click();
+ await workflow.getByRole('button',{name:'확인한 내용으로 의약품 정보 검토',exact:true}).click();
  await workflow.getByRole('heading',{name:/사진 처리 결과/}).waitFor();
 }
 async function compare(workflow) {
  await preview(workflow);
  await workflow.getByRole('heading',{name:'사진 처리 결과 · 정규화 검토'}).waitFor();
- await workflow.getByRole('button',{name:'정규화 결과 확인 후 D 비교',exact:true}).click();
+ await workflow.getByRole('button',{name:'의약품 정보 확인 후 비교하기',exact:true}).click();
  await workflow.getByRole('heading',{name:'사진 처리 결과 · 비교 완료'}).waitFor();
 }
 async function delayed(page,pattern) {
@@ -120,9 +120,9 @@ async function delayed(page,pattern) {
   const successful=mixed.getByRole('form',{name:'약품 후보 1',exact:true});
   const failed=mixed.getByRole('form',{name:'약품 후보 2',exact:true});
   assert.match(await failed.innerText(),/가상 혼합 응답의 실패 후보/);
-  assert.equal(await failed.getByRole('button',{name:'추출 내용 확인 완료 (로컬)',exact:true}).isDisabled(),true);
+  assert.equal(await failed.getByRole('button',{name:'추출 내용 확인 완료',exact:true}).isDisabled(),true);
   await successful.getByRole('checkbox').check();
-  await successful.getByRole('button',{name:'추출 내용 확인 완료 (로컬)',exact:true}).click();
+  await successful.getByRole('button',{name:'추출 내용 확인 완료',exact:true}).click();
   assert.match(await successful.locator('.confirmation-state').innerText(),/로컬 user_confirmed=true/);
   assert.match(await failed.locator('.confirmation-state').innerText(),/user_confirmed=false/);
   checked.push('mixed extraction keeps successful and failed candidates; failure cannot be confirmed');
@@ -142,7 +142,7 @@ async function delayed(page,pattern) {
   workflow=await openPhoto(page);await start(side(workflow,'현재'),'failed');
   await side(workflow,'현재').getByRole('button',{name:'같은 사례 재시도',exact:true}).click();
   await side(workflow,'현재').getByRole('heading',{name:'가상 이미지 분석에 실패했습니다'}).waitFor();
-  assert.equal(await workflow.getByRole('button',{name:'수정 후보 B 정규화 미리보기'}).isDisabled(),true);
+  assert.equal(await workflow.getByRole('button',{name:'확인한 내용으로 의약품 정보 검토'}).isDisabled(),true);
   await start(side(workflow,'현재'),'single');
   checked.push('null record held; failed response and retry');
 
@@ -163,7 +163,7 @@ async function delayed(page,pattern) {
 
   await ready(workflow);
   delay=await delayed(page,'**/api/local-demo/photos/process');
-  await workflow.getByRole('button',{name:'수정 후보 B 정규화 미리보기'}).click();await delay.arrived;
+  await workflow.getByRole('button',{name:'확인한 내용으로 의약품 정보 검토'}).click();await delay.arrived;
   await side(workflow,'현재').getByRole('textbox',{name:'1회 투약량',exact:true}).fill('0');
   delay.release();await delay.done;
   assert.equal(await workflow.getByRole('region',{name:'사진 처리 결과'}).count(),0);
@@ -175,7 +175,7 @@ async function delayed(page,pattern) {
   await page.route('**/api/local-demo/photos/process',route=>route.fulfill({
    status:503,json:{detail:'가상 로컬 처리 실패'},
   }),{times:1});
-  await workflow.getByRole('button',{name:'수정 후보 B 정규화 미리보기',exact:true}).click();
+  await workflow.getByRole('button',{name:'확인한 내용으로 의약품 정보 검토',exact:true}).click();
   await workflow.getByRole('alert').filter({hasText:'로컬 Mock 처리 실패'}).waitFor();
   assert.equal(await workflow.getByRole('article').count(),0,'failed request must clear previous comparison and verified intake');
   assert.equal(await workflow.getByRole('region',{name:'사진 처리 결과',exact:true}).count(),0);

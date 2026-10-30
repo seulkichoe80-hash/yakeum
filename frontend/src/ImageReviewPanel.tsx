@@ -1,3 +1,4 @@
+import { focusVisible } from './workflowPresentation';
 import { useEffect, useId, useReducer, useRef, useState } from 'react';
 import type { MedicationRecord } from './types';
 import { fileError } from './validation';
@@ -5,7 +6,7 @@ import './imageReview.css';
 import { changedFields, demoLabels, draftFrom, draftIssues, extractionLabels, initialReviewState, mockExtraction, reviewReducer, type CandidateDraft, type CandidateReview, type DemoCase, type ExtractionResult, type ReviewState } from './imageReviewModel';
 
 type Props = {familyMemberId:string;familyLabel:string;sourceType:MedicationRecord['source_type'];sourceLabel:string;recordDate:string;file:File|null;
- uploaded?:boolean;account?:boolean;gemini?:boolean;
+ uploaded?:boolean;account?:boolean;gemini?:boolean;blockedReason?:string;
  loadResults?:(scenario:DemoCase,signal:AbortSignal)=>Promise<ExtractionResult[]>;
  onReviewChange?:(state:ReviewState)=>void};
 export function ImageReviewPanel(props:Props) {
@@ -27,9 +28,10 @@ export function ImageReviewPanel(props:Props) {
  },[props.file]);
  useEffect(()=>()=>{if(timer.current) clearTimeout(timer.current);controller.current?.abort();pending.current=false;request.current++;},[]);
  useEffect(()=>{props.onReviewChange?.(state);},[state,props.onReviewChange]);
- useEffect(()=>{if(state.phase==='ready') resultHeading.current?.focus();if(state.phase==='failed') errorPanel.current?.focus();},[state.phase]);
+ useEffect(()=>{if(state.phase==='ready') focusVisible(resultHeading.current);if(state.phase==='failed') focusVisible(errorPanel.current);},[state.phase]);
+ const blocked=props.blockedReason||(props.uploaded&&!props.file?'사진 파일을 선택해 주세요.':!props.recordDate?'자료 기준일을 선택해 주세요.':props.file?fileError(props.file.name,props.file.size,false):null);
  function start() {
-  if(pending.current) return;
+  if(pending.current||blocked) return;
   pending.current=true;
   const id=++request.current;
   dispatch({type:'start',requestId:id});
@@ -63,13 +65,15 @@ export function ImageReviewPanel(props:Props) {
    {preview && !badImage ? <img src={preview} alt="사용자가 선택한 원본 이미지 대조용 미리보기" onError={()=>setBadImage(true)}/> : <p>{badImage ? '이미지를 표시할 수 없습니다. 다른 파일을 선택해 주세요.' : '위에서 이미지를 선택하면 미리 볼 수 있습니다. 개인정보 없는 가상 이미지를 사용하세요.'}</p>}
    {props.file && <p className="filename">선택 파일: {props.file.name} · {props.gemini?'추출 후보를 원본과 대조해 주세요.':'아래 후보는 이 파일과 무관한 가상 값입니다.'}</p>}
   </details>
-  <div className="demo-controls">{!props.gemini&&<label>가상 추출 사례<select value={scenario} disabled={state.phase==='loading'} onChange={e=>{setScenario(e.target.value as DemoCase);dispatch({type:'reset'});}}>{(Object.keys(demoLabels) as DemoCase[]).map(key=><option key={key} value={key}>{demoLabels[key]}</option>)}</select></label>}
-   <button className="primary" onClick={start} disabled={state.phase==='loading'||!props.recordDate}>{state.phase==='loading'?(props.gemini?'Gemini 요청 중…':'가상 분석 중…'):props.gemini?'Gemini로 사진 추출 요청':props.uploaded?'사진 업로드 후 가짜 후보 보기':'가상 추출 결과 보기'}</button>
+  <div className="demo-controls" hidden={state.phase==='ready'}>{!props.gemini&&<label>가상 추출 사례<select value={scenario} disabled={state.phase==='loading'} onChange={e=>{setScenario(e.target.value as DemoCase);dispatch({type:'reset'});}}>{(Object.keys(demoLabels) as DemoCase[]).map(key=><option key={key} value={key}>{demoLabels[key]}</option>)}</select></label>}
+   <button className="primary" onClick={start} disabled={state.phase==='loading'||!!blocked||!!props.gemini&&state.phase==='ready'} aria-describedby={`${panelId}-conditions`}>{state.phase==='loading'?(props.gemini?'Gemini 요청 중…':'가상 분석 중…'):props.gemini?'Gemini로 사진 추출 요청':props.uploaded?'사진 업로드 후 가짜 후보 보기':'가상 추출 결과 보기'}</button>
   </div>
+  <p id={`${panelId}-conditions`} role="status">{state.phase==='ready'?'✓ 추출 완료 · 아래에서 내용을 원본과 대조하고 확인하세요.':blocked??'사진을 읽을 준비가 되었습니다.'}</p>
   {!props.recordDate&&<p role="alert" className="field-error">자료 기준일을 선택해 주세요.</p>}
   {state.phase==='loading' && <div role="status" className="info">{props.gemini?'Gemini 요청 중입니다. SDK 시간 제한은 60초이며 취소해도 이미 전송된 요청/비용은 취소되지 않을 수 있습니다.':'가상 결과를 준비하고 있습니다. 실제 이미지 분석 요청은 없습니다.'} <button onClick={cancel}>{props.gemini?'Gemini 요청 화면 취소':'가상 분석 취소'}</button></div>}
-  {state.phase==='failed' && <div ref={errorPanel} className="image-error" role="alert" tabIndex={-1}><h3>{props.gemini?'Gemini 추출을 완료하지 못했습니다':'가상 이미지 분석에 실패했습니다'}</h3><p>{state.error}</p><button onClick={start}>{props.gemini?'Gemini 요청 재시도 (추가 호출)':'같은 사례 재시도'}</button><p>{props.gemini?'실패 또는 시간 초과일 수 있습니다. 서버 설정·호출 한도와 원본을 확인하세요. 자동 재시도하지 않습니다.':'성공 흐름은 위 사례를 정상 제품으로 바꿔 확인할 수 있습니다.'}</p></div>}
+  {state.phase==='failed' && <div ref={errorPanel} className="image-error" role="alert" tabIndex={-1}><h3>{props.gemini?'Gemini 추출을 완료하지 못했습니다':'가상 이미지 분석에 실패했습니다'}</h3><p>{state.error}</p><button disabled={!!blocked||props.gemini} onClick={start}>{props.gemini?'Gemini 요청 재시도 (추가 호출)':'같은 사례 재시도'}</button><p>{props.gemini?'실패 또는 시간 초과일 수 있습니다. 서버 설정·호출 한도와 원본을 확인하세요. 자동 재시도하지 않습니다.':'성공 흐름은 위 사례를 정상 제품으로 바꿔 확인할 수 있습니다.'}</p></div>}
   {state.phase==='ready' && <>
+   {!props.gemini&&<details><summary>가상 추출 다시 하기</summary><p>현재 후보 확인과 비교 결과가 초기화됩니다.</p><button type="button" onClick={start} disabled={!!blocked}>가상 추출 다시 요청</button></details>}
    <h3 ref={resultHeading} tabIndex={-1}>약품 후보 {state.candidates.length}개 · 화면 확인 완료 {completed}개</h3>
    <p className="info">이곳의 확인은 <strong>추출 내용의 대조</strong>입니다. 실제 복용 여부(TAKING/NOT_TAKING/UNKNOWN), 비교 판정, 정규화 결과를 변경하지 않습니다. 모르는 값은 추측하지 말고 비워 두거나 확인을 보류하세요.</p>
    {state.candidates.map((candidate,index)=>{
@@ -105,7 +109,7 @@ export function ImageReviewPanel(props:Props) {
      <p>사용자 수정: {modified.length}개 항목 · 공란은 미확인 값으로 유지됩니다.</p>
      <label className="check"><input type="checkbox" checked={candidate.acknowledged} onChange={e=>dispatch({type:'acknowledge',key:candidate.key,value:e.target.checked})}/>후보 {index+1}의 추출 내용과 수정값을 원본과 대조했습니다.</label>
      {candidate.attempted&&!candidate.user_confirmed&&<p role="alert" className="field-error">표시된 입력 오류를 확인하고 원본 대조에 체크해 주세요.</p>}
-     <div className="candidate-actions"><button className="primary" type="submit" disabled={candidate.user_confirmed||candidate.original.status==='FAILED'}>추출 내용 확인 완료 (로컬)</button><button type="button" onClick={()=>dispatch({type:'defer',key:candidate.key})}>확인 보류</button><button type="button" onClick={()=>dispatch({type:'restore',key:candidate.key})}>AI 추출값으로 되돌리기</button></div>
+     <div className="candidate-actions"><button className="primary" type="submit" disabled={candidate.user_confirmed||candidate.original.status==='FAILED'}>추출 내용 확인 완료</button><button type="button" onClick={()=>dispatch({type:'defer',key:candidate.key})}>확인 보류</button><button type="button" onClick={()=>dispatch({type:'restore',key:candidate.key})}>AI 추출값으로 되돌리기</button></div>
      <p role="status" className="confirmation-state">{candidate.user_confirmed?'화면 확인 완료 · 로컬 user_confirmed=true':candidate.deferred?'확인 보류 · user_confirmed=false':'확인 전 · user_confirmed=false'}</p>
      <small>원본 추출 결과의 user_confirmed=false는 보존됩니다. 다시 수정하면 화면 확인도 초기화됩니다. 서버 저장·정규화·실제 복용상태에는 반영되지 않습니다.</small>
     </form>;

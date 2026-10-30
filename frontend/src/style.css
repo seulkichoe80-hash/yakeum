@@ -93,3 +93,26 @@ main details pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-
 .comparison-notice p{margin:6px 0}
 @media(max-width:720px){.record .comparison-badge{max-width:140px;flex-shrink:0}.comparison-badge{font-size:14px}}
 @media(forced-colors:active){.comparison-badge{color:CanvasText;background:Canvas;border:2px solid CanvasText}}
+/* Presentation workflow: hidden panels stay mounted to preserve pending work. */
+[hidden]{display:none!important}
+.account-workspace [role=tablist]{display:flex;gap:8px;flex-wrap:wrap;border-bottom:2px solid #cbd5e1;margin:24px 0 18px;padding-bottom:10px}
+.account-workspace [role=tab]{flex:1;min-width:100px;background:#f1f5f9;color:#334155;border:1px solid #94a3b8;font-weight:700}
+.account-workspace [role=tab][aria-selected=true]{background:#164e43;color:white;border-color:#164e43;box-shadow:inset 0 -3px #90dfba}
+button:focus-visible,summary:focus-visible,[tabindex="-1"]:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+.account-workspace label:has(>input[type=checkbox]){display:flex;flex-direction:row;align-items:flex-start;justify-content:flex-start;gap:10px;line-height:1.7;cursor:pointer}
+.account-workspace label>input[type=checkbox]{width:20px;height:20px;flex:none;margin:3px 0}
+.workflow-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;list-style:none;padding:0;margin:24px 0}
+.workflow-steps li{border:1px solid #94a3b8;border-radius:8px;background:#f8fafc;color:#334155;padding:12px;font-weight:600;font-size:14px}
+.workflow-steps [aria-current=step]{background:#e1f4eb;color:#134e4a;border:2px solid #166534}
+.record-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
+.record-summary{background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:14px;overflow-wrap:anywhere}
+.record-summary h5{font-size:16px;margin:0 0 10px}.record-summary dl{margin:0}.record-summary dl>div{display:grid;grid-template-columns:100px minmax(0,1fr);gap:8px;padding:5px 0}.record-summary dt{color:#475569}.record-summary dd{margin:0;font-weight:600}.record-summary small{display:block;border-top:1px solid #cbd5e1;padding-top:10px;line-height:1.7;color:#475569}
+.processing-source{border:1px solid #cbd5e1;border-radius:10px;padding:12px 16px;background:#f8fafc;color:#334155;font-size:14px;overflow-wrap:anywhere}.processing-source p{margin:5px 0}
+.saved-list{list-style:none;padding:0;display:grid;gap:12px}.saved-list li{border:1px solid #cbd5e1;border-radius:10px;padding:12px 16px}.saved-list p{font-size:13px;color:#475569;margin:5px 0}
+.intake-heading{border-top:2px solid #cbd5e1;padding-top:18px;font-weight:700;margin-top:20px}
+.admin-tools{padding:10px 14px;border:1px solid #cbd5e1;border-radius:8px;margin:16px 0}.admin-tools summary{cursor:pointer;font-weight:600}
+@media(max-width:600px){.workflow-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.record-pair{grid-template-columns:minmax(0,1fr)}.account-workspace [role=tab]{min-width:80px;font-size:14px;margin:0}.record-summary dl>div{grid-template-columns:90px minmax(0,1fr)}}
+.account-workspace p,.account-workspace small,.account-workspace .review-field small{color:#475569}
+.account-workspace .record-summary dl{display:block;font-size:14px}
+.account-workspace .record-summary dl>div{grid-template-columns:100px minmax(0,1fr)}
+.save-actions{border-top:2px solid #94a3b8;margin-top:24px;padding:18px 0}.save-actions h4{margin:0 0 8px}
