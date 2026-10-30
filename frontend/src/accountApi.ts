@@ -5,12 +5,16 @@ import { reviewBatch, validatePhotoResponse, type PhotoResponse } from './photoA
 import type { UploadDocument } from './uploadPhotoApi';
 let csrf='';
 export function clearAccount(){csrf='';}
+export class AccountRequestError extends Error {
+ status:number;
+ constructor(message:string,status:number){super(message);this.status=status;}
+}
 export async function accountRequest(path:string,method='GET',body?:unknown,signal?:AbortSignal):Promise<any>{
  const headers:Record<string,string>={};if(csrf)headers['X-CSRF-Token']=csrf;
  if(body!==undefined&&!(body instanceof FormData))headers['Content-Type']='application/json';
  const response=await fetch(`/api/dev-account${path}`,{method,headers,credentials:'same-origin',cache:'no-store',body:body instanceof FormData?body:body===undefined?undefined:JSON.stringify(body),signal});
  const value=await response.json();
- if(!response.ok){if(response.status===401){csrf='';window.dispatchEvent(new Event('yakeum-session-expired'));}throw new Error(typeof value.detail==='string'?value.detail:'입력 형식을 확인하고 다시 시도해 주세요.');}
+ if(!response.ok){if(response.status===401){csrf='';window.dispatchEvent(new Event('yakeum-session-expired'));}throw new AccountRequestError(typeof value.detail==='string'?value.detail:'입력 형식을 확인하고 다시 시도해 주세요.',response.status);}
  if(value.csrf_token)csrf=value.csrf_token;
  return value;
 }

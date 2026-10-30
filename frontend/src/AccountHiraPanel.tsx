@@ -1,3 +1,4 @@
+import {editIntakeChoice,knownSaveRejection} from './intakeEdits';
 import {ResultSummary,SimpleMedication,IntakeSelection,batchDates} from './SimpleResult';
 import type {IntakeChoice} from './currentIntakeUi';
 import { ProcessingSource, focusVisible } from './workflowPresentation';
@@ -30,6 +31,7 @@ function parse(value:any,family:string):Snapshot{
  return {...value,result};
 }
 export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK',tab='hira',onViewSaved,savedDetail=false,hideSavedList=false,onOpenDetail,onBack}:{savedDetail?:boolean;hideSavedList?:boolean;onOpenDetail?:(row:string)=>void;onBack?:()=>void;family:string;name:string;officialMode?:'LOCAL_MOCK'|'MFDS_LIVE';tab?:'photo'|'hira'|'saved';onViewSaved?:()=>void}){
+ const [saveFailure,setSaveFailure]=useState(false);
  const [choices,setChoices]=useState<Record<string,IntakeChoice>>({});
  const [showInput,setShowInput]=useState(false);
  const [previous,setPrevious]=useState<File|null>(null),[current,setCurrent]=useState<File|null>(null);
@@ -44,7 +46,7 @@ export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK',tab='hir
  const operation=useRef<{id:number;c:AbortController;timers:number[];saveRun?:string}|null>(null);
  const resultTitle=useRef<HTMLHeadingElement|null>(null),focusOrigin=useRef(tab);
  useEffect(()=>{if(snapshot&&focusOrigin.current===tab)focusVisible(resultTitle.current);},[snapshot]);
- useEffect(()=>{if(snapshot&&!uncertainRun)setChoices({});},[snapshot?.run_id]);
+ useEffect(()=>{if(snapshot&&!uncertainRun){setChoices({});setSaveFailure(false);}},[snapshot?.run_id]);
  const root=`/families/${family}`;
  const active=(id:number,c:AbortController)=>id===version.current&&!c.signal.aborted;
  function stopTimers(){operation.current?.timers.forEach(window.clearTimeout);}
@@ -78,13 +80,13 @@ export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK',tab='hir
   const body=new FormData();body.append('previous_file',previous);body.append('current_file',current);body.append('official_mode',officialMode);
   const v=await accountRequest(`${root}/hira/process`,'POST',body,c.signal);if(active(id,c)){if(v.result?.processing?.official_data_mode!==officialMode)throw new Error('요청한 의약품 매칭 출처와 응답이 다릅니다.');setSnapshot(parse(v,family));}
  }catch(e){if(active(id,c))setError(e instanceof Error?e.message:'HIRA 처리 실패');}finally{finish(id,c);}}
- async function detail(run:string){onOpenDetail?.(`saved-hira-${run}`);const {id,c}=start(true);try{const v=await accountRequest(`${root}/hira-runs/${run}`,'GET',undefined,c.signal);if(active(id,c))setSnapshot(parse(v,family));}catch(e){if(active(id,c))setError(e instanceof Error?e.message:'저장 결과 조회 실패');}finally{finish(id,c);}}
- async function save(){if(!snapshot||busy||uncertainRun)return;const run=snapshot.run_id;const {id,c}=start(false,run);try{
-  await accountRequest(`${root}/hira-runs/${run}/save`,'POST',{intake_confirmations:Object.entries(choices).map(([record_id,choice])=>({record_id,choice}))},c.signal);
+ async function detail(run:string){setSaveFailure(false);onOpenDetail?.(`saved-hira-${run}`);const {id,c}=start(true);try{const v=await accountRequest(`${root}/hira-runs/${run}`,'GET',undefined,c.signal);if(active(id,c))setSnapshot(parse(v,family));}catch(e){if(active(id,c))setError(e instanceof Error?e.message:'저장 결과 조회 실패');}finally{finish(id,c);}}
+ async function save(){if(!snapshot||busy||uncertainRun||snapshot.saved&&!Object.keys(choices).length)return;const run=snapshot.run_id;const {id,c}=start(false,run);setSaveFailure(false);let posted=false;try{
+  await accountRequest(`${root}/hira-runs/${run}/save`,'POST',{intake_confirmations:Object.entries(choices).map(([record_id,choice])=>({record_id,choice}))},c.signal);posted=true;
   const v=await accountRequest(`${root}/hira-runs/${run}`,'GET',undefined,c.signal);
   const list=await accountRequest(`${root}/hira-runs`,'GET',undefined,c.signal);
   if(active(id,c)){setSnapshot(parse(v,family));setRows(list.runs);setRowsKnown(true);setDrafts(rows=>rows.filter(r=>r.id!==run));setUncertainRun('');setChoices({});setNotice('HIRA 결과를 개발용 DB에 저장했습니다. 복용 확인과는 별개입니다.');}
- }catch(e){if(active(id,c)){setUncertainRun(run);setError('저장 요청 결과를 확인하지 못했습니다. 중복 요청을 피하도록 저장 완료 여부부터 확인해 주세요.');}}finally{finish(id,c);}}
+ }catch(e){if(active(id,c)){if(!posted&&knownSaveRejection(e)){setSaveFailure(true);setError('저장에 실패했습니다. 입력과 접근 권한을 확인하세요. 저장 완료로 처리하지 않았습니다.');}else{setUncertainRun(run);setError('저장 요청 결과를 확인하지 못했습니다. 중복 요청을 피하도록 저장 완료 여부부터 확인해 주세요.');}}}finally{finish(id,c);}}
  async function checkSave(){if(!uncertainRun||busy)return;const run=uncertainRun;const {id,c}=start(false);try{
   const list=await accountRequest(`${root}/hira-runs`,'GET',undefined,c.signal);
   if(!active(id,c))return;setRows(list.runs);setRowsKnown(true);
@@ -124,8 +126,8 @@ export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK',tab='hir
    {snapshot.saved&&<details><summary>자료 삭제</summary><DeleteSavedResult key={snapshot.run_id} kind="HIRA" family={name} created={rows.find(r=>r.id===snapshot.run_id)?.created??'저장된 자료'} run={snapshot.run_id} busy={busy} onConfirm={remove}/></details>}
    {!snapshot.result.comparison.executed?<><ComparisonBadge status="HELD"/><p role="status">비교 보류 · 비교 미실행</p><ul>{snapshot.result.comparison.holds.map((h,i)=><li key={i}>{h.message} · 영향 원본 {h.affected_refs.length}건</li>)}</ul></>:<p>비교 완료 · 결과 {snapshot.result.reconciliation_result!.items.length}건</p>}
    <details><summary>HIRA 원본·정규화·보류 사유</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({response_version:snapshot.result.response_version,processing:snapshot.result.processing,official_lookup:snapshot.result.official_lookup,source_rows:snapshot.result.source_rows,accepted:snapshot.result.accepted_results,failed:snapshot.result.review_results,comparison:snapshot.result.comparison},null,2)}</pre></details>
-   {snapshot.result.reconciliation_result?.items.map((item,index)=>{const record=(item.current_record??item.previous_record)!;const state=snapshot.intake_states.find(s=>s.medication_record_id===record.record_id);return <SimpleMedication item={item} key={record.record_id}><IntakeSelection disabled={busy||!!uncertainRun} value={choices[record.record_id]??(state?.verification_status==='USER_VERIFIED'?state.intake_status:undefined)} onChange={choice=>setChoices(x=>({...x,[record.record_id]:choice}))}/></SimpleMedication>;})}
-   <button className="primary" disabled={busy||!!uncertainRun||(snapshot.saved&&!Object.keys(choices).length)} onClick={save}>{snapshot.saved?'변경사항 저장':'저장하기'}</button><p role="status">{uncertainRun?'저장 결과 확인 필요 · 재전송하지 마세요.':snapshot.saved&&Object.keys(choices).length?'자료 저장 완료 · 복용 선택 변경은 저장 전':snapshot.saved?'✓ 저장 완료':'저장 전 · 복용 미선택은 확인 전으로 유지됩니다.'}</p>{snapshot.saved&&tab==='hira'&&<button onClick={onViewSaved}>저장 기록 보기</button>}
+   {snapshot.result.reconciliation_result?.items.map((item,index)=>{const record=(item.current_record??item.previous_record)!;const state=snapshot.intake_states.find(s=>s.medication_record_id===record.record_id);return <SimpleMedication item={item} key={record.record_id}><IntakeSelection disabled={busy||!!uncertainRun} value={choices[record.record_id]??(state?.verification_status==='USER_VERIFIED'?state.intake_status:undefined)} onChange={choice=>{setChoices(x=>editIntakeChoice(snapshot.intake_states,x,record.record_id,choice));setError('');setSaveFailure(false);}} onClear={state?.verification_status!=='USER_VERIFIED'?()=>{setChoices(x=>editIntakeChoice(snapshot.intake_states,x,record.record_id));setError('');setSaveFailure(false);}:undefined}/></SimpleMedication>;})}
+   <button className="primary" disabled={busy||!!uncertainRun||(snapshot.saved&&!Object.keys(choices).length)} onClick={save}>{busy?'저장 중…':snapshot.saved?'변경사항 저장':'저장하기'}</button><p role="status">{busy?'저장·조회 중…':uncertainRun?'저장 결과 확인 필요 · 재전송하지 마세요.':saveFailure?'저장 실패':error?'조회 상태 확인 필요':snapshot.saved&&Object.keys(choices).length?'자료 저장 완료 · 복용 선택 변경은 저장 전':snapshot.saved?'✓ 저장 완료':'저장 전 · 복용 미선택은 확인 전으로 유지됩니다.'}</p>{snapshot.saved&&tab==='hira'&&<button onClick={onViewSaved}>저장 기록 보기</button>}
 
   </section>}
  </section>;
