@@ -130,3 +130,24 @@ def test_live_matching_snapshot_provenance_on_disposable_postgres(monkeypatch,ki
 def test_owned_hira_draft_recovery_on_disposable_postgres(case_name):
     from backend.tests import test_hira_draft_recovery
     getattr(test_hira_draft_recovery,case_name)()
+
+
+def test_gemini_synthetic_persistent_concurrent_global_limit(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from pathlib import Path
+    from unittest.mock import patch
+    from fastapi import HTTPException
+    from backend.api import gemini_synthetic as gate
+    monkeypatch.setenv('YAKEUM_GEMINI_SYNTHETIC_ENABLED','1')
+    monkeypatch.setenv('YAKEUM_GEMINI_SYNTHETIC_ADMIN_USERNAME','synthetic_admin')
+    monkeypatch.setenv('GEMINI_API_KEY','SYNTHETIC-ONLY')
+    monkeypatch.setenv('YAKEUM_GEMINI_MODEL','synthetic-model')
+    image=(Path(__file__).resolve().parents[2]/'docs/integration/samples/render-gemini/synthetic-bag.png').read_bytes()
+    def attempt():
+        try:return gate.extract(image,'image/png',None,{'username':'synthetic_admin'},True,'previous')
+        except HTTPException as error:return error.status_code
+    with patch.object(gate,'extract_image_candidates',return_value=[]) as transport:
+        with ThreadPoolExecutor(2) as pool:results=list(pool.map(lambda _:attempt(),range(2)))
+        assert results.count(409)==1 and transport.call_count==1
+        # Every call opens a fresh DB connection; no in-memory allowance is consulted.
+        assert attempt()==409 and transport.call_count==1

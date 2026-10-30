@@ -157,7 +157,7 @@ def create_family(body: FamilyInput,user: User):
 
 
 async def extract_document(family: UUID,user: User,file: Annotated[UploadFile,File()],record_date: Annotated[date,Form()],
-                  source_type: Annotated[photo_upload.SourceType,Form()],scenario: Annotated[photo_upload.UploadScenario,Form()]='single', *, gemini=False):
+                  source_type: Annotated[photo_upload.SourceType,Form()],scenario: Annotated[photo_upload.UploadScenario,Form()]='single', *, gemini=False, synthetic_consent=False, synthetic_side=None):
     try:
         with database() as db: owned_family(db,family,user)
         data,mime=await photo_upload.validated_image(file)
@@ -166,7 +166,11 @@ async def extract_document(family: UUID,user: User,file: Annotated[UploadFile,Fi
         if gemini:
             from starlette.concurrency import run_in_threadpool
             from backend.api.gemini_bridge import extract_approved_image
-            results=await run_in_threadpool(extract_approved_image,data,mime,context)
+            if os.environ.get('YAKEUM_EXTERNAL_DEMO') == '1' or synthetic_consent:
+                from backend.api.gemini_synthetic import extract as synthetic_extract
+                results=await run_in_threadpool(synthetic_extract,data,mime,context,user,synthetic_consent,synthetic_side)
+            else:
+                results=await run_in_threadpool(extract_approved_image,data,mime,context)
         else:
             results=adapt_provider_call(lambda:photo_upload.fake_response(data,mime,scenario,source_type),context)
         metadata=doc.model_dump(mode='json')
@@ -191,8 +195,10 @@ async def extract(family: UUID,user: User,file: Annotated[UploadFile,File()],rec
 
 @router.post('/families/{family}/photos/gemini-extract')
 async def extract_gemini(family: UUID,user: User,file: Annotated[UploadFile,File()],record_date: Annotated[date,Form()],
-                         source_type: Annotated[photo_upload.SourceType,Form()]):
-    return await extract_document(family,user,file,record_date,source_type,gemini=True)
+                         source_type: Annotated[photo_upload.SourceType,Form()],
+                         synthetic_consent: Annotated[bool,Form()]=False,
+                         synthetic_side: Annotated[Literal['previous','current']|None,Form()]=None):
+    return await extract_document(family,user,file,record_date,source_type,gemini=True,synthetic_consent=synthetic_consent,synthetic_side=synthetic_side)
 
 
 class AccountBatch(photo_demo.LocalModel):

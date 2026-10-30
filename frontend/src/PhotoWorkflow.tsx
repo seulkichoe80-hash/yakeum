@@ -18,6 +18,7 @@ type Side='previous'|'current';
 // session every edit or new request invalidates preview and intake confirmation.
 export function PhotoWorkflow(props:Props) {
  const [gemini,setGemini]=useState(false);
+ const [syntheticConsent,setSyntheticConsent]=useState(false);
  const [previousFile,setPreviousFile]=useState<File|null>(null);
  const [previousDate,setPreviousDate]=useState('2026-09-01');
  const [policy,setPolicy]=useState<'normal'|'repeat'|'unknown'|'mixed'>('normal');
@@ -38,7 +39,8 @@ export function PhotoWorkflow(props:Props) {
   if(props.uploaded) {
    const file=side==='previous'?previousFile:props.file;
    if(!file) throw new Error('이전과 현재 사진을 각각 선택해 주세요.');
-   const result=await (props.account?(gemini?accountGeminiUpload:accountUpload):uploadPhoto)(props.familyMemberId,file,side==='previous'?previousDate:props.recordDate,props.sourceType,policy==='normal'?scenario:policy,signal);
+   const args=[props.familyMemberId,file,side==='previous'?previousDate:props.recordDate,props.sourceType,policy==='normal'?scenario:policy,signal] as const;
+   const result=await (props.account&&gemini?accountGeminiUpload(...args,{consent:syntheticConsent,side}):(props.account?accountUpload:uploadPhoto)(...args));
    if(!signal.aborted) documents.current[side]=result.document;
    return result.results;
   }
@@ -46,7 +48,7 @@ export function PhotoWorkflow(props:Props) {
   const results=await extractPhoto(props.familyMemberId,document,signal);
   if(!signal.aborted) documents.current[side]=document;
   return results;
- },[invalidate,previousDate,props.recordDate,props.sourceType,props.familyMemberId,policy,props.uploaded,props.file,previousFile,props.account,gemini]);
+ },[invalidate,previousDate,props.recordDate,props.sourceType,props.familyMemberId,policy,props.uploaded,props.file,previousFile,props.account,gemini,syntheticConsent]);
  const previousLoader=useCallback((scenario:DemoCase,signal:AbortSignal)=>load('previous',scenario,signal),[load]);
  const currentLoader=useCallback((scenario:DemoCase,signal:AbortSignal)=>load('current',scenario,signal),[load]);
  function reset() {invalidate();setReviews({});documents.current={};setEpoch(v=>v+1);}
@@ -79,6 +81,7 @@ export function PhotoWorkflow(props:Props) {
  return <section className="photo-workflow" aria-label={props.uploaded?'사진 업로드 전체 연결':'사진 Mock 전체 연결'}>
   <h2>{gemini?'사진 업로드 · Gemini 추출 경로':props.uploaded?'사진 업로드 · 가짜 AI 연결 검사':'사진 Mock 전체 연결 검증'}</h2>
   {props.account&&<label>사진 추출 방식<select value={gemini?'GEMINI':'MOCK'} onChange={e=>{setGemini(e.target.value==='GEMINI');reset();}}><option value="MOCK">가상 추출 · 실제 인식 아님</option><option value="GEMINI">Gemini · 별도 승인과 서버 설정 필요</option></select></label>}
+  {gemini&&<label><input type="checkbox" checked={syntheticConsent} onChange={e=>{setSyntheticConsent(e.target.checked);reset();}}/>관리자 합성 검증: 지정 PNG만 이전·현재 각 1회 전송하는 데 동의합니다. 실패·취소·재시작 후에도 재호출하지 않습니다.</label>}
   {gemini&&<p className="notice">Gemini 요청 경로입니다. 승인된 가상 이미지만 사용하세요. 서버 활성화·키·모델 설정이 없으면 실패하며 가상 추출로 바꾸지 않습니다. SDK 시간 제한 60초·자동 재시도 없음. 이전·현재를 각각 추출하면 Gemini 요청은 총 2회입니다. 실패·취소 후 다시 누르면 추가 시도이므로 별도 승인 전에는 누르지 마세요. 추출 성공도 사용자 확인이나 정확도 보장이 아닙니다. 정규화 출처: {officialModeLabel(props.officialMode)}.</p>}
   {props.uploaded&&!gemini?<p className="info">가상 사진만 사용하세요. PNG·JPEG·WebP, 최대 10MB · 2천만 화소 이하 정지 사진. 후보는 가짜 AI 응답이며 실제 인식 결과가 아닙니다. {props.account?'사진 파일은 저장하지 않으며 원본 후보·수정·결과는 개발용 DB에 구분해 저장합니다. 현재 계정 소유 가족에만 접근할 수 있습니다.':'사진은 영구 저장하지 않고 후보만 서버 메모리에 15분간 유지합니다. 로그인·권한 기능은 없습니다.'}</p>:!gemini&&<p className="info">가상 추출·가상 의약품 매칭 전용 · 두 가상 자료를 직접 이전/현재로 지정합니다. 가상 A 응답 → 공통 adapter → 사용자 수정 → B 정규화 → D 비교를 앱 API로 실행합니다. 이미지·키를 전송하거나 외부 API를 호출하지 않으며 결과는 저장되지 않습니다.</p>}
   <label>이전 가상 자료 기준일<input type="date" value={previousDate} onChange={e=>{setPreviousDate(e.target.value);reset();}}/></label>

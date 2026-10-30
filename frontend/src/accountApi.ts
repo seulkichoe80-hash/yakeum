@@ -14,9 +14,9 @@ export async function accountRequest(path:string,method='GET',body?:unknown,sign
  if(value.csrf_token)csrf=value.csrf_token;
  return value;
 }
-export async function accountUpload(family:string,file:File,date:string,source:MedicationRecord['source_type'],scenario:string,signal:AbortSignal,gemini=false):Promise<{document:UploadDocument;results:ExtractionResult[]}>{
+export async function accountUpload(family:string,file:File,date:string,source:MedicationRecord['source_type'],scenario:string,signal:AbortSignal,gemini=false,synthetic?:{consent:boolean;side:'previous'|'current'}):Promise<{document:UploadDocument;results:ExtractionResult[]}>{
  const error=fileError(file.name,file.size,false);if(error)throw new Error(error);
- const body=new FormData();body.append('file',file);body.append('record_date',date);body.append('source_type',source);if(!gemini)body.append('scenario',scenario);
+ const body=new FormData();body.append('file',file);body.append('record_date',date);body.append('source_type',source);if(!gemini)body.append('scenario',scenario);if(synthetic?.consent){body.append('synthetic_consent','true');body.append('synthetic_side',synthetic.side);}
  const v=await accountRequest(`/families/${family}/photos/${gemini?'gemini-extract':'extract'}`,'POST',body,signal);
  if(v.extraction_source!==(gemini?'GEMINI':'MOCK'))throw new Error('추출 출처가 요청과 다릅니다.');
  if(v.response_version!=='DEV_ACCOUNT_V1'||!Array.isArray(v.results)||!v.results.length)throw new Error('개발용 사진 응답이 올바르지 않습니다.');
@@ -35,4 +35,4 @@ export async function saveAccountResult(family:string,run:string,states:Record<s
  return accountRequest(`/families/${family}/runs/${run}/save`,'POST',{intake_confirmations},signal);
 }
 
-export const accountGeminiUpload=(family:string,file:File,date:string,source:MedicationRecord['source_type'],scenario:string,signal:AbortSignal)=>accountUpload(family,file,date,source,scenario,signal,true);
+export const accountGeminiUpload=(family:string,file:File,date:string,source:MedicationRecord['source_type'],scenario:string,signal:AbortSignal,synthetic?:{consent:boolean;side:'previous'|'current'})=>accountUpload(family,file,date,source,scenario,signal,true,synthetic);

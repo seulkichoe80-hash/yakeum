@@ -140,3 +140,10 @@ YAKEUM_DEMO_GATE_PASSWORD가 필수다. 공유 입구 없이 화면/API/문서�
 /api/health는 최소 liveness만 공개하며 개별 가족 권한을 부여하지 않는다.
 Compose 내부 예행연습(flag=0)은 기존대로 동작한다. 외부 flag=1을 Compose에 적용하려면
 두 입구 변수를 컨테이너에 별도 전달해야 하므로 기존 파일을 그대로 외부용으로 사용하지 않는다.
+
+### 외부 시연의 승인된 Gemini 합성 검증
+
+일반 `YAKEUM_GEMINI_LIVE_ENABLED=0` 보호는 유지합니다. `1`로 바꾸면 시작이 거부됩니다.
+별도 관리자·고정 이미지·PostgreSQL 전역 2슬롯 검증의 설정/클릭/한계는
+[RENDER_GEMINI_RESTRICTED.md](../docs/integration/RENDER_GEMINI_RESTRICTED.md)를 따릅니다.
+새 설정의 적용과 실제 호출은 별도 승인 후 진행하며 자동 재시도/슬롯 초기화는 하지 않습니다.

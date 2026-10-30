@@ -1,3 +1,6 @@
+> **외부 시연 설정 정정:** 일반 LIVE_ENABLED=1은 금지합니다.
+> [RENDER_GEMINI_RESTRICTED.md](RENDER_GEMINI_RESTRICTED.md)의 별도 관리자 합성 경로를 사용하세요.
+
 # Render 합성 약봉투 Gemini 검증 준비
 
 2026-10-30 (한국 시간). 시작 코드 `595e77f7e043e9f2b3491ec5024c37c6c38d6f3c`.

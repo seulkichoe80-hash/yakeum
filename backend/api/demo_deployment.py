@@ -41,6 +41,11 @@ def validate_external_demo_settings(values=None):
             raise RuntimeError('External synthetic demo database must be an absolute path outside source.')
     else:raise RuntimeError('Unsupported synthetic demo storage backend.')
 
+    if values.get('YAKEUM_GEMINI_SYNTHETIC_ENABLED') == '1':
+        import re
+        if backend != 'postgres' or not re.fullmatch(r'[a-z0-9_-]{3,40}', values.get('YAKEUM_GEMINI_SYNTHETIC_ADMIN_USERNAME', '')):
+            raise RuntimeError('External synthetic Gemini validation requires PostgreSQL and a designated administrator.')
+
     username = values.get('YAKEUM_DEMO_GATE_USERNAME', '')
     password = values.get('YAKEUM_DEMO_GATE_PASSWORD', '')
     if not username or ':' in username or len(password) < 20:

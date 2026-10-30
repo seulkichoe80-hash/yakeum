@@ -97,3 +97,19 @@ def test_https_gate_keeps_cookie_csrf_and_family_ownership_separate(monkeypatch,
     assert c.post('/api/dev-account/families',json={'name':'가상 가족'}).status_code==403
     c.headers['X-CSRF-Token']=login.json()['csrf_token']
     assert c.post('/api/dev-account/families',json={'name':'가상 가족'}).status_code==201
+
+
+def test_external_restricted_gemini_does_not_relax_general_live_gate():
+    values=settings()
+    values.update(YAKEUM_STORAGE_BACKEND='postgres',
+                  YAKEUM_DATABASE_URL='postgresql://synthetic:synthetic-only@db.example.invalid/synthetic',
+                  YAKEUM_GEMINI_SYNTHETIC_ENABLED='1',
+                  YAKEUM_GEMINI_SYNTHETIC_ADMIN_USERNAME='synthetic_admin')
+    validate_external_demo_settings(values)
+    values['YAKEUM_GEMINI_LIVE_ENABLED']='1'
+    with pytest.raises(RuntimeError,match='YAKEUM_GEMINI_LIVE_ENABLED=0'):
+        validate_external_demo_settings(values)
+    values['YAKEUM_GEMINI_LIVE_ENABLED']='0'
+    values['YAKEUM_GEMINI_SYNTHETIC_ADMIN_USERNAME']=''
+    with pytest.raises(RuntimeError,match='designated administrator'):
+        validate_external_demo_settings(values)

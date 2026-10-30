@@ -483,3 +483,13 @@ MFDS_LIVE 선택을 추가하며 별도 서버 허용이 없으면 중단한다.
 본인 가족의 기존 saved=0 결과를 읽는 GET hira-drafts 목록/상세를 추가한다.
 DEV_ACCOUNT_HIRA_V1의 saved=false 결과를 재사용하며, 읽기만으로 외부 조회·저장·복용 확인을 실행하지 않는다.
 기존 저장 상세의 saved=true/소유권 검사는 유지한다. [HIRA_RESULT_RECOVERY.md](integration/HIRA_RESULT_RECOVERY.md)를 따른다.
+
+
+## TASK D Render 관리자 합성 Gemini 검증 (2026-10-30)
+
+기존 계정 `photos/gemini-extract` multipart에 선택적 `synthetic_consent`(bool, 기본 false),
+`synthetic_side`(previous/current)를 추가한다. 외부 시연에서는 서버 관리자·명시적 동의·고정 PNG 해시·
+DB 전역 각 슬롯 1회가 필수이며 일반 LIVE_ENABLED는 0을 유지한다. 응답은 기존 DEV_ACCOUNT_V1 및
+공통 ExtractionResult 그대로다. 중복은 HTTP409, 권한403/비활성404/설정503/파일·동의422.
+새 내부 소비 테이블은 API 초기화/리셋이 없고 기존 결과/가족 자료와 별개로 유지된다.
+팀 전체 합의 완료 선언이 아닌 TASK D 제한 검증 구현이다. 상세: integration/RENDER_GEMINI_RESTRICTED.md.
