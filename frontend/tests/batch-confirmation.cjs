@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const {mockExtraction,initialReviewState,reviewReducer,confirmReviewedBatch}=require('../src/imageReviewModel.ts');
+let s=reviewReducer(initialReviewState(),{type:'start',requestId:1});s=reviewReducer(s,{type:'finish',requestId:1,results:mockExtraction('multiple','synthetic-family','MEDICINE_BAG','2026-10-01')});
+assert.equal(confirmReviewedBatch(undefined,true),null);assert.equal(confirmReviewedBatch(s,false),null);
+const confirmed=confirmReviewedBatch(s,true);assert(confirmed.candidates.every(x=>x.user_confirmed&&x.acknowledged));assert(s.candidates.every(x=>!x.user_confirmed));assert(confirmed.candidates.every(x=>x.original.record.user_confirmed===false));
+const bad=reviewReducer(s,{type:'edit',key:s.candidates[0].key,draft:{...s.candidates[0].draft,dose:'bad'}});assert.equal(confirmReviewedBatch(bad,true),null);
+const deferred=reviewReducer(s,{type:'defer',key:s.candidates[0].key});assert.equal(confirmReviewedBatch(deferred,true),null);
+const failed=structuredClone(s);failed.candidates[1].original.status='FAILED';assert.equal(confirmReviewedBatch(failed,true),null);
+const missing=structuredClone(s);missing.candidates[1].original.record=null;assert.equal(confirmReviewedBatch(missing,true),null);
+console.log('Batch confirmation retains explicit consent, existing draft validation, deferral/null/failure blocking and immutable unconfirmed originals.');

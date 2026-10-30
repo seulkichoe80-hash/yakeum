@@ -1,3 +1,5 @@
+> 후속 사용자 작업 중심 단순화는 [UI_SIMPLIFICATION_REVIEW.md](UI_SIMPLIFICATION_REVIEW.md)를 참조하세요.
+
 # 발표·시연 UI 검토 (2026-10-30 한국 시간)
 
 시작 codex/mvp-completion / 56921209b3b19810154686bec2979bec2b830bbf, 작업 트리 clean.

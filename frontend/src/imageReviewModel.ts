@@ -90,3 +90,10 @@ export function reviewReducer(state: ReviewState, action: ReviewAction): ReviewS
   return {...candidate,attempted:true,user_confirmed:candidate.acknowledged && Object.keys(draftIssues(candidate.draft)).length === 0,deferred:false};
  })};
 }
+
+// Explicit batch acknowledgement still runs the exact per-candidate validator.
+export function confirmReviewedBatch(state:ReviewState|undefined,acknowledged:boolean):ReviewState|null {
+ if(!state||!acknowledged||state.phase!=='ready'||!state.candidates.length)return null;
+ if(state.candidates.some(c=>c.deferred||c.original.status==='FAILED'||!c.original.record||Object.keys(draftIssues(c.draft)).length))return null;
+ return state.candidates.reduce((s,c)=>reviewReducer(reviewReducer(s,{type:'acknowledge',key:c.key,value:true}),{type:'confirm',key:c.key}),state);
+}

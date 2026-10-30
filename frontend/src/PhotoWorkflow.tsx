@@ -1,3 +1,4 @@
+import { AccountPhotoFlow } from './AccountPhotoFlow';
 import { ProcessingSource, MedicineReview, focusVisible } from './workflowPresentation';
 import { MfdsLookupDiagnostics } from './MfdsLookupDiagnostics';
 import { ComparisonBadge, ComparisonChanges, ComparisonNotice, RecordSummary } from './ComparisonDisplay';
@@ -17,7 +18,8 @@ type Side='previous'|'current';
 
 // Parent remounts this component on family/file/type/date changes. Within that
 // session every edit or new request invalidates preview and intake confirmation.
-export function PhotoWorkflow(props:Props) {
+export function PhotoWorkflow(props:Props){return props.account?<AccountPhotoFlow {...props}/>:<LegacyPhotoWorkflow {...props}/>;}
+function LegacyPhotoWorkflow(props:Props) {
  const [gemini,setGemini]=useState(false);
  const [syntheticConsent,setSyntheticConsent]=useState(false);
  const localAttempts=useRef(new Set<string>());
