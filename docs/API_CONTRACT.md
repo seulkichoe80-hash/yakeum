@@ -466,3 +466,10 @@ Gemini 요청 경로와 Mock을 구분한다. 서버 활성화·설정·시도 �
 ADMIN_MFDS_PROBE_V1과 영속 1회 실행 규칙은
 [integration/RENDER_MFDS_ADMIN_PROBE.md](integration/RENDER_MFDS_ADMIN_PROBE.md)를 따른다.
 실제 의약품 매칭 전환이나 운영 관리자 인증 완성을 뜻하지 않는다.
+
+## 계정의 명시적 식약처 매칭 경로 (옵트인)
+
+기본/생략 official_mode=LOCAL_MOCK은 유지한다. 계정 사진 JSON·HIRA form에만
+MFDS_LIVE 선택을 추가하며 별도 서버 허용이 없으면 중단한다.
+실제 HIRA 결과는 TASK_D_HIRA_MFDS_V1으로 구분한다. 공통 약 정보와 기존 공개 HIRA v2는 유지한다.
+출처·전체 보류·요청 한도·저장 영향은 [MFDS_LIVE_MATCHING_V1.md](integration/MFDS_LIVE_MATCHING_V1.md)를 따른다.

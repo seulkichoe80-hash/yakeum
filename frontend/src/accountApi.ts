@@ -23,9 +23,10 @@ export async function accountUpload(family:string,file:File,date:string,source:M
  for(const r of v.results)if(r.record&&r.record.family_member_id!==family)throw new Error('후보 가족이 다릅니다.');
  return {document:{document_id:v.document_id,upload_token:v.document_id,record_date:date,source_type:source,scenario:'single'},results:v.results};
 }
-export async function accountProcess(family:string,previous:UploadDocument,current:UploadDocument,p:CandidateReview[],c:CandidateReview[],confirmed:boolean,signal:AbortSignal):Promise<PhotoResponse>{
+export async function accountProcess(family:string,previous:UploadDocument,current:UploadDocument,p:CandidateReview[],c:CandidateReview[],confirmed:boolean,signal:AbortSignal,official_mode:'LOCAL_MOCK'|'MFDS_LIVE'='LOCAL_MOCK'):Promise<PhotoResponse>{
  const batch=(d:UploadDocument,c:CandidateReview[])=>({document_id:d.document_id,reviews:reviewBatch(d,c).reviews});
- const v=await accountRequest(`/families/${family}/photos/process`,'POST',{previous:batch(previous,p),current:batch(current,c),normalization_confirmed:confirmed},signal);
+ const v=await accountRequest(`/families/${family}/photos/process`,'POST',{previous:batch(previous,p),current:batch(current,c),normalization_confirmed:confirmed,official_mode},signal);
+ if(v.result?.mode!==official_mode)throw new Error('요청한 의약품 매칭 출처와 응답이 다릅니다.');
  if(v.response_version!=='DEV_ACCOUNT_V1'||typeof v.run_id!=='string')throw new Error('저장 준비 응답이 다릅니다.');
  return {...validatePhotoResponse(v.result,family),account_run_id:v.run_id};
 }

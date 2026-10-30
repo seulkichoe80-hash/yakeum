@@ -150,3 +150,7 @@ subtests 5개와 브라우저 그룹은 독립 테스트 수로 합산하지 않
 배포 Docker 이미지에는 테스트 서버/테스트 모듈을 복사하지 않는다.
 
 2026-10-30 로그인 전달 방식 대조·앱 내 진입 검증: [MFDS_ADMIN_AUTH_REVIEW.md](MFDS_ADMIN_AUTH_REVIEW.md).
+
+후속: 사용자가 제공한 Render 정상 실조회 결과와 사진·HIRA용 별도 실제 매칭 경로 준비는
+[MFDS_LIVE_MATCHING_V1.md](MFDS_LIVE_MATCHING_V1.md)에 기록했다.
+관리자 1회 기록은 그대로 보존하며 일반 매칭 허용 설정은 별도로 기본 꺼짐이다.

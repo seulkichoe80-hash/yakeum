@@ -47,14 +47,14 @@ export async function requestHiraComparison(
  return parseHiraV2Response(await response.json(), input.familyMemberId);
 }
 
-export function parseVerticalSliceResponse(value: unknown, expectedFamilyId: string): VerticalSliceResponse {
- if (!isObject(value)) throw new ApiError('Backend 응답 형식을 확인할 수 없습니다.', 502);
+export function parseVerticalSliceResponse(value: unknown, expectedFamilyId: string, officialMode='LOCAL_MOCK'): VerticalSliceResponse {
+ if (!['LOCAL_MOCK','MFDS_LIVE'].includes(officialMode)||!isObject(value)) throw new ApiError('Backend 응답 형식을 확인할 수 없습니다.', 502);
  const response = value as Record<string, unknown>;
  const processing = response.processing;
  if (!isObject(processing)
   || processing.parser !== 'DETERMINISTIC'
   || processing.file_processing !== 'EXECUTED'
-  || processing.official_data_mode !== 'LOCAL_MOCK'
+  || processing.official_data_mode !== officialMode
   || processing.persisted !== false) {
   throw new ApiError('Backend 처리 방식 표시가 올바르지 않습니다.', 502);
  }
@@ -122,15 +122,15 @@ function isObject(value: unknown): value is Record<string, unknown> {
  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-export function parseHiraV2Response(value:unknown, family:string):HiraV2Response {
- if(!isObject(value)||value.response_version!=='TASK_D_HIRA_V2'||value.family_member_id!==family
+export function parseHiraV2Response(value:unknown, family:string, officialMode='LOCAL_MOCK'):HiraV2Response {
+ if(!isObject(value)||value.response_version!==(officialMode==='MFDS_LIVE'?'TASK_D_HIRA_MFDS_V1':'TASK_D_HIRA_V2')||value.family_member_id!==family
   ||!isObject(value.comparison)||typeof value.comparison.executed!=='boolean'
   ||!Array.isArray(value.comparison.holds)||!Array.isArray(value.source_rows)) throw new ApiError('HIRA v2 계약을 확인할 수 없습니다.',502);
  const held=!value.comparison.executed;
  if(held ? (value.comparison.holds.length===0||value.reconciliation_result!==null||!Array.isArray(value.current_intake_states)||value.current_intake_states.length!==0)
   : value.comparison.holds.length!==0) throw new ApiError('비교 실행/보류 결과가 일치하지 않습니다.',502);
  // Reuse all existing processing, batch, family and intake safety checks.
- parseVerticalSliceResponse(held?{...value,reconciliation_result:{family_member_id:family,generated_at:'held',items:[]}}:value,family);
+ parseVerticalSliceResponse(held?{...value,reconciliation_result:{family_member_id:family,generated_at:'held',items:[]}}:value,family,officialMode);
  const refKey=(ref:Record<string,unknown>)=>JSON.stringify([ref.side,ref.document_id,ref.input_index]);
  const refs=new Set<string>(); const pointers=new Set<string>();
  for(const row of value.source_rows) {

@@ -20,18 +20,24 @@ def process_hira_comparison(
     previous_path: Path,
     current_path: Path,
     family_member_id: str,
-    *, version: int = 1,
+    *, version: int = 1, official_lookup=None,
 ) -> dict[str, Any]:
-    """Run deterministic local processing without persistence or network I/O."""
+    """Default Mock; account-only explicit injected lookup may use the live path."""
 
-    previous_internal = normalize_hira_file(previous_path, client=MockMfdsClient())
-    current_internal = normalize_hira_file(current_path, client=MockMfdsClient())
+    from backend.services.mfds.live_matching import NoLookup, verify_result
+    client=NoLookup() if official_lookup is not None else MockMfdsClient()
+    previous_internal = normalize_hira_file(previous_path, client=client)
+    current_internal = normalize_hira_file(current_path, client=client)
     previous_results = to_common_results(previous_internal, family_member_id)
     current_results = to_common_results(current_internal, family_member_id)
+    if official_lookup is not None:
+        if version != 2: raise ValueError('Live matching requires explicit HIRA v2')
+        previous_results=[verify_result(r,official_lookup) for r in previous_results]
+        current_results=[verify_result(r,official_lookup) for r in current_results]
     if version == 2:
         from backend.api.hira_hold import process_guarded
         return process_guarded(previous_results, current_results,
-                               previous_internal, current_internal, family_member_id)
+                               previous_internal, current_internal, family_member_id, official_mode="MFDS_LIVE" if official_lookup is not None else "LOCAL_MOCK")
     integrated = reconcile_normalization_results(
         previous_results,
         current_results,

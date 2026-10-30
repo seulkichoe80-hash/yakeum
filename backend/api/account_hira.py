@@ -1,9 +1,11 @@
 """Owned HIRA v2 snapshots, separate from photo runs. Development SQLite only."""
 from datetime import datetime, timezone
 import json
-from typing import Annotated
+import tempfile
+from typing import Annotated, Literal
 from uuid import UUID, uuid4
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from starlette.concurrency import run_in_threadpool
 from backend.api.dev_account import User, guard, owned_family, SaveInput, Choice
 from backend.storage.local_db import database
 from backend.services.reconciliation.current_intake import apply_user_verification
@@ -21,12 +23,27 @@ def owned_hira(db,family,run_id,user,saved=False):
 
 
 @router.post('/hira/process')
-async def process(family: UUID,user: User,previous_file: Annotated[UploadFile,File()],current_file: Annotated[UploadFile,File()]):
+async def process(family: UUID,user: User,previous_file: Annotated[UploadFile,File()],current_file: Annotated[UploadFile,File()], official_mode: Annotated[Literal["LOCAL_MOCK","MFDS_LIVE"],Form()]="LOCAL_MOCK"):
     try:
         with database() as db: owned_family(db,family,user)
         # Lazy import reuses existing bounded upload/parser/v2 validation, without a cycle.
         from backend.api.main import _reconcile_hira_files
-        result=(await _reconcile_hira_files(family,previous_file,current_file,version=2)).model_dump(mode='json')
+        if official_mode=='LOCAL_MOCK':
+            result=(await _reconcile_hira_files(family,previous_file,current_file,version=2)).model_dump(mode='json')
+        else:
+            from backend.services.mfds.live_matching import configured_lookup
+            from backend.api.pipeline import process_hira_comparison
+            from backend.api.main import _save_and_validate, UploadRejected
+            from pathlib import Path
+            lookup=configured_lookup(official_mode)
+            try:
+                with tempfile.TemporaryDirectory(prefix='yakeum-live-hira-') as directory:
+                    previous,current=Path(directory)/'previous.xlsx',Path(directory)/'current.xlsx'
+                    await _save_and_validate(previous_file,previous)
+                    await _save_and_validate(current_file,current)
+                    result=await run_in_threadpool(process_hira_comparison,previous,current,str(family),version=2,official_lookup=lookup)
+            except UploadRejected as exc:
+                raise HTTPException(exc.status_code,exc.detail) from None
         run_id=str(uuid4());now=datetime.now(timezone.utc)
         with database() as db:
             owned_family(db,family,user)

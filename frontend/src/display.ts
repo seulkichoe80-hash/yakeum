@@ -9,3 +9,7 @@ export function koreanSavedTime(value:string):string {
 export function extractionSourceLabel(source:string='MOCK'):string {
  return source==='MOCK'?'가상 추출':source==='GEMINI'?'Gemini 추출':'추출 출처 확인 필요';
 }
+
+export function officialModeLabel(mode:string='LOCAL_MOCK'):string {
+ return mode==='MFDS_LIVE'?'실제 식약처 조회 경로 (확정 여부는 결과 확인)':mode==='LOCAL_MOCK'?'가상 의약품 매칭':'의약품 매칭 출처 확인 필요';
+}

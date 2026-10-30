@@ -33,7 +33,7 @@ def _comparable(record):
     )
 
 
-def process_guarded(previous, current, previous_internal, current_internal, family):
+def process_guarded(previous, current, previous_internal, current_internal, family, *, official_mode="LOCAL_MOCK"):
     batches = {'previous': previous, 'current': current}
     prepared = {side: _prepare_batch(results, family) for side, results in batches.items()}
     sources = []
@@ -59,6 +59,8 @@ def process_guarded(previous, current, previous_internal, current_internal, fami
         holds.append({'kind': kind, 'message': message, 'affected_refs': deepcopy(all_refs)})
     if any(r['status'] == 'FAILED' or r.get('record') is None for rows in batches.values() for r in rows):
         hold('UNIDENTIFIED_FAILED_INPUT', '실패 후보가 있어 양쪽 자료 전체 비교를 실행하지 않았습니다.')
+    if official_mode=='MFDS_LIVE' and any(r['status']!='MATCHED' for rows in batches.values() for r in rows):
+        hold('UNKNOWN_COMPARISON_FIELDS', '공식 제품·성분·함량의 확인이 끝나지 않아 전체 비교를 보류했습니다.')
     records = {side: data['records'] for side, data in prepared.items()}
     if any(not _comparable(r) for rows in records.values() for r in rows):
         hold('UNKNOWN_COMPARISON_FIELDS', '성분·함량·단위 또는 비교 필수값이 미확인이라 전체 비교를 보류했습니다.')
@@ -80,9 +82,9 @@ def process_guarded(previous, current, previous_internal, current_internal, fami
     } if holds else reconcile_normalization_results(previous, current, family))
     return {
         **integrated,
-        'response_version': 'TASK_D_HIRA_V2', 'family_member_id': family,
+        'response_version': 'TASK_D_HIRA_MFDS_V1' if official_mode=='MFDS_LIVE' else 'TASK_D_HIRA_V2', 'family_member_id': family,
         'processing': {'parser': 'DETERMINISTIC', 'file_processing': 'EXECUTED',
-                       'official_data_mode': 'LOCAL_MOCK', 'persisted': False},
+                       'official_data_mode': official_mode, 'persisted': False},
         'comparison': {'executed': not holds, 'holds': holds}, 'source_rows': sources,
         'current_intake_states': [] if holds else build_current_intake_states(integrated['reconciliation_result']),
     }

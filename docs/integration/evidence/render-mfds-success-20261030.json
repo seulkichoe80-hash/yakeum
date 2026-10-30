@@ -1,0 +1,20 @@
+{
+  "response_version": "ADMIN_MFDS_PROBE_V1",
+  "state": "FINISHED",
+  "consumed": true,
+  "started_at": "2026-10-29T23:47:56.163527+00:00",
+  "result": {
+    "mode": "live", "request_attempts": 1, "automatic_retries": 0,
+    "key_registered": true, "xml_valid": true, "api_success": true,
+    "page": 1, "page_size": 3, "total_count": 7, "received_count": 3,
+    "page_valid": true, "all_candidates_received": false,
+    "next_page_available": true, "automatic_next_page_requests": 0,
+    "unique_candidate_evidence": false,
+    "ingredient_strength_verified_against_user_record": false,
+    "products": [
+      {"id_present": true, "name_present": true, "main_ingredients_present": true, "material_present": true, "insurance_code_known": false, "ingredient_count": 1, "direct_amount_count": 0, "unknown_amount_count": 1},
+      {"id_present": true, "name_present": true, "main_ingredients_present": true, "material_present": true, "insurance_code_known": false, "ingredient_count": 1, "direct_amount_count": 1, "unknown_amount_count": 0},
+      {"id_present": true, "name_present": true, "main_ingredients_present": true, "material_present": true, "insurance_code_known": false, "ingredient_count": 4, "direct_amount_count": 4, "unknown_amount_count": 0}
+    ]
+  }
+}

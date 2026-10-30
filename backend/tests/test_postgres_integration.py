@@ -114,3 +114,11 @@ def test_durable_admin_probe_on_disposable_postgres(monkeypatch,case_name):
     monkeypatch.setenv('MFDS_API_KEY','SYNTHETIC-SECRET')
     monkeypatch.setattr(mfds_admin.probe,'fetch_xml',lambda *a:pytest.fail('live forbidden'))
     getattr(test_mfds_admin,case_name)(monkeypatch)
+
+
+@pytest.mark.parametrize('kind',['photo','hira'])
+def test_live_matching_snapshot_provenance_on_disposable_postgres(monkeypatch,kind):
+    from backend.tests.test_live_mfds_matching import test_persistence_sources_and_other_owner_access
+    monkeypatch.setenv('YAKEUM_MFDS_MATCH_ENABLED','1')
+    monkeypatch.setenv('MFDS_API_KEY','SYNTHETIC-SECRET')
+    test_persistence_sources_and_other_owner_access(monkeypatch,kind)

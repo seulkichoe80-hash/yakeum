@@ -1,5 +1,5 @@
 import { ComparisonBadge, ComparisonChanges, ComparisonNotice, RecordSummary } from './ComparisonDisplay';
-import { koreanSavedTime } from './display';
+import { koreanSavedTime, officialModeLabel } from './display';
 import { useEffect, useRef, useState } from 'react';
 import { DeleteSavedResult } from './DeleteSavedResult';
 import { accountRequest } from './accountApi';
@@ -11,7 +11,9 @@ import { intakeChoiceLabels, verificationLabels } from './currentIntakeUi';
 type Snapshot={run_id:string;saved:boolean;result:HiraV2Response;intake_states:CurrentIntakeState[]};
 function parse(value:any,family:string):Snapshot{
  if(value.response_version!=='DEV_ACCOUNT_HIRA_V1'||value.source_type!=='HIRA'||value.family_member_id!==family||typeof value.run_id!=='string'||typeof value.saved!=='boolean')throw new Error('계정 HIRA 응답이 다릅니다.');
- const result=parseHiraV2Response(value.result,family);
+ const mode=value.result?.processing?.official_data_mode;
+ if(!['LOCAL_MOCK','MFDS_LIVE'].includes(mode))throw new Error('의약품 매칭 출처가 다릅니다.');
+ const result=parseHiraV2Response(value.result,family,mode);
  const expected=new Set(result.current_intake_states.map(s=>s.medication_record_id));
  if(!Array.isArray(value.intake_states)||value.intake_states.length!==expected.size)throw new Error('저장된 복용 항목이 다릅니다.');
  const ids=new Set<string>();
@@ -23,7 +25,7 @@ function parse(value:any,family:string):Snapshot{
  }
  return {...value,result};
 }
-export function AccountHiraPanel({family,name}:{family:string;name:string}){
+export function AccountHiraPanel({family,name,officialMode='LOCAL_MOCK'}:{family:string;name:string;officialMode?:'LOCAL_MOCK'|'MFDS_LIVE'}){
  const [previous,setPrevious]=useState<File|null>(null),[current,setCurrent]=useState<File|null>(null);
  const [snapshot,setSnapshot]=useState<Snapshot|null>(null),[rows,setRows]=useState<{id:string;created:string}[]>([]);
  const [rowsKnown,setRowsKnown]=useState(false);
@@ -53,8 +55,8 @@ export function AccountHiraPanel({family,name}:{family:string;name:string}){
  async function process(){const {id,c}=start(true);try{
   if(!previous||!current)throw new Error('이전과 현재 XLSX 파일을 각각 선택해 주세요.');
   for(const file of [previous,current]){const e=fileError(file.name,file.size,true);if(e)throw new Error(e);}
-  const body=new FormData();body.append('previous_file',previous);body.append('current_file',current);
-  const v=await accountRequest(`${root}/hira/process`,'POST',body,c.signal);if(active(id,c))setSnapshot(parse(v,family));
+  const body=new FormData();body.append('previous_file',previous);body.append('current_file',current);body.append('official_mode',officialMode);
+  const v=await accountRequest(`${root}/hira/process`,'POST',body,c.signal);if(active(id,c)){if(v.result?.processing?.official_data_mode!==officialMode)throw new Error('요청한 의약품 매칭 출처와 응답이 다릅니다.');setSnapshot(parse(v,family));}
  }catch(e){if(active(id,c))setError(e instanceof Error?e.message:'HIRA 처리 실패');}finally{finish(id,c);}}
  async function detail(run:string){const {id,c}=start(true);try{const v=await accountRequest(`${root}/hira-runs/${run}`,'GET',undefined,c.signal);if(active(id,c))setSnapshot(parse(v,family));}catch(e){if(active(id,c))setError(e instanceof Error?e.message:'저장 결과 조회 실패');}finally{finish(id,c);}}
  async function save(){if(!snapshot||busy||uncertainRun)return;const run=snapshot.run_id;const {id,c}=start(false,run);try{
@@ -82,7 +84,7 @@ export function AccountHiraPanel({family,name}:{family:string;name:string}){
   const v=await accountRequest(`${root}/hira-runs/${run}`,'GET',undefined,c.signal);if(active(id,c))setSnapshot(parse(v,family));
  }catch(e){if(active(id,c))setError('복용 확인 결과를 확인하지 못했습니다. 저장된 결과를 다시 열어 확인해 주세요.');}finally{finish(id,c);}}
  return <section className="card account-hira" aria-label="계정 HIRA 저장"><h2>{name} · HIRA 자료 비교·저장</h2>
-  <p className="info">가상 XLSX 전용 · 개발용 DB · 가상 의약품 매칭입니다. 원본 파일은 보관하지 않고 제한된 원본 행·정규화·비교 보류 사유를 저장합니다. 저장은 내용 확인이나 실제 복용 확인을 뜻하지 않습니다.</p>
+  <p className="info">가상 XLSX 전용 · 개발용 DB · {officialModeLabel(officialMode)}. 원본 파일은 보관하지 않고 제한된 원본 행·정규화·비교 보류 사유를 저장합니다. 저장은 내용 확인이나 실제 복용 확인을 뜻하지 않습니다.</p>
   <label>이전 HIRA 파일<input type="file" disabled={deleting} accept=".xlsx" onChange={e=>{setPrevious(e.target.files?.[0]??null);clear();}}/></label>
   <label>현재 HIRA 파일<input type="file" disabled={deleting} accept=".xlsx" onChange={e=>{setCurrent(e.target.files?.[0]??null);clear();}}/></label>
   <button disabled={!previous||!current||busy} onClick={process}>HIRA 파일 처리</button>
@@ -92,7 +94,7 @@ export function AccountHiraPanel({family,name}:{family:string;name:string}){
   {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
   <h3>이 가족의 HIRA 저장 목록</h3><button disabled={busy} onClick={list}>HIRA 저장 목록 새로고침</button>
   {rowsKnown&&!rows.length&&<p>저장된 HIRA 결과가 없습니다.</p>}{rows.map((r,i)=><button disabled={busy} key={r.id} onClick={()=>detail(r.id)}>HIRA 저장 결과 {i+1} · {koreanSavedTime(r.created)}</button>)}
-  {snapshot&&<section aria-label="계정 HIRA 결과"><h3>{snapshot.saved?'저장된 HIRA 결과':'HIRA 처리 결과'}</h3><ComparisonNotice/>
+  {snapshot&&<section aria-label="계정 HIRA 결과"><p>{officialModeLabel(snapshot.result.processing.official_data_mode)}</p><h3>{snapshot.saved?'저장된 HIRA 결과':'HIRA 처리 결과'}</h3><ComparisonNotice/>
    {snapshot.saved&&<DeleteSavedResult key={snapshot.run_id} kind="HIRA" family={name} created={rows.find(r=>r.id===snapshot.run_id)?.created??'저장된 자료'} run={snapshot.run_id} busy={busy} onConfirm={remove}/>}
    {!snapshot.result.comparison.executed?<><ComparisonBadge status="HELD"/><p role="status">비교 보류 · 비교 미실행</p><ul>{snapshot.result.comparison.holds.map((h,i)=><li key={i}>{h.message} · 영향 원본 {h.affected_refs.length}건</li>)}</ul></>:<p>비교 완료 · 결과 {snapshot.result.reconciliation_result!.items.length}건</p>}
    {!snapshot.saved&&<button disabled={busy||!!uncertainRun} onClick={save}>이 HIRA 결과 저장 (보류 포함)</button>}

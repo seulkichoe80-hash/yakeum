@@ -1,5 +1,5 @@
 import { ComparisonBadge, ComparisonChanges, ComparisonNotice, RecordSummary } from './ComparisonDisplay';
-import { extractionSourceLabel } from './display';
+import { extractionSourceLabel, officialModeLabel } from './display';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { accountUpload, accountGeminiUpload, accountProcess, saveAccountResult } from './accountApi';
 import { uploadPhoto, processUploads, type UploadDocument } from './uploadPhotoApi';
@@ -10,7 +10,7 @@ import { initialCurrentIntakeState, intakeChoiceLabels, verificationLabels, veri
 import type { MedicationRecord } from './types';
 import { labels, productName } from './types';
 
-type Props={familyMemberId:string;familyLabel:string;sourceType:MedicationRecord['source_type'];sourceLabel:string;recordDate:string;file:File|null;uploaded?:boolean;account?:boolean;deletedRunId?:string};
+type Props={officialMode?:'LOCAL_MOCK'|'MFDS_LIVE';familyMemberId:string;familyLabel:string;sourceType:MedicationRecord['source_type'];sourceLabel:string;recordDate:string;file:File|null;uploaded?:boolean;account?:boolean;deletedRunId?:string};
 type Side='previous'|'current';
 
 // Parent remounts this component on family/file/type/date changes. Within that
@@ -63,7 +63,7 @@ export function PhotoWorkflow(props:Props) {
   abort.current?.abort();const controller=new AbortController();abort.current=controller;
   const id=++generation.current;setBusy(true);setError('');setResponse(null);setIntakes({});
   try {
-   const value=props.uploaded ? await (props.account?accountProcess:processUploads)(props.familyMemberId,previous as UploadDocument,current as UploadDocument,reviews.previous.candidates,reviews.current.candidates,confirmed,controller.signal) : await processPhotos(props.familyMemberId,reviewBatch(previous,reviews.previous.candidates),reviewBatch(current,reviews.current.candidates),confirmed,controller.signal);
+   const value=props.uploaded ? await (props.account?accountProcess:processUploads)(props.familyMemberId,previous as UploadDocument,current as UploadDocument,reviews.previous.candidates,reviews.current.candidates,confirmed,controller.signal,props.officialMode) : await processPhotos(props.familyMemberId,reviewBatch(previous,reviews.previous.candidates),reviewBatch(current,reviews.current.candidates),confirmed,controller.signal);
    if(id!==generation.current||controller.signal.aborted) return;
    setResponse(value);
    if(value.stage==='compared') {
@@ -78,7 +78,7 @@ export function PhotoWorkflow(props:Props) {
  return <section className="photo-workflow" aria-label={props.uploaded?'사진 업로드 전체 연결':'사진 Mock 전체 연결'}>
   <h2>{gemini?'사진 업로드 · Gemini 추출 경로':props.uploaded?'사진 업로드 · 가짜 AI 연결 검사':'사진 Mock 전체 연결 검증'}</h2>
   {props.account&&<label>사진 추출 방식<select value={gemini?'GEMINI':'MOCK'} onChange={e=>{setGemini(e.target.value==='GEMINI');reset();}}><option value="MOCK">가상 추출 · 실제 인식 아님</option><option value="GEMINI">Gemini · 별도 승인과 서버 설정 필요</option></select></label>}
-  {gemini&&<p className="notice">Gemini 요청 경로입니다. 승인된 가상 이미지만 사용하세요. 서버 활성화·키·모델 설정이 없으면 실패하며 가상 추출로 바꾸지 않습니다. 최대 60초·자동 재시도 없음. 추출 성공도 사용자 확인이나 정확도 보장이 아닙니다. 정규화는 가상 의약품 매칭입니다.</p>}
+  {gemini&&<p className="notice">Gemini 요청 경로입니다. 승인된 가상 이미지만 사용하세요. 서버 활성화·키·모델 설정이 없으면 실패하며 가상 추출로 바꾸지 않습니다. 최대 60초·자동 재시도 없음. 추출 성공도 사용자 확인이나 정확도 보장이 아닙니다. 정규화 출처: {officialModeLabel(props.officialMode)}.</p>}
   {props.uploaded&&!gemini?<p className="info">가상 사진만 사용하세요. PNG·JPEG·WebP, 최대 10MB · 2천만 화소 이하 정지 사진. 후보는 가짜 AI 응답이며 실제 인식 결과가 아닙니다. {props.account?'사진 파일은 저장하지 않으며 원본 후보·수정·결과는 개발용 DB에 구분해 저장합니다. 현재 계정 소유 가족에만 접근할 수 있습니다.':'사진은 영구 저장하지 않고 후보만 서버 메모리에 15분간 유지합니다. 로그인·권한 기능은 없습니다.'}</p>:!gemini&&<p className="info">가상 추출·가상 의약품 매칭 전용 · 두 가상 자료를 직접 이전/현재로 지정합니다. 가상 A 응답 → 공통 adapter → 사용자 수정 → B 정규화 → D 비교를 앱 API로 실행합니다. 이미지·키를 전송하거나 외부 API를 호출하지 않으며 결과는 저장되지 않습니다.</p>}
   <label>이전 가상 자료 기준일<input type="date" value={previousDate} onChange={e=>{setPreviousDate(e.target.value);reset();}}/></label>
   {!gemini&&<label>정책 보류 검사<select value={policy} onChange={e=>{setPolicy(e.target.value as typeof policy);reset();}}><option value="normal">일반 후보</option><option value="repeat">반복 조제 · 대표 정책 미합의</option><option value="unknown">함량 미확인</option>{props.uploaded&&<option value="mixed">정상 + 숫자 오류 후보</option>}</select></label>}
@@ -95,7 +95,7 @@ export function PhotoWorkflow(props:Props) {
   {response&&(!props.deletedRunId||response.account_run_id!==props.deletedRunId)&&<section aria-label="사진 처리 결과">
    <h3>사진 처리 결과 · {response.stage==='held'?'비교 보류':response.stage==='normalized'?'정규화 검토':'비교 완료'}</h3>
    <ComparisonNotice/>{response.stage==='held'&&<ComparisonBadge status="HELD"/>}
-   <p>{response.extraction_sources?`추출 출처: 이전 ${extractionSourceLabel(response.extraction_sources.previous)} / 현재 ${extractionSourceLabel(response.extraction_sources.current)} · 가상 의약품 매칭 · 실제 호출 검증과 별도` : props.account?'가상 추출·가상 의약품 매칭 · 실제 AI/식약처 조회 없음 · 명시적으로 저장한 결과만 저장 목록에서 다시 볼 수 있습니다.':'가상 추출·가상 의약품 매칭 · 실제 AI/식약처 조회 없음 · 새로고침하면 사라집니다.'}</p>
+   <p>추출 출처: 이전 {extractionSourceLabel(response.extraction_sources?.previous)} / 현재 {extractionSourceLabel(response.extraction_sources?.current)} · {officialModeLabel(response.mode)} · 내용 확인과 실제 복용 확인은 별개입니다.</p>
    {props.account&&response.stage==='compared'&&<button disabled={busy} onClick={save}>확인한 결과와 복용 선택 저장</button>}
    {saved&&<p role="status">{saved}</p>}
    <details><summary>원본·수정 초안·정규화 결과 확인</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({original:response.original_results,edited:response.edited_records,normalized:response.normalization_results},null,2)}</pre></details>

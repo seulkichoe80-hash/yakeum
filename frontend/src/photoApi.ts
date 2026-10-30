@@ -7,7 +7,7 @@ export type PhotoBatch = PhotoDocument & {reviews:{index:number;confirmed:boolea
 export type PhotoResponse = {
  extraction_sources?:{previous:'MOCK'|'GEMINI';current:'MOCK'|'GEMINI'};
  account_run_id?:string;
- mode:'LOCAL_MOCK';persisted:false;stage:'normalized'|'compared'|'held';
+ mode:'LOCAL_MOCK'|'MFDS_LIVE';persisted:false;stage:'normalized'|'compared'|'held';
  original_results:{previous:ExtractionResult[];current:ExtractionResult[]};
  edited_records:{previous:MedicationRecord[];current:MedicationRecord[]};
  normalization_results:{previous:NormalizationResult[];current:NormalizationResult[]};
@@ -47,7 +47,7 @@ export async function processPhotos(family:string,previous:PhotoBatch,current:Ph
 }
 
 export function validatePhotoResponse(value:any,family:string):PhotoResponse {
- if(!['normalized','compared','held'].includes(value.stage)||!Array.isArray(value.pending_decisions)||!Array.isArray(value.current_intake_states)) throw new Error('사진 처리 응답이 다릅니다.');
+ if(!['LOCAL_MOCK','MFDS_LIVE'].includes(value.mode)||!['normalized','compared','held'].includes(value.stage)||!Array.isArray(value.pending_decisions)||!Array.isArray(value.current_intake_states)) throw new Error('사진 처리 응답이 다릅니다.');
  for(const side of ['previous','current'] as const) {
   if(!Array.isArray(value.normalization_results?.[side])) throw new Error('정규화 응답이 다릅니다.');
   for(const result of value.normalization_results[side]) {

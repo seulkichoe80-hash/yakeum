@@ -204,6 +204,7 @@ class Processing(photo_demo.LocalModel):
     previous: AccountBatch
     current: AccountBatch
     normalization_confirmed: StrictBool=False
+    official_mode: Literal["LOCAL_MOCK", "MFDS_LIVE"]="LOCAL_MOCK"
 
 
 @router.post('/families/{family}/photos/process')
@@ -219,14 +220,18 @@ def process(family: UUID,body: Processing,user: User):
             metadata=json.loads(row['metadata'])
             extraction_sources[side]=metadata.pop('_extraction_source','MOCK')
             batches[side]=photo_demo.Batch(**metadata,reviews=batch.reviews)
-    result=photo_demo.process_virtual(photo_demo.ProcessInput(family_member_id=family,normalization_confirmed=body.normalization_confirmed,**batches),sources=sources)
+    from backend.services.mfds.live_matching import configured_lookup
+    lookup=configured_lookup(body.official_mode)
+    result=photo_demo.process_virtual(photo_demo.ProcessInput(family_member_id=family,normalization_confirmed=body.normalization_confirmed,**batches),sources=sources,official_lookup=lookup)
     if 'GEMINI' in extraction_sources.values():result['extraction_sources']=extraction_sources
     run_id=str(uuid4());created=datetime.now(timezone.utc).isoformat()
     with database() as db:
         owned_family(db,family,user)
         # Un-saved processing drafts expire; saved snapshots are never removed here.
         db.execute('DELETE FROM runs WHERE saved=0 AND created<?',(datetime.fromtimestamp(time()-86400,timezone.utc).isoformat(),))
-        db.execute('INSERT INTO runs VALUES(?,?,?,?,0,?)',(run_id,str(family),body.model_dump_json(),json.dumps(result),created))
+        reviews=body.model_dump(mode='json')
+        if 'official_mode' not in body.model_fields_set: reviews.pop('official_mode',None)
+        db.execute('INSERT INTO runs VALUES(?,?,?,?,0,?)',(run_id,str(family),json.dumps(reviews),json.dumps(result),created))
     return {'response_version':VERSION,'development_only':True,'run_id':run_id,'result':result}
 
 

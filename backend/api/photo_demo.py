@@ -162,7 +162,12 @@ def _edited(original: dict, draft: Draft):
     return r
 
 
-def process_virtual(request: ProcessInput, *, sources: dict | None = None):
+def process_virtual(request: ProcessInput, *, sources: dict | None = None, official_lookup=None):
+    def normalize(original):
+        if official_lookup is not None:
+            from backend.services.mfds.live_matching import normalize_photo
+            return normalize_photo(original, official_lookup, expected_family_member_id=family)
+        return normalize_structured_record(original, _catalog(), expected_family_member_id=family)
     family = str(request.family_member_id)
     reasons, snapshots = [], {"previous": [], "current": []}
     batches = {"previous": [], "current": []}
@@ -179,7 +184,7 @@ def process_virtual(request: ProcessInput, *, sources: dict | None = None):
             review = reviews.get(index)
             if original["record"] is None or original["status"] == "FAILED":
                 reasons.append({"side": side, "message": "원본 기록이 없거나 추출이 실패한 후보는 재추출/확인 보류가 필요합니다."})
-                batches[side].append(normalize_structured_record(original, _catalog(), expected_family_member_id=family))
+                batches[side].append(normalize(original))
                 continue
             if review is None or not review.confirmed:
                 reasons.append({"side": side, "message": "추출 내용 대조가 완료되지 않은 후보가 있습니다."})
@@ -190,7 +195,7 @@ def process_virtual(request: ProcessInput, *, sources: dict | None = None):
                 reasons.append({"side": side, "message": "후보 수정값의 제품명·수량·단위를 확인해 주세요."})
                 continue
             snapshots[side].append(deepcopy(edited))
-            result = normalize_structured_record({**original, "record": edited}, _catalog(), expected_family_member_id=family)
+            result = normalize({**original, "record": edited})
             batches[side].append(result)
             r = result["record"]
             if r is None or result["status"] in {"FAILED", "PARTIAL"}:
@@ -216,7 +221,7 @@ def process_virtual(request: ProcessInput, *, sources: dict | None = None):
         previous = previous_by_product.get(current["mfds_product_id"]) if current else None
         if previous and sorted(i["ingredient_name_normalized"] or "" for i in previous["ingredients"]) != sorted(i["ingredient_name_normalized"] or "" for i in current["ingredients"]):
             reasons.append({"side": "both", "message": "같은 제품의 성분 구성이 일치하지 않아 동일 함량으로 확정하지 않습니다."})
-    base = {"mode": "LOCAL_MOCK", "persisted": False, "original_results": originals,
+    base = {"mode": "MFDS_LIVE" if official_lookup is not None else "LOCAL_MOCK", "persisted": False, "original_results": originals,
             "edited_records": snapshots, "normalization_results": batches,
             "pending_decisions": reasons, "reconciliation_result": None, "current_intake_states": []}
     if reasons:

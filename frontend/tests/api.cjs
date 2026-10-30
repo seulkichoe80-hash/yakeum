@@ -40,3 +40,12 @@ for(const bad of [
 const zero={...v2,reconciliation_result:{...contractMock,items:[]},current_intake_states:[]};
 assert.equal(parseHiraV2Response(zero,familyId).comparison.executed,true);
 console.log('HIRA v2 checks passed: explicit version, held/empty distinction, source pointers and stale result rejection.');
+
+const liveV2={...v2,response_version:'TASK_D_HIRA_MFDS_V1',processing:{...v2.processing,official_data_mode:'MFDS_LIVE'}};
+assert.equal(parseHiraV2Response(liveV2,familyId,'MFDS_LIVE'),liveV2);
+assert.throws(()=>parseHiraV2Response(liveV2,familyId),ApiError);
+assert.throws(()=>parseHiraV2Response(v2,familyId,'MFDS_LIVE'),ApiError);
+const liveHeld={...held,response_version:'TASK_D_HIRA_MFDS_V1',processing:liveV2.processing};
+assert.equal(parseHiraV2Response(liveHeld,familyId,'MFDS_LIVE'),liveHeld);
+assert.throws(()=>parseVerticalSliceResponse({...response,processing:{...response.processing,official_data_mode:'OTHER'}},familyId,'OTHER'),ApiError);
+console.log('Explicit live HIRA variant, mock/live mismatch rejection and held-null preservation passed.');
