@@ -18,7 +18,7 @@
 
 ## 영상 파일 보관
 
-MP4·원본 음성·배경음·DB·촬영 캐시는 Git에 포함하지 않습니다. 최종 전달 파일은 작업환경의 `/workspace/outputs/yakeum-tts-final-v2/`에 있습니다. 이 경로는 GitHub 다운로드 주소가 아니며 별도로 보관해야 합니다.
+후속 전체 작업 저장 요청에 따라 최종 MP4 3종, DOCX, 제작 코드·편집 설정·몽타주·주요 캡처를 이 폴더에 추가했습니다. 원본 음성·배경음·DB·중복 영상·중간 WAV·촬영 캐시는 제외했습니다. 제작 코드는 production/README.md의 원본 자료 의존성과 제한을 확인하세요. MP4는 GitHub 파일 페이지의 Download raw로 다운로드하세요.
 
 - `YAKEUM_FINAL_TTS_BGM.mp4`
 - `YAKEUM_FINAL_TTS_ONLY.mp4`

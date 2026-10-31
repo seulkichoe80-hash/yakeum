@@ -1,0 +1,232 @@
+{
+  "placements": [
+    {
+      "file": 1,
+      "source_start": 0,
+      "source_end": null,
+      "timeline_start": 0.5,
+      "conservative_end": 7.844,
+      "gain_db": -2
+    },
+    {
+      "file": 2,
+      "source_start": 0,
+      "source_end": null,
+      "timeline_start": 10.3,
+      "conservative_end": 47.70400000000001,
+      "gain_db": -2
+    },
+    {
+      "file": 3,
+      "source_start": 0,
+      "source_end": null,
+      "timeline_start": 54,
+      "conservative_end": 112.24799999999999,
+      "gain_db": -2
+    },
+    {
+      "file": 4,
+      "source_start": 0,
+      "source_end": 27.2,
+      "timeline_start": 122,
+      "conservative_end": 149.2,
+      "gain_db": -2
+    },
+    {
+      "file": 5,
+      "source_start": 0,
+      "source_end": 11.6314,
+      "timeline_start": 158,
+      "conservative_end": 169.63139999999999,
+      "gain_db": -2
+    },
+    {
+      "file": 5,
+      "source_start": 11.6314,
+      "source_end": 20.5792,
+      "timeline_start": 173.6314,
+      "conservative_end": 182.57920000000001,
+      "gain_db": -2
+    },
+    {
+      "file": 5,
+      "source_start": 20.5792,
+      "source_end": null,
+      "timeline_start": 185.5792,
+      "conservative_end": 197.076,
+      "gain_db": -2
+    },
+    {
+      "file": 6,
+      "source_start": 0,
+      "source_end": null,
+      "timeline_start": 201,
+      "conservative_end": 233.04,
+      "gain_db": -2
+    },
+    {
+      "file": 7,
+      "source_start": 0,
+      "source_end": null,
+      "timeline_start": 242,
+      "conservative_end": 277.352,
+      "gain_db": -2
+    },
+    {
+      "file": 8,
+      "source_start": 0,
+      "source_end": null,
+      "timeline_start": 282,
+      "conservative_end": 309.576,
+      "gain_db": -2
+    },
+    {
+      "file": 9,
+      "source_start": 0,
+      "source_end": null,
+      "timeline_start": 311,
+      "conservative_end": 341.132,
+      "gain_db": -2
+    },
+    {
+      "file": 10,
+      "source_start": 0,
+      "source_end": 17.348125,
+      "timeline_start": 345.5,
+      "conservative_end": 362.848125,
+      "gain_db": -2
+    },
+    {
+      "file": 10,
+      "source_start": 17.348125,
+      "source_end": null,
+      "timeline_start": 365.348125,
+      "conservative_end": 393.43199999999996,
+      "gain_db": -2
+    },
+    {
+      "file": 11,
+      "source_start": 0,
+      "source_end": null,
+      "timeline_start": 399.5,
+      "conservative_end": 418.328,
+      "gain_db": -2
+    }
+  ],
+  "input_levels": [
+    {
+      "file": 1,
+      "input_duration": 7.344,
+      "applied_gain_db": -2,
+      "mean_volume": -16.1,
+      "max_volume": -1.6
+    },
+    {
+      "file": 2,
+      "input_duration": 37.404,
+      "applied_gain_db": -2,
+      "mean_volume": -14.4,
+      "max_volume": -1.4
+    },
+    {
+      "file": 3,
+      "input_duration": 58.248,
+      "applied_gain_db": -2,
+      "mean_volume": -14.7,
+      "max_volume": -1.3
+    },
+    {
+      "file": 4,
+      "input_duration": 38.556,
+      "applied_gain_db": -2,
+      "mean_volume": -15.2,
+      "max_volume": -1.4
+    },
+    {
+      "file": 5,
+      "input_duration": 32.076,
+      "applied_gain_db": -2,
+      "mean_volume": -15.0,
+      "max_volume": -1.5
+    },
+    {
+      "file": 6,
+      "input_duration": 32.04,
+      "applied_gain_db": -2,
+      "mean_volume": -15.7,
+      "max_volume": -1.4
+    },
+    {
+      "file": 7,
+      "input_duration": 35.352,
+      "applied_gain_db": -2,
+      "mean_volume": -15.9,
+      "max_volume": -1.4
+    },
+    {
+      "file": 8,
+      "input_duration": 27.576,
+      "applied_gain_db": -2,
+      "mean_volume": -15.0,
+      "max_volume": -1.4
+    },
+    {
+      "file": 9,
+      "input_duration": 30.132,
+      "applied_gain_db": -2,
+      "mean_volume": -14.4,
+      "max_volume": -1.3
+    },
+    {
+      "file": 10,
+      "input_duration": 45.432,
+      "applied_gain_db": -2,
+      "mean_volume": -15.1,
+      "max_volume": -1.4
+    },
+    {
+      "file": 11,
+      "input_duration": 18.828,
+      "applied_gain_db": -2,
+      "mean_volume": -14.7,
+      "max_volume": -1.4
+    }
+  ],
+  "original_total_seconds": 362.988,
+  "duplicate_trim": {
+    "file": 4,
+    "start": 27.2,
+    "end": 38.556,
+    "seconds_removed": 11.356,
+    "duplicate_of": "3.mp3 tail 47.122s onwards",
+    "waveform_correlation": 0.9554006962253585
+  },
+  "edited_narration_seconds": 351.632,
+  "voice_gain_db": -2,
+  "music_base_gain_db": -14,
+  "scheduled_ducking": {
+    "additional_gain_db": -6,
+    "attack_ms": 250,
+    "release_ms": 1000,
+    "intervals": "all narration file/segment spans"
+  },
+  "ducking": {
+    "threshold": 0.05,
+    "ratio": 6,
+    "attack_ms": 30,
+    "release_ms": 1000,
+    "knee": 4,
+    "makeup": 1
+  },
+  "music_fade_in": 3,
+  "music_fade_out": 5,
+  "linear_crossfade_seconds": 4,
+  "master_limiter": {
+    "limit": 0.95,
+    "automatic_gain": false
+  },
+  "playback_speed": 1.0,
+  "physical_headphone_listening": "NOT_PERFORMED",
+  "physical_pc_speaker_listening": "NOT_PERFORMED",
+  "musical_phrase_listening": "NOT_PERFORMED"
+}

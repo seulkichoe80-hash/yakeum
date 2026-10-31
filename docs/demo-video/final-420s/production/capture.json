@@ -1,0 +1,583 @@
+{
+  "sha": "ccb2602f86dd4e275c0a75ab77fb62484a8a8b02",
+  "webm": "/workspace/outputs/yakeum-main-7min/raw/page@eea7d2a31af13f08e45b7e5fa18d4538.webm",
+  "shots": [
+    {
+      "name": "intro",
+      "start": 1.824,
+      "end": 3.126,
+      "box": null
+    },
+    {
+      "name": "family",
+      "start": 3.515,
+      "end": 5.777,
+      "box": {
+        "x": 555.375,
+        "y": 159.984375,
+        "width": 404.625,
+        "height": 50
+      }
+    },
+    {
+      "name": "register-context",
+      "start": 6.114,
+      "end": 7.414,
+      "box": null
+    },
+    {
+      "name": "choose-previous",
+      "start": 7.777,
+      "end": 9.834,
+      "box": {
+        "x": 480,
+        "y": 418.15625,
+        "width": 960,
+        "height": 257.15625
+      }
+    },
+    {
+      "name": "choose-current",
+      "start": 10.241,
+      "end": 12.389,
+      "box": {
+        "x": 480,
+        "y": 418.15625,
+        "width": 960,
+        "height": 257.15625
+      }
+    },
+    {
+      "name": "dates",
+      "start": 12.745,
+      "end": 14.046,
+      "box": {
+        "x": 480,
+        "y": 418.15625,
+        "width": 960,
+        "height": 257.15625
+      }
+    },
+    {
+      "name": "read",
+      "start": 14.443,
+      "end": 15.769,
+      "box": {
+        "x": 480,
+        "y": 307.578125,
+        "width": 960,
+        "height": 476.921875
+      }
+    },
+    {
+      "name": "review-context",
+      "start": 16.526,
+      "end": 17.828,
+      "box": null
+    },
+    {
+      "name": "originals",
+      "start": 18.242,
+      "end": 19.543,
+      "box": null,
+      "images": [
+        {
+          "x": 491.5,
+          "y": 532.921875,
+          "width": 450,
+          "height": 240
+        },
+        {
+          "x": 978.5,
+          "y": 532.921875,
+          "width": 450,
+          "height": 240
+        }
+      ]
+    },
+    {
+      "name": "contrast",
+      "start": 19.916,
+      "end": 21.217,
+      "box": null,
+      "images": [
+        {
+          "x": 978.5,
+          "y": 532.921875,
+          "width": 450,
+          "height": 240
+        }
+      ],
+      "dose": {
+        "x": 980,
+        "y": 1066.78125,
+        "width": 447,
+        "height": 49.59375
+      }
+    },
+    {
+      "name": "edit",
+      "start": 21.593,
+      "end": 24.988,
+      "box": {
+        "x": 980,
+        "y": 1066.78125,
+        "width": 447,
+        "height": 49.59375
+      },
+      "dose": {
+        "x": 980,
+        "y": 1066.78125,
+        "width": 447,
+        "height": 49.59375
+      }
+    },
+    {
+      "name": "edited",
+      "start": 25.447,
+      "end": 26.747,
+      "box": {
+        "x": 980,
+        "y": 1066.78125,
+        "width": 447,
+        "height": 49.59375
+      },
+      "dose": {
+        "x": 980,
+        "y": 1066.78125,
+        "width": 447,
+        "height": 49.59375
+      }
+    },
+    {
+      "name": "confirm",
+      "start": 27.578,
+      "end": 30.067,
+      "box": null,
+      "ack": {
+        "x": 480,
+        "y": 1302.921875,
+        "width": 960,
+        "height": 27.1875
+      },
+      "compare": {
+        "x": 480,
+        "y": 1348.109375,
+        "width": 160.734375,
+        "height": 47.59375
+      }
+    },
+    {
+      "name": "compare-click",
+      "start": 30.441,
+      "end": 31.848,
+      "box": null,
+      "ack": {
+        "x": 480,
+        "y": 1302.921875,
+        "width": 960,
+        "height": 27.1875
+      },
+      "compare": {
+        "x": 480,
+        "y": 1348.109375,
+        "width": 160.734375,
+        "height": 47.59375
+      }
+    },
+    {
+      "name": "result-context",
+      "start": 32.575,
+      "end": 33.877,
+      "box": null
+    },
+    {
+      "name": "result-summary",
+      "start": 34.215,
+      "end": 35.516,
+      "box": {
+        "x": 480,
+        "y": 366.96875,
+        "width": 960,
+        "height": 175.578125
+      }
+    },
+    {
+      "name": "changed",
+      "start": 35.852,
+      "end": 37.154,
+      "box": {
+        "x": 480,
+        "y": 550.546875,
+        "width": 960,
+        "height": 362.953125
+      }
+    },
+    {
+      "name": "detail-pair",
+      "start": 39.29,
+      "end": 40.59,
+      "box": {
+        "x": 501,
+        "y": 784.125,
+        "width": 918,
+        "height": 330.9375
+      }
+    },
+    {
+      "name": "detail-previous",
+      "start": 40.936,
+      "end": 42.237,
+      "box": {
+        "x": 501,
+        "y": 784.125,
+        "width": 452,
+        "height": 330.9375
+      }
+    },
+    {
+      "name": "detail-current",
+      "start": 42.599,
+      "end": 43.901,
+      "box": {
+        "x": 967,
+        "y": 784.125,
+        "width": 452,
+        "height": 330.9375
+      }
+    },
+    {
+      "name": "result-notice",
+      "start": 46.02,
+      "end": 47.321,
+      "box": {
+        "x": 480,
+        "y": 366.96875,
+        "width": 960,
+        "height": 175.578125
+      }
+    },
+    {
+      "name": "intake-context",
+      "start": 47.654,
+      "end": 48.956,
+      "box": null
+    },
+    {
+      "name": "intake-empty",
+      "start": 49.302,
+      "end": 50.603,
+      "box": {
+        "x": 503,
+        "y": 784.125,
+        "width": 914,
+        "height": 108.375
+      }
+    },
+    {
+      "name": "intake-select",
+      "start": 50.948,
+      "end": 53.674,
+      "box": {
+        "x": 503,
+        "y": 784.125,
+        "width": 914,
+        "height": 108.375
+      }
+    },
+    {
+      "name": "save-click",
+      "start": 54.465,
+      "end": 55.881,
+      "box": null,
+      "intake": {
+        "x": 503,
+        "y": 784.125,
+        "width": 914,
+        "height": 86.78125
+      },
+      "save": {
+        "x": 480,
+        "y": 994.296875,
+        "width": 92.890625,
+        "height": 47.59375
+      }
+    },
+    {
+      "name": "saved-photo",
+      "start": 56.645,
+      "end": 57.947,
+      "box": null,
+      "intake": {
+        "x": 503,
+        "y": 784.125,
+        "width": 914,
+        "height": 77.984375
+      },
+      "open": {
+        "x": 480,
+        "y": 1101.890625,
+        "width": 131.28125,
+        "height": 47.59375
+      }
+    },
+    {
+      "name": "hira-context",
+      "start": 60.043,
+      "end": 61.344,
+      "box": null
+    },
+    {
+      "name": "hira-files",
+      "start": 62.572,
+      "end": 64.993,
+      "box": {
+        "x": 480,
+        "y": 307.578125,
+        "width": 960,
+        "height": 451.9375
+      }
+    },
+    {
+      "name": "hira-ready",
+      "start": 65.36,
+      "end": 66.661,
+      "box": {
+        "x": 480,
+        "y": 307.578125,
+        "width": 960,
+        "height": 451.9375
+      }
+    },
+    {
+      "name": "hira-compare",
+      "start": 67.013,
+      "end": 68.342,
+      "box": {
+        "x": 480,
+        "y": 307.578125,
+        "width": 960,
+        "height": 451.9375
+      }
+    },
+    {
+      "name": "hira-result",
+      "start": 69.111,
+      "end": 70.412,
+      "box": {
+        "x": 506,
+        "y": 333.578125,
+        "width": 908,
+        "height": 850.6875
+      }
+    },
+    {
+      "name": "hira-save",
+      "start": 70.766,
+      "end": 73.422,
+      "box": {
+        "x": 506,
+        "y": 333.578125,
+        "width": 908,
+        "height": 850.6875
+      }
+    },
+    {
+      "name": "hira-reopen",
+      "start": 75.183,
+      "end": 76.485,
+      "box": {
+        "x": 506,
+        "y": 338.578125,
+        "width": 908,
+        "height": 890.6875
+      }
+    },
+    {
+      "name": "hold-context",
+      "start": 79.855,
+      "end": 81.156,
+      "box": null
+    },
+    {
+      "name": "hold-file",
+      "start": 81.511,
+      "end": 84.161,
+      "box": {
+        "x": 480,
+        "y": 307.578125,
+        "width": 960,
+        "height": 476.140625
+      }
+    },
+    {
+      "name": "held",
+      "start": 84.903,
+      "end": 86.204,
+      "box": {
+        "x": 506,
+        "y": 333.578125,
+        "width": 908,
+        "height": 567.125
+      }
+    },
+    {
+      "name": "hold-reasons",
+      "start": 86.548,
+      "end": 87.849,
+      "box": {
+        "x": 506,
+        "y": 744.125,
+        "width": 908,
+        "height": 25.59375
+      }
+    },
+    {
+      "name": "list-context",
+      "start": 91.168,
+      "end": 92.469,
+      "box": null
+    },
+    {
+      "name": "saved-list",
+      "start": 95.873,
+      "end": 97.174,
+      "box": null
+    },
+    {
+      "name": "reopen-photo",
+      "start": 99.248,
+      "end": 100.548,
+      "box": {
+        "x": 480,
+        "y": 437.171875,
+        "width": 960,
+        "height": 752.5
+      }
+    },
+    {
+      "name": "reopen-hira",
+      "start": 103.981,
+      "end": 105.283,
+      "box": {
+        "x": 506,
+        "y": 333.578125,
+        "width": 908,
+        "height": 845.890625
+      }
+    },
+    {
+      "name": "mobile-context",
+      "start": 106.043,
+      "end": 107.345,
+      "box": null,
+      "mobile": true
+    },
+    {
+      "name": "mobile-card",
+      "start": 108.085,
+      "end": 109.386,
+      "box": {
+        "x": 31,
+        "y": 470.296875,
+        "width": 328,
+        "height": 374.15625
+      },
+      "mobile": true
+    },
+    {
+      "name": "mobile-intake",
+      "start": 110.019,
+      "end": 111.321,
+      "box": {
+        "x": 50,
+        "y": 699.875,
+        "width": 290,
+        "height": 127.578125
+      },
+      "mobile": true
+    },
+    {
+      "name": "outro-result",
+      "start": 112.039,
+      "end": 113.34,
+      "box": {
+        "x": 506,
+        "y": 333.578125,
+        "width": 908,
+        "height": 845.890625
+      }
+    },
+    {
+      "name": "outro-steps",
+      "start": 115.408,
+      "end": 116.709,
+      "box": null
+    }
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/api/dev-account/register"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/login"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/families"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/families/ID/photos/extract"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/families/ID/photos/extract"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/families/ID/photos/process"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/families/ID/photos/process"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/families/ID/runs/ID/save"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/families/ID/hira/process"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/families/ID/hira-runs/ID/save"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/families/ID/hira/process"
+    },
+    {
+      "method": "POST",
+      "path": "/api/dev-account/families/ID/hira-runs/ID/save"
+    }
+  ],
+  "checks": [
+    "original synthetic photo 2 / Mock 1 / edited 2",
+    "actual photo comparison 1 -> 2",
+    "photo save completed",
+    "HIRA Mock comparison changed",
+    "HIRA saved and reread TAKING",
+    "held comparison unexecuted and no intake radios",
+    "held result saved without intake",
+    "photo saved reread TAKING",
+    "390px mobile no horizontal overflow, saved state displayed"
+  ],
+  "actualExternalCalls": 0,
+  "originalPhoto2Mock1": true
+}
