@@ -1,0 +1,28 @@
+[
+  {
+    "file": "약이음_개발해설서.docx",
+    "bytes": 47749,
+    "sha256": "efa8018e991a18bc93d8773740df6f47f49ef9d64511e66dbd8c9e8e8e177344"
+  },
+  {
+    "file": "약이음_발표대본_수정본.docx",
+    "bytes": 47666,
+    "sha256": "5794a808e4458084218cc8c1f81cc69bd3b01bfd4d87a78c8916c2b9a9c1613e"
+  },
+  {
+    "file": "YAKEUM_PRESENTATION_ORDERED.pptx",
+    "bytes": 22283242,
+    "sha256": "23712c6fc87994de5a62ef6772cd57b1eaa0ef86806d3658ffddc1bd8c454d41"
+  },
+  {
+    "file": "약이음 시연영상.mp4",
+    "bytes": 21434957,
+    "sha256": "aebdec961485368887c2eda69d3be0f2c3da38271205bc552c6bccc255703833"
+  },
+  {
+    "file": "약이음_한눈에_이해하기.png",
+    "bytes": 1595654,
+    "sha256": "9370aa0592ff308734b53bdcc37d5a6cb67da43316cb79068987ecae9bef5d83",
+    "source": "YAKEUM_PRESENTATION_ORDERED.pptx / ppt/media/image.png; matches supplied inline image"
+  }
+]
