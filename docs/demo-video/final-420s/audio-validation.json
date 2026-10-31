@@ -1,0 +1,33 @@
+{
+  "stems_seconds": 420,
+  "voice_gain_db": -2,
+  "music_base_gain_db": -14,
+  "maximum_ducked_to_base_rms_ratio": 1.0,
+  "active_voice_window_threshold_dbfs": -32,
+  "active_voice_to_music_db": {
+    "minimum": 6.913214527638829,
+    "median": 30.97794625233199
+  },
+  "voice_mono_downmix_rms_delta_db": 0.0,
+  "mix_sample_peak_dbfs": -6.171077758727024,
+  "repeat_boundaries": [
+    {
+      "overlap_start_approx": 180.032625,
+      "overlap_end_approx": 184.032625,
+      "music_rms_dbfs": -41.55004371402497,
+      "music_peak_dbfs": -26.641778319432664,
+      "direct_listening": "NOT_PERFORMED"
+    },
+    {
+      "overlap_start_approx": 360.06525,
+      "overlap_end_approx": 364.06525,
+      "music_rms_dbfs": -41.550115403233754,
+      "music_peak_dbfs": -26.64829756877387,
+      "direct_listening": "NOT_PERFORMED"
+    }
+  ],
+  "crossfade_gain_law": "linear; outgoing+incoming gains=1, no summing boost",
+  "earphone_hardware_listening": "NOT_PERFORMED",
+  "pc_speaker_hardware_listening": "NOT_PERFORMED",
+  "subjective_articulation_and_musical_phrase_review": "NOT_PERFORMED"
+}

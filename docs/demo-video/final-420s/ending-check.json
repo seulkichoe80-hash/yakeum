@@ -1,0 +1,17 @@
+{
+  "narration-420.wav": {
+    "seconds": 420.0,
+    "last_sample_above_minus55_dbfs": 418.1602291666667,
+    "last_100ms_peak_dbfs": -240.0
+  },
+  "music-base-420.wav": {
+    "seconds": 420.0,
+    "last_sample_above_minus55_dbfs": 419.72872916666665,
+    "last_100ms_peak_dbfs": -64.1737986571905
+  },
+  "mix-420.wav": {
+    "seconds": 420.0,
+    "last_sample_above_minus55_dbfs": 419.72872916666665,
+    "last_100ms_peak_dbfs": -64.1737986571905
+  }
+}

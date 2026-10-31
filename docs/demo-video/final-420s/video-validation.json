@@ -1,0 +1,108 @@
+{
+  "files": {
+    "YAKEUM_TTS_BGM_420s.mp4": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "duration": "420.000000",
+          "nb_read_frames": "12600"
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2,
+          "r_frame_rate": "0/0",
+          "duration": "420.000000",
+          "nb_read_frames": "19688"
+        }
+      ],
+      "format": {
+        "duration": "420.000000",
+        "size": "21434957"
+      },
+      "video_bitstream_hash": "SHA256=a45173d4a38f68e8b8d544989542246b7ad3b6a8b5bb55a4e23751fe10168352",
+      "file_sha256": "aebdec961485368887c2eda69d3be0f2c3da38271205bc552c6bccc255703833",
+      "full_decode": "passed",
+      "levels": {
+        "mean_volume": -20.8,
+        "max_volume": -6.3
+      }
+    },
+    "YAKEUM_TTS_ONLY_420s.mp4": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "duration": "420.000000",
+          "nb_read_frames": "12600"
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2,
+          "r_frame_rate": "0/0",
+          "duration": "420.000000",
+          "nb_read_frames": "19688"
+        }
+      ],
+      "format": {
+        "duration": "420.000000",
+        "size": "19690350"
+      },
+      "video_bitstream_hash": "SHA256=a45173d4a38f68e8b8d544989542246b7ad3b6a8b5bb55a4e23751fe10168352",
+      "file_sha256": "3da5b090c93bd734f94580fc21a74b345745bf6ccdfaf726352913e9a9bd437f",
+      "full_decode": "passed",
+      "levels": {
+        "mean_volume": -20.8,
+        "max_volume": -6.3
+      }
+    },
+    "YAKEUM_SILENT_420s.mp4": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "30/1",
+          "duration": "420.000000",
+          "nb_read_frames": "12600"
+        }
+      ],
+      "format": {
+        "duration": "420.000000",
+        "size": "10976801"
+      },
+      "video_bitstream_hash": "SHA256=a45173d4a38f68e8b8d544989542246b7ad3b6a8b5bb55a4e23751fe10168352",
+      "file_sha256": "4526a9df17ecee4a3cc3cc99d2be1ed84d41f9919eccf0586489b5f9d8610add",
+      "full_decode": "passed"
+    }
+  },
+  "identical_video_streams": true,
+  "subtitle_cues": 52,
+  "shot_montages": 52,
+  "stage_montages": 9,
+  "inspected_transition_frames": 24,
+  "flat_content_flags": [],
+  "ocr_secret_pattern_flags": [],
+  "app_sha": "ccb2602f86dd4e275c0a75ab77fb62484a8a8b02",
+  "actual_medical_api_calls": 0,
+  "physical_headphone_listening": "NOT_PERFORMED",
+  "physical_pc_speaker_listening": "NOT_PERFORMED",
+  "subjective_music_join_listening": "NOT_PERFORMED"
+}
